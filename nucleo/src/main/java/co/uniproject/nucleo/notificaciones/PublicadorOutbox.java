@@ -81,7 +81,7 @@ public class PublicadorOutbox {
                 try {
                     rabbit.send(Topologia.EXCHANGE_EVENTOS, p.tipo(), mensaje, cd);
                     CorrelationData.Confirm confirmacion = cd.getFuture().get(esperaConfirmacion.toMillis(), TimeUnit.MILLISECONDS);
-                    if (confirmacion != null && confirmacion.isAck()) {
+                    if (confirmacion != null && confirmacion.ack()) {
                         jdbc.sql("UPDATE evento_saliente SET publicado_en = now() WHERE id = :id")
                                 .param("id", p.id())
                                 .update();
