@@ -1,0 +1,183 @@
+package co.uniproject.nucleo;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.rabbitmq.RabbitMQContainer;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Base de las pruebas HTTP del dominio: PostgreSQL y RabbitMQ reales, un solo contexto de Spring para todas las
+ * subclases y un navegador con cookies y CSRF como el SPA. Cada prueba crea sus propios usuarios con correoUnico(...):
+ * no dependen del orden ni de las demás.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public abstract class ApiIntegracionBase {
+
+    /** Contraseña de los usuarios creados con crearUsuario (hash bcrypt de costo 4 para que las pruebas sean rápidas). */
+    protected static final String CLAVE = "ClavePrueba2026";
+
+    private static final String HASH_CLAVE = new BCryptPasswordEncoder(4).encode(CLAVE);
+    private static final AtomicLong SECUENCIA = new AtomicLong();
+    private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6");
+    private static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:4.3.7-management");
+
+    static {
+        postgres.start();
+        rabbit.start();
+    }
+
+    @DynamicPropertySource
+    static void propiedades(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.rabbitmq.host", rabbit::getHost);
+        registry.add("spring.rabbitmq.port", rabbit::getAmqpPort);
+        registry.add("spring.rabbitmq.username", rabbit::getAdminUsername);
+        registry.add("spring.rabbitmq.password", rabbit::getAdminPassword);
+        registry.add("uniproject.token-interno", () -> "token-de-prueba");
+        registry.add("uniproject.outbox.intervalo-ms", () -> 600000L);
+    }
+
+    @Value("${local.server.port}")
+    protected int puerto;
+
+    @Autowired
+    protected JdbcClient jdbc;
+
+    /** Correo distinto en cada llamada (p. ej. "est.17@u.edu.co"). */
+    protected static String correoUnico(String prefijo) {
+        return prefijo + "." + SECUENCIA.incrementAndGet() + "@u.edu.co";
+    }
+
+    /** Crea un usuario con la contraseña CLAVE directamente en la BD. rol: ADMINISTRADOR, DOCENTE, ESTUDIANTE o MONITOR. */
+    protected long crearUsuario(String nombre, String email, String rol) {
+        return jdbc.sql("INSERT INTO usuario (nombre, email, password_hash, rol_plataforma, autoriza_tratamiento_datos, "
+                        + "fecha_autorizacion) VALUES (:nombre, :email, :hash, :rol, true, now()) RETURNING id_usuario")
+                .param("nombre", nombre)
+                .param("email", email)
+                .param("hash", HASH_CLAVE)
+                .param("rol", rol)
+                .query(Long.class)
+                .single();
+    }
+
+    protected long idUsuario(String email) {
+        return jdbc.sql("SELECT id_usuario FROM usuario WHERE email = :email").param("email", email)
+                .query(Long.class).single();
+    }
+
+    /** Navegador con sesión iniciada (contraseña CLAVE) y cookie CSRF vigente. */
+    protected Navegador sesion(String email) {
+        Navegador n = new Navegador(puerto);
+        n.pedirCsrf();
+        HttpResponse<String> r = n.post("/api/sesion/login",
+                "{\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE + "\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        n.pedirCsrf();
+        return n;
+    }
+
+    /** Primer valor numérico del campo en un JSON, p. ej. numero(cuerpo, "idProyecto"). */
+    protected static long numero(String json, String campo) {
+        Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*(\\d+)").matcher(json);
+        assertThat(m.find()).as("campo %s en %s", campo, json).isTrue();
+        return Long.parseLong(m.group(1));
+    }
+
+    /** true si el JSON tiene "campo": valor exacto (12 no casa con 123). */
+    protected static boolean tieneValor(String json, String campo, long valor) {
+        return Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*" + valor + "(?!\\d)").matcher(json).find();
+    }
+
+    /** Cliente con cookies propias: guarda Set-Cookie y manda X-XSRF-TOKEN como lo hará el SPA. */
+    public static final class Navegador {
+
+        private final HttpClient cliente = HttpClient.newHttpClient();
+        private final Map<String, String> cookies = new LinkedHashMap<>();
+        private final String base;
+
+        public Navegador(int puerto) {
+            this.base = "http://localhost:" + puerto;
+        }
+
+        public HttpResponse<String> get(String ruta) {
+            return enviar("GET", ruta, null);
+        }
+
+        public HttpResponse<String> post(String ruta, String json) {
+            return enviar("POST", ruta, json);
+        }
+
+        public HttpResponse<String> put(String ruta, String json) {
+            return enviar("PUT", ruta, json);
+        }
+
+        public HttpResponse<String> delete(String ruta) {
+            return enviar("DELETE", ruta, null);
+        }
+
+        public void pedirCsrf() {
+            assertThat(get("/api/sesion/csrf").statusCode()).isEqualTo(204);
+            assertThat(cookies).containsKey("XSRF-TOKEN");
+        }
+
+        public String cookie(String nombre) {
+            return cookies.get(nombre);
+        }
+
+        private HttpResponse<String> enviar(String metodo, String ruta, String json) {
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + ruta)).method(metodo,
+                    json == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(json));
+            if (json != null) {
+                b.header("Content-Type", "application/json");
+            }
+            if (!cookies.isEmpty()) {
+                b.header("Cookie", cookies.entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue())
+                        .collect(Collectors.joining("; ")));
+            }
+            if (cookies.containsKey("XSRF-TOKEN")) {
+                b.header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"));
+            }
+            try {
+                HttpResponse<String> r = cliente.send(b.build(), HttpResponse.BodyHandlers.ofString());
+                r.headers().allValues("set-cookie").forEach(this::guardar);
+                return r;
+            } catch (IOException | InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        private void guardar(String setCookie) {
+            String par = setCookie.split(";", 2)[0];
+            int igual = par.indexOf('=');
+            String nombre = par.substring(0, igual);
+            String valor = par.substring(igual + 1);
+            if (valor.isEmpty() || setCookie.toLowerCase(Locale.ROOT).contains("max-age=0")) {
+                cookies.remove(nombre);
+            } else {
+                cookies.put(nombre, valor);
+            }
+        }
+    }
+}
