@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,7 +108,12 @@ public class ServicioCorreosProyecto {
                     monitores.save(m);
                 }
             }
-            c = correos.save(c);
+            try {
+                c = correos.saveAndFlush(c);
+            } catch (DataIntegrityViolationException e) {
+                throw new ReglaNegocioException("CORREO_HABILITADO_EN_PARALELO",
+                        "Otra operación habilitó alguno de estos correos al mismo tiempo. Vuelve a intentarlo");
+            }
             auditoria.registrar(EntradaAuditoria.cambio(usuario.idUsuario(), "correo_habilitado",
                     c.getIdCorreoHabilitado(), AccionAuditoria.HABILITAR_CORREO, "rol_plataforma", null, rol.name()));
             habilitados.add(CorreoHabilitadoVista.de(c));
