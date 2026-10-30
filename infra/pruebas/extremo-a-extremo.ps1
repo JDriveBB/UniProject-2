@@ -155,7 +155,7 @@ try {
 
 # E3 Vinculacion
 try {
-    $sqlE3 = "INSERT INTO usuario (id_usuario) VALUES ($U1), ($U2) ON CONFLICT (id_usuario) DO UPDATE SET telegram_chat_id = NULL; DELETE FROM codigo_vinculacion WHERE codigo LIKE 'E2E-%'; INSERT INTO codigo_vinculacion (codigo, usuario_id, creado_en, vence_en) VALUES ('$COD_VIGENTE', $U1, now(), now() + interval '15 minutes'), ('$COD_VENCIDO', $U2, now() - interval '1 hour', now() - interval '30 minutes');"
+    $sqlE3 = "INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol_plataforma) VALUES ($U1, 'E2E $U1', 'e2e$U1@prueba.invalid', '!', 'ESTUDIANTE'), ($U2, 'E2E $U2', 'e2e$U2@prueba.invalid', '!', 'ESTUDIANTE') ON CONFLICT (id_usuario) DO UPDATE SET telegram_chat_id = NULL; DELETE FROM codigo_vinculacion WHERE codigo LIKE 'E2E-%'; INSERT INTO codigo_vinculacion (codigo, usuario_id, creado_en, vence_en) VALUES ('$COD_VIGENTE', $U1, now(), now() + interval '15 minutes'), ('$COD_VENCIDO', $U2, now() - interval '1 hour', now() - interval '30 minutes');"
     Sql $sqlE3
 
     $rVigente = Post "/interno/telegram/vinculaciones" "{`"codigo`":`"$COD_VIGENTE`",`"chatId`":$CHAT1}" $true
