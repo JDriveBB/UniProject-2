@@ -9,3 +9,4 @@ Archivos_contexto
 docs
 infra
 *.md
+.worktrees/
