@@ -7,12 +7,12 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /** Un renglón ACTUALIZAR por campo que cambió (valores como texto). Nunca se le pasan correos ni contraseñas. */
-final class AuditoriaCambios {
+public final class AuditoriaCambios {
 
     private AuditoriaCambios() {
     }
 
-    static void siCambia(RegistroAuditoria auditoria, long idUsuario, String entidad, long idRegistro, String campo,
+    public static void siCambia(RegistroAuditoria auditoria, long idUsuario, String entidad, long idRegistro, String campo,
                          Object anterior, Object nuevo) {
         String textoAnterior = texto(anterior);
         String textoNuevo = texto(nuevo);
@@ -23,7 +23,7 @@ final class AuditoriaCambios {
     }
 
     /** BigDecimal sin ceros a la derecha (40.00 y 40 son el mismo valor); lo demás con toString. */
-    static String texto(Object valor) {
+    public static String texto(Object valor) {
         if (valor == null) {
             return null;
         }
