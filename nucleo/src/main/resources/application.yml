@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: nucleo
+  threads:
+    virtual:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://${UNIPROJECT_DB_HOST:localhost}:5432/uniproject
+    username: uniproject_nucleo
+    password: ${NUCLEO_DB_PASSWORD}
+  flyway:
+    schemas: public
+    create-schemas: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  rabbitmq:
+    host: ${UNIPROJECT_RABBITMQ_HOST:localhost}
+    port: 5672
+    username: nucleo
+    password: ${RABBITMQ_NUCLEO_PASSWORD}
+    publisher-confirm-type: correlated
+  task:
+    scheduling:
+      pool:
+        size: 3
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+uniproject:
+  url-base: ${UNIPROJECT_URL_BASE:http://localhost:8080}
+  token-interno: ${UNIPROJECT_TOKEN_INTERNO:}
+  telegram:
+    usuario-bot: ${TELEGRAM_BOT_USERNAME:}
+  vinculacion:
+    vigencia: 15m
