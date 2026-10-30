@@ -58,7 +58,7 @@ class PublicadorOutboxTest {
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         Clock reloj = Clock.fixed(Instant.parse("2026-10-24T19:05:00Z"), ZoneId.of("America/Bogota"));
         codec = new CodecEventos();
-        registro = new RegistroEventosJdbc(jdbc, codec, reloj);
+        registro = new RegistroEventosJdbc(jdbc, codec, reloj, evento -> 0);
         rabbit = Mockito.mock(RabbitTemplate.class);
         publicador = new PublicadorOutbox(jdbc, rabbit, tx, 50, Duration.ofMillis(300));
     }

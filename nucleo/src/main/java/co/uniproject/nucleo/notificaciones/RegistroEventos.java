@@ -10,7 +10,8 @@ import java.util.UUID;
 public interface RegistroEventos {
 
     /**
-     * Crea el CloudEvent (EventoCloud.nuevo), lo valida contra su esquema y lo inserta en evento_saliente.
+     * Crea el CloudEvent (EventoCloud.nuevo), lo valida contra su esquema, lo inserta en evento_saliente y deja una
+     * fila por destinatario en la bandeja (tabla notificacion, decisión N1), todo en la transacción del llamador.
      *
      * @return id del evento (también es el id de la fila y el messageId en RabbitMQ)
      * @throws IllegalStateException si no hay una transacción activa
