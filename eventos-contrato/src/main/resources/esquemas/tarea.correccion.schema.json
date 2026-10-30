@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tarea.correccion",
+  "description": "Corrección solicitada. CloudEvent 1.0 publicado por el núcleo en uniproject.eventos con clave de enrutamiento tarea.correccion.",
+  "type": "object",
+  "required": ["specversion", "id", "source", "type", "time", "datacontenttype", "data"],
+  "properties": {
+    "specversion": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "source": { "const": "/uniproject/nucleo" },
+    "type": { "const": "tarea.correccion" },
+    "time": { "$ref": "#/definitions/instante" },
+    "datacontenttype": { "const": "application/json" },
+    "data": {
+      "type": "object",
+      "required": ["proyecto", "equipo", "tarea", "responsable", "lider", "resumen"],
+      "properties": {
+        "proyecto": { "$ref": "#/definitions/referencia" },
+        "equipo": { "$ref": "#/definitions/referencia" },
+        "tarea": { "$ref": "#/definitions/referenciaTarea" },
+        "responsable": { "$ref": "#/definitions/persona" },
+        "lider": { "$ref": "#/definitions/referencia" },
+        "resumen": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    }
+  },
+  "definitions": {
+    "id": { "type": "integer", "minimum": 1 },
+    "texto": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "instante": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$" },
+    "fecha": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "referencia": {
+      "type": "object",
+      "required": ["id", "nombre"],
+      "properties": { "id": { "$ref": "#/definitions/id" }, "nombre": { "$ref": "#/definitions/texto" } }
+    },
+    "referenciaTarea": {
+      "type": "object",
+      "required": ["id", "titulo"],
+      "properties": { "id": { "$ref": "#/definitions/id" }, "titulo": { "$ref": "#/definitions/texto" } }
+    },
+    "persona": {
+      "type": "object",
+      "required": ["id", "nombre"],
+      "properties": {
+        "id": { "$ref": "#/definitions/id" },
+        "nombre": { "$ref": "#/definitions/texto" },
+        "chatId": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    }
+  }
+}
