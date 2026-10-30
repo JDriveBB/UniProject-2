@@ -1,13 +1,16 @@
 package co.uniproject.nucleo;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -136,6 +139,24 @@ public abstract class ApiIntegracionBase {
             return enviar("DELETE", ruta, null);
         }
 
+        public HttpResponse<byte[]> getBytes(String ruta) {
+            return enviar("GET", ruta, null, null, HttpResponse.BodyHandlers.ofByteArray());
+        }
+
+        /** multipart/form-data con un solo archivo, como lo manda el navegador. */
+        public HttpResponse<String> postArchivo(String ruta, String campo, String nombreArchivo, String tipo,
+                                                byte[] contenido) {
+            String limite = "limite" + UUID.randomUUID().toString().replace("-", "");
+            ByteArrayOutputStream cuerpo = new ByteArrayOutputStream();
+            cuerpo.writeBytes(("--" + limite + "\r\nContent-Disposition: form-data; name=\"" + campo
+                    + "\"; filename=\"" + nombreArchivo + "\"\r\nContent-Type: " + tipo + "\r\n\r\n")
+                    .getBytes(StandardCharsets.UTF_8));
+            cuerpo.writeBytes(contenido);
+            cuerpo.writeBytes(("\r\n--" + limite + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            return enviar("POST", ruta, "multipart/form-data; boundary=" + limite, cuerpo.toByteArray(),
+                    HttpResponse.BodyHandlers.ofString());
+        }
+
         public void pedirCsrf() {
             assertThat(get("/api/sesion/csrf").statusCode()).isEqualTo(204);
             assertThat(cookies).containsKey("XSRF-TOKEN");
@@ -146,10 +167,16 @@ public abstract class ApiIntegracionBase {
         }
 
         private HttpResponse<String> enviar(String metodo, String ruta, String json) {
+            return enviar(metodo, ruta, json == null ? null : "application/json",
+                    json == null ? null : json.getBytes(StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+        }
+
+        private <T> HttpResponse<T> enviar(String metodo, String ruta, String tipo, byte[] cuerpo,
+                                           HttpResponse.BodyHandler<T> manejador) {
             HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + ruta)).method(metodo,
-                    json == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(json));
-            if (json != null) {
-                b.header("Content-Type", "application/json");
+                    cuerpo == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(cuerpo));
+            if (tipo != null) {
+                b.header("Content-Type", tipo);
             }
             if (!cookies.isEmpty()) {
                 b.header("Cookie", cookies.entrySet().stream()
@@ -160,7 +187,7 @@ public abstract class ApiIntegracionBase {
                 b.header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"));
             }
             try {
-                HttpResponse<String> r = cliente.send(b.build(), HttpResponse.BodyHandlers.ofString());
+                HttpResponse<T> r = cliente.send(b.build(), manejador);
                 r.headers().allValues("set-cookie").forEach(this::guardar);
                 return r;
             } catch (IOException | InterruptedException e) {

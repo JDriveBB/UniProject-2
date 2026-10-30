@@ -86,8 +86,11 @@ services:
       UNIPROJECT_ADMIN_EMAIL: ${UNIPROJECT_ADMIN_EMAIL:-}
       UNIPROJECT_ADMIN_NOMBRE: ${UNIPROJECT_ADMIN_NOMBRE:-Administrador}
       UNIPROJECT_ADMIN_CONTRASENA: ${UNIPROJECT_ADMIN_CONTRASENA:-}
+      UNIPROJECT_EVIDENCIAS_RAIZ: /datos
     ports:
       - "8080:8080"
+    volumes:
+      - datos-evidencias:/datos/evidencias
     restart: unless-stopped
 
   agente:
@@ -119,3 +122,4 @@ services:
 volumes:
   datos-postgres:
   datos-rabbitmq:
+  datos-evidencias:
