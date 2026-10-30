@@ -15,6 +15,8 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -pl nucleo -am package -DskipT
 # Ejecución: solo el JRE, usuario sin privilegios.
 FROM eclipse-temurin:25-jre-noble
 RUN groupadd --system uniproject && useradd --system --gid uniproject --no-create-home uniproject
+# Evidencias (R-14): el volumen datos-evidencias se monta en /datos/evidencias y hereda este dueño al crearse.
+RUN mkdir -p /datos/evidencias && chown -R uniproject:uniproject /datos
 WORKDIR /app
 COPY --from=construccion /fuente/nucleo/target/nucleo-0.1.0-SNAPSHOT.jar /app/app.jar
 USER uniproject

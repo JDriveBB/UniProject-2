@@ -15,6 +15,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * Errores de la API del dominio en un solo formato (RespuestaError). No aplica a /interno/**: el controlador interno
@@ -71,6 +72,13 @@ public class ManejadorErrores {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespuestaError> cuerpoIlegible(HttpMessageNotReadableException e) {
         return respuesta(HttpStatus.BAD_REQUEST, "CUERPO_INVALIDO", "El cuerpo de la petición no es válido", List.of());
+    }
+
+    /** Decisión 17b-3: por encima del límite de Spring (12 MB). Mismo código que el límite propio de 10 MB. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<RespuestaError> archivoDemasiadoGrande(MaxUploadSizeExceededException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, "ARCHIVO_DEMASIADO_GRANDE",
+                "El archivo supera 10 MB. Súbelo a un repositorio y adjunta el enlace", List.of());
     }
 
     private static ResponseEntity<RespuestaError> respuesta(HttpStatus estado, String codigo, String mensaje,

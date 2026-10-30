@@ -21,6 +21,11 @@ spring:
     username: nucleo
     password: ${RABBITMQ_NUCLEO_PASSWORD}
     publisher-confirm-type: correlated
+  servlet:
+    multipart:
+      max-file-size: 12MB
+      max-request-size: 13MB
+      resolve-lazily: true
   task:
     scheduling:
       pool:
@@ -59,3 +64,5 @@ uniproject:
     email: ${UNIPROJECT_ADMIN_EMAIL:}
     nombre: ${UNIPROJECT_ADMIN_NOMBRE:Administrador}
     contrasena: ${UNIPROJECT_ADMIN_CONTRASENA:}
+  evidencias:
+    raiz: ${UNIPROJECT_EVIDENCIAS_RAIZ:${java.io.tmpdir}/uniproject}
