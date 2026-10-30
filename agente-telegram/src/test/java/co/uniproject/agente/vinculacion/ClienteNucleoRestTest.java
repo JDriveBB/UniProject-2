@@ -103,6 +103,16 @@ class ClienteNucleoRestTest {
     }
 
     @Test
+    void conflicto409EsErrorSinReintento() {
+        esperarVinculacion(withStatus(HttpStatus.CONFLICT));
+
+        ResultadoVinculacion resultado = cliente.vincular(C, 123L);
+
+        assertThat(resultado).isEqualTo(ResultadoVinculacion.ERROR);
+        servidor.verify();
+    }
+
+    @Test
     void bloqueoEnviaChat() {
         servidor.expect(requestTo("http://nucleo.test/interno/telegram/bloqueos"))
                 .andExpect(method(HttpMethod.POST))

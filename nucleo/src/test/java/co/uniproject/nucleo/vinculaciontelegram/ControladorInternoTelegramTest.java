@@ -5,6 +5,7 @@ import co.uniproject.nucleo.seguridad.FiltroTokenInterno;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -104,6 +105,22 @@ public class ControladorInternoTelegramTest {
                     {"codigo":"%s","chatId":123}
                     """.formatted(codigo)))
             .andExpect(status().isGone());
+    }
+
+    @Test
+    void choqueConElUniqueDelChatEs409() throws Exception {
+        String codigo = "A".repeat(32);
+        when(servicio.confirmar(codigo, 123L)).thenThrow(new DuplicateKeyException("simulado"));
+
+        mvc.perform(post(ContratoInterno.RUTA_VINCULACIONES)
+                .header(ContratoInterno.CABECERA_TOKEN, "token-de-prueba")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"codigo":"%s","chatId":123}
+                    """.formatted(codigo)))
+            .andExpect(status().isConflict());
+
+        verify(servicio, times(1)).confirmar(codigo, 123L);
     }
 
     @Test

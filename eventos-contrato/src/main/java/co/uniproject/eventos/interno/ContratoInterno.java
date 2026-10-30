@@ -2,7 +2,7 @@ package co.uniproject.eventos.interno;
 
 /**
  * Endpoint interno del núcleo (decisiones-tecnicas-java §4). Cuerpos JSON; respuestas sin cuerpo.
- * POST RUTA_VINCULACIONES: 204 vinculado · 400 cuerpo inválido · 401 token ausente o incorrecto · 404 código inexistente · 410 código usado o vencido.
+ * POST RUTA_VINCULACIONES: 204 vinculado · 400 cuerpo inválido · 401 token ausente o incorrecto · 404 código inexistente · 409 conflicto transitorio (el mismo chat se vinculó a la vez a otra cuenta; el código sigue sin usar: se puede reintentar) · 410 código usado o vencido.
  * POST RUTA_BLOQUEOS:      204 (siempre, exista o no el chat) · 400 cuerpo inválido · 401 token.
  */
 public final class ContratoInterno {

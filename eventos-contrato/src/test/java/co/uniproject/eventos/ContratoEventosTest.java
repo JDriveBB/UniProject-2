@@ -127,4 +127,16 @@ class ContratoEventosTest {
         assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(33))).isFalse();
         assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(31) + "+")).isFalse();
     }
+
+    @Test
+    void mensajeDeEventoInvalidoNoPermiteFalsificarLineasDeLog() {
+        assertThatThrownBy(() -> CODEC.leer("{\"type\":\"otro\\r\\nWARN falso\\tx\"}".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(EventoInvalidoException.class)
+                .hasMessage("type ausente o desconocido: otro??WARN falso?x");
+
+        String largo = "x".repeat(5000);
+        assertThatThrownBy(() -> CODEC.leer(("{\"type\":\"" + largo + "\"}").getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(EventoInvalidoException.class)
+                .hasMessage(("type ausente o desconocido: " + largo).substring(0, 500) + "...");
+    }
 }
