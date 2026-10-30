@@ -5,7 +5,7 @@ spring:
     virtual:
       enabled: false
   datasource:
-    url: jdbc:postgresql://${UNIPROJECT_DB_HOST:localhost}:5432/uniproject
+    url: jdbc:postgresql://${UNIPROJECT_DB_HOST:localhost}:5432/uniproject?logServerErrorDetail=false
     username: uniproject_nucleo
     password: ${NUCLEO_DB_PASSWORD}
   flyway:

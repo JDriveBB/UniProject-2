@@ -8,7 +8,7 @@ spring:
     virtual:
       enabled: false
   datasource:
-    url: jdbc:postgresql://${UNIPROJECT_DB_HOST:localhost}:5432/uniproject?currentSchema=agente
+    url: jdbc:postgresql://${UNIPROJECT_DB_HOST:localhost}:5432/uniproject?currentSchema=agente&logServerErrorDetail=false
     username: uniproject_agente
     password: ${AGENTE_DB_PASSWORD}
   flyway:
