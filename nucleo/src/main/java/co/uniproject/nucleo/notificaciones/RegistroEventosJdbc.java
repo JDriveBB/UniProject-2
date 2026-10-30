@@ -3,6 +3,7 @@ package co.uniproject.nucleo.notificaciones;
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.EventoCloud;
 import co.uniproject.eventos.datos.DatosEvento;
+import co.uniproject.nucleo.notificaciones.bandeja.RegistroNotificaciones;
 import java.time.Clock;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -15,11 +16,13 @@ public class RegistroEventosJdbc implements RegistroEventos {
     private final JdbcClient jdbc;
     private final CodecEventos codec;
     private final Clock reloj;
+    private final RegistroNotificaciones bandeja;
 
-    public RegistroEventosJdbc(JdbcClient jdbc, CodecEventos codec, Clock reloj) {
+    public RegistroEventosJdbc(JdbcClient jdbc, CodecEventos codec, Clock reloj, RegistroNotificaciones bandeja) {
         this.jdbc = jdbc;
         this.codec = codec;
         this.reloj = reloj;
+        this.bandeja = bandeja;
     }
 
     @Override
@@ -34,6 +37,7 @@ public class RegistroEventosJdbc implements RegistroEventos {
                 .param("tipo", evento.type())
                 .param("carga", json)
                 .update();
+        bandeja.registrar(evento);
         return evento.id();
     }
 }

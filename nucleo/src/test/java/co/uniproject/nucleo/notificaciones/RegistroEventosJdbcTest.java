@@ -40,7 +40,7 @@ class RegistroEventosJdbcTest {
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         reloj = Clock.fixed(Instant.parse("2026-10-24T19:05:00Z"), ZoneId.of("America/Bogota"));
         codec = new CodecEventos();
-        registro = new RegistroEventosJdbc(jdbc, codec, reloj);
+        registro = new RegistroEventosJdbc(jdbc, codec, reloj, evento -> 0);
     }
 
     @Test
