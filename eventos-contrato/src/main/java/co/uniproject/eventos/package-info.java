@@ -1,4 +1,4 @@
 /**
- * Contrato de eventos de UniProject (CloudEvents 1.0). Se llena en el bloque de contratos.
+ * Contrato de eventos de UniProject (CloudEvents 1.0). Fuente única para núcleo y agente.
  */
 package co.uniproject.eventos;

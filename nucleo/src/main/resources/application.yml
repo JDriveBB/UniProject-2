@@ -42,3 +42,10 @@ uniproject:
     usuario-bot: ${TELEGRAM_BOT_USERNAME:}
   vinculacion:
     vigencia: 15m
+  outbox:
+    intervalo-ms: 2000
+    tamano-lote: 50
+    espera-confirmacion: 5s
+  programador:
+    cron-riesgo: "0 0 * * * *"
+    cron-inactividad: "0 0 * * * *"
