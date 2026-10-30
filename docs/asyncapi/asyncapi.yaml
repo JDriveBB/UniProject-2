@@ -1,0 +1,173 @@
+asyncapi: 3.0.0
+info:
+  title: Eventos de UniProject
+  version: 1.0.0
+  description: |
+    Eventos que el núcleo de UniProject publica en RabbitMQ 4.3 a través de la outbox (tabla Evento_Saliente):
+    un publicador por sondeo los envía al exchange topic uniproject.eventos con confirmaciones del broker.
+    El agente de Telegram los recibe desde la quorum queue notificaciones.telegram (enlazada con la clave #),
+    con confirmación manual, reintento diferido y cola de fallidos notificaciones.telegram.fallidos.
+    Cada mensaje es un CloudEvent 1.0 en modo estructurado. Los JSON Schema (draft-07) del módulo
+    eventos-contrato son la fuente de verdad; este documento los referencia.
+  license:
+    name: Uso académico - Diseño de Software I
+defaultContentType: application/cloudevents+json
+servers:
+  broker:
+    host: rabbitmq:5672
+    protocol: amqp
+    protocolVersion: 0.9.1
+    description: RabbitMQ 4.3 (servicio rabbitmq de Docker Compose), vhost /.
+channels:
+  tareaRutaCriticaRiesgo:
+    address: tarea.ruta_critica.riesgo
+    messages:
+      tareaRutaCriticaRiesgo:
+        $ref: '#/components/messages/TareaRutaCriticaRiesgo'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoInactividad:
+    address: equipo.inactividad
+    messages:
+      equipoInactividad:
+        $ref: '#/components/messages/EquipoInactividad'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  hitoEnviado:
+    address: hito.enviado
+    messages:
+      hitoEnviado:
+        $ref: '#/components/messages/HitoEnviado'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  hitoEvaluado:
+    address: hito.evaluado
+    messages:
+      hitoEvaluado:
+        $ref: '#/components/messages/HitoEvaluado'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  tareaReasignada:
+    address: tarea.reasignada
+    messages:
+      tareaReasignada:
+        $ref: '#/components/messages/TareaReasignada'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  tareaCorreccion:
+    address: tarea.correccion
+    messages:
+      tareaCorreccion:
+        $ref: '#/components/messages/TareaCorreccion'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+operations:
+  publicarTareaRutaCriticaRiesgo:
+    action: send
+    summary: El programador interno detecta que una tarea de la ruta crítica pasó a estar en riesgo (RF4, RF9).
+    channel:
+      $ref: '#/channels/tareaRutaCriticaRiesgo'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoInactividad:
+    action: send
+    summary: El programador interno detecta un estudiante sin actividad durante el periodo configurado (RF6).
+    channel:
+      $ref: '#/channels/equipoInactividad'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarHitoEnviado:
+    action: send
+    summary: Un estudiante envía un hito a revisión (RF7).
+    channel:
+      $ref: '#/channels/hitoEnviado'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarHitoEvaluado:
+    action: send
+    summary: El docente evalúa un hito; viaja solo el carácter de la nota, no la nota (RF8, Ley 1581).
+    channel:
+      $ref: '#/channels/hitoEvaluado'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarTareaReasignada:
+    action: send
+    summary: El líder reasigna una tarea a otro integrante (RF11).
+    channel:
+      $ref: '#/channels/tareaReasignada'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarTareaCorreccion:
+    action: send
+    summary: El líder pide rehacer la entrega de una tarea (RF5).
+    channel:
+      $ref: '#/channels/tareaCorreccion'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+components:
+  channelBindings:
+    eventos:
+      amqp:
+        is: routingKey
+        exchange:
+          name: uniproject.eventos
+          type: topic
+          durable: true
+          autoDelete: false
+          vhost: /
+        bindingVersion: 0.3.0
+  operationBindings:
+    publicacion:
+      amqp:
+        deliveryMode: 2
+        mandatory: false
+        bindingVersion: 0.3.0
+  messages:
+    TareaRutaCriticaRiesgo:
+      name: tarea.ruta_critica.riesgo
+      title: Tarea de la ruta crítica en riesgo
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/tarea.ruta_critica.riesgo.schema.json'
+    EquipoInactividad:
+      name: equipo.inactividad
+      title: Inactividad detectada
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.inactividad.schema.json'
+    HitoEnviado:
+      name: hito.enviado
+      title: Hito enviado a revisión
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/hito.enviado.schema.json'
+    HitoEvaluado:
+      name: hito.evaluado
+      title: Hito evaluado
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/hito.evaluado.schema.json'
+    TareaReasignada:
+      name: tarea.reasignada
+      title: Tarea reasignada
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/tarea.reasignada.schema.json'
+    TareaCorreccion:
+      name: tarea.correccion
+      title: Corrección solicitada
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/tarea.correccion.schema.json'
