@@ -140,7 +140,7 @@ try {
     $r1 = Post "/interno/telegram/vinculaciones" "{`"codigo`":`"$COD_INEXIST`",`"chatId`":$CHAT1}" $false
     $r2 = Post "/interno/telegram/vinculaciones" "{`"codigo`":`"$COD_INEXIST`",`"chatId`":$CHAT1}" $true
     $r3 = Post "/interno/telegram/vinculaciones" '{"codigo":"abc","chatId":1}' $true
-    $r4 = (& curl.exe -s -o NUL -w "%{http_code}" "http://localhost:8080/").Trim()
+    $r4 = (& curl.exe -s -o NUL -w "%{http_code}" "http://localhost:8080/api/sesion/yo").Trim()
     $r5 = (& curl.exe -s -o NUL -w "%{http_code}" "http://localhost:8080/actuator/health").Trim()
 
     if ($r1 -eq "401" -and $r2 -eq "404" -and $r3 -eq "400" -and $r4 -eq "401" -and $r5 -eq "200") {
