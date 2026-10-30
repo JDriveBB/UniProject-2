@@ -69,17 +69,21 @@ public final class CalculadoraIce {
             total = total.add(credito);
         }
         BigDecimal n = BigDecimal.valueOf(ids.size());
-        BigDecimal base = BigDecimal.ONE.subtract(ALFA);
         List<NotaSugerida> resultado = new ArrayList<>(ids.size());
         for (Map.Entry<Long, BigDecimal> e : aporte.entrySet()) {
             BigDecimal ice = total.signum() == 0
                     ? BigDecimal.ONE.setScale(4)
                     : e.getValue().multiply(n).divide(total, 4, RoundingMode.HALF_UP);
-            BigDecimal nota = notaGrupal.multiply(base.add(ALFA.multiply(ice)))
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .min(NOTA_MAXIMA);
+            BigDecimal nota = notaIndividual(notaGrupal, ice);
             resultado.add(new NotaSugerida(e.getKey(), e.getValue(), ice, nota));
         }
         return List.copyOf(resultado);
+    }
+
+    /** nota_i = min(5, grupal · (1 − α + α · ICE_i)), 2 decimales HALF_UP. Lo reutiliza el cambio de nota grupal. */
+    public static BigDecimal notaIndividual(BigDecimal notaGrupal, BigDecimal ice) {
+        return notaGrupal.multiply(BigDecimal.ONE.subtract(ALFA).add(ALFA.multiply(ice)))
+                .setScale(2, RoundingMode.HALF_UP)
+                .min(NOTA_MAXIMA);
     }
 }
