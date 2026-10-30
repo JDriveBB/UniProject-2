@@ -1,5 +1,7 @@
 # Diagrama de base de datos vigente (19 tablas)
 
+> Nota del arquitecto (2026-10-30): la tabla de abajo tiene **20** tablas, no 19 (el rótulo del SVG está mal). V3 implementa las 20 + `correo_habilitado`. Corregir el rótulo es tarea del `documentador`.
+
 Fuente: `UniProject 1-entrega/actualizaciones de entrega/Diagrama_BD_UniProject.svg` (generado con Graphviz, modificado el 2026-10-29 23:33). El usuario lo indicó el 2026-10-30 como el diagrama más actual; extraído como texto. Nombres de tabla del diagrama; en PostgreSQL van en minúscula (`Evento_Saliente` → `evento_saliente`, regla K1). PK = clave primaria, FK = clave foránea. El SVG no indica los tipos de dato ni a qué tabla apunta cada FK: se deducen del nombre y deben fijarse en la migración.
 
 | Tabla | Columnas |
