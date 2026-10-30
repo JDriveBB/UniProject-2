@@ -66,3 +66,8 @@ uniproject:
     contrasena: ${UNIPROJECT_ADMIN_CONTRASENA:}
   evidencias:
     raiz: ${UNIPROJECT_EVIDENCIAS_RAIZ:${java.io.tmpdir}/uniproject}
+
+logging:
+  level:
+    # Hibernate registra el DETAIL de PostgreSQL (con el correo) en las violaciones de unicidad (Ley 1581)
+    org.hibernate.orm.jdbc.error: "OFF"
