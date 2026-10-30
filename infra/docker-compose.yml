@@ -1,0 +1,118 @@
+# UniProject — Docker Compose (plan §8.9; decisiones-tecnicas-java §5).
+# Desde la raíz del repositorio:
+#   docker compose --env-file .env -f infra/docker-compose.yml up -d --build
+name: uniproject
+
+services:
+  base-de-datos:
+    image: postgres:18.6
+    environment:
+      POSTGRES_DB: uniproject
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      NUCLEO_DB_PASSWORD: ${NUCLEO_DB_PASSWORD:?falta NUCLEO_DB_PASSWORD en .env}
+      AGENTE_DB_PASSWORD: ${AGENTE_DB_PASSWORD:?falta AGENTE_DB_PASSWORD en .env}
+      TZ: ${TZ:-America/Bogota}
+      PGTZ: ${TZ:-America/Bogota}
+    volumes:
+      - datos-postgres:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "uniproject"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.3.7-management
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_ADMIN_USER: ${RABBITMQ_ADMIN_USER:?falta RABBITMQ_ADMIN_USER en .env}
+      RABBITMQ_ADMIN_PASSWORD: ${RABBITMQ_ADMIN_PASSWORD:?falta RABBITMQ_ADMIN_PASSWORD en .env}
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - datos-rabbitmq:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-uniproject.conf:ro
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_port_listener 15672"]
+      interval: 10s
+      timeout: 15s
+      retries: 15
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq-inicializador:
+    image: curlimages/curl:8.22.0
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_ADMIN_USER: ${RABBITMQ_ADMIN_USER:?falta RABBITMQ_ADMIN_USER en .env}
+      RABBITMQ_ADMIN_PASSWORD: ${RABBITMQ_ADMIN_PASSWORD:?falta RABBITMQ_ADMIN_PASSWORD en .env}
+      RABBITMQ_NUCLEO_PASSWORD: ${RABBITMQ_NUCLEO_PASSWORD:?falta RABBITMQ_NUCLEO_PASSWORD en .env}
+      RABBITMQ_AGENTE_PASSWORD: ${RABBITMQ_AGENTE_PASSWORD:?falta RABBITMQ_AGENTE_PASSWORD en .env}
+    volumes:
+      - ./rabbitmq/definitions.json:/definiciones/definitions.json:ro
+      - ./rabbitmq/inicializar.sh:/definiciones/inicializar.sh:ro
+      - ./rabbitmq/verificar.sh:/definiciones/verificar.sh:ro
+    entrypoint: ["/bin/sh", "/definiciones/inicializar.sh"]
+    restart: "no"
+
+  nucleo:
+    build:
+      context: ..
+      dockerfile: nucleo/Dockerfile
+    image: uniproject/nucleo:0.1.0
+    depends_on:
+      base-de-datos:
+        condition: service_healthy
+      rabbitmq-inicializador:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      UNIPROJECT_DB_HOST: base-de-datos
+      UNIPROJECT_RABBITMQ_HOST: rabbitmq
+      NUCLEO_DB_PASSWORD: ${NUCLEO_DB_PASSWORD:?falta NUCLEO_DB_PASSWORD en .env}
+      RABBITMQ_NUCLEO_PASSWORD: ${RABBITMQ_NUCLEO_PASSWORD:?falta RABBITMQ_NUCLEO_PASSWORD en .env}
+      UNIPROJECT_TOKEN_INTERNO: ${UNIPROJECT_TOKEN_INTERNO:?falta UNIPROJECT_TOKEN_INTERNO en .env}
+      UNIPROJECT_URL_BASE: ${UNIPROJECT_URL_BASE:-http://localhost:8080}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  agente:
+    build:
+      context: ..
+      dockerfile: agente-telegram/Dockerfile
+    image: uniproject/agente-telegram:0.1.0
+    depends_on:
+      base-de-datos:
+        condition: service_healthy
+      rabbitmq-inicializador:
+        condition: service_completed_successfully
+      nucleo:
+        condition: service_started
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      UNIPROJECT_DB_HOST: base-de-datos
+      UNIPROJECT_RABBITMQ_HOST: rabbitmq
+      UNIPROJECT_NUCLEO_URL: http://nucleo:8080
+      AGENTE_DB_PASSWORD: ${AGENTE_DB_PASSWORD:?falta AGENTE_DB_PASSWORD en .env}
+      RABBITMQ_AGENTE_PASSWORD: ${RABBITMQ_AGENTE_PASSWORD:?falta RABBITMQ_AGENTE_PASSWORD en .env}
+      UNIPROJECT_TOKEN_INTERNO: ${UNIPROJECT_TOKEN_INTERNO:?falta UNIPROJECT_TOKEN_INTERNO en .env}
+      UNIPROJECT_URL_BASE: ${UNIPROJECT_URL_BASE:-http://localhost:8080}
+      UNIPROJECT_TELEGRAM_BOTON_ENLACE: ${UNIPROJECT_TELEGRAM_BOTON_ENLACE:-false}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+    restart: unless-stopped
+
+volumes:
+  datos-postgres:
+  datos-rabbitmq:

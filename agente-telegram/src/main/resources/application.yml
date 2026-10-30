@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: agente-telegram
+  main:
+    web-application-type: none
+    keep-alive: true
+  threads:
+    virtual:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://${UNIPROJECT_DB_HOST:localhost}:5432/uniproject?currentSchema=agente
+    username: uniproject_agente
+    password: ${AGENTE_DB_PASSWORD}
+  flyway:
+    schemas: agente
+    default-schema: agente
+    create-schemas: false
+  rabbitmq:
+    host: ${UNIPROJECT_RABBITMQ_HOST:localhost}
+    port: 5672
+    username: agente
+    password: ${RABBITMQ_AGENTE_PASSWORD}
+    listener:
+      type: simple
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        concurrency: 1
+        max-concurrency: 1
+        retry:
+          enabled: false
+  mustache:
+    prefix: classpath:/plantillas/
+    suffix: .mustache
+    check-template-location: false
+
+uniproject:
+  nucleo-url: ${UNIPROJECT_NUCLEO_URL:http://localhost:8080}
+  url-base: ${UNIPROJECT_URL_BASE:http://localhost:8080}
+  token-interno: ${UNIPROJECT_TOKEN_INTERNO:}
+  telegram:
+    token: ${TELEGRAM_BOT_TOKEN:}
+    usuario-bot: ${TELEGRAM_BOT_USERNAME:}
+    boton-enlace: ${UNIPROJECT_TELEGRAM_BOTON_ENLACE:false}

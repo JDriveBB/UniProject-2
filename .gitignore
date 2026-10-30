@@ -1,0 +1,22 @@
+# Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Secretos (Ley 1581 y token del bot)
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Sistema operativo / OneDrive / Office
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+
+# Registros
+*.log
