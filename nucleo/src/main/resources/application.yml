@@ -66,6 +66,8 @@ uniproject:
     contrasena: ${UNIPROJECT_ADMIN_CONTRASENA:}
   evidencias:
     raiz: ${UNIPROJECT_EVIDENCIAS_RAIZ:${java.io.tmpdir}/uniproject}
+  demo:
+    contrasena: ${UNIPROJECT_DEMO_CONTRASENA:}
 
 logging:
   level:
