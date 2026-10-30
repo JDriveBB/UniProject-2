@@ -1,6 +1,7 @@
 package co.uniproject.agente.telegram;
 
 import co.uniproject.agente.plantillas.Aviso;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,14 +80,9 @@ public class EnviadorTelegramOkHttp implements EnviadorTelegram {
                 return ResultadoEnvio.BLOQUEADO;
             }
             if (estado == 400) {
-                String apiResponse = e.getApiResponse();
-                if (apiResponse != null) {
-                    String lower = apiResponse.toLowerCase();
-                    if (lower.contains("can't parse entities") || lower.contains("button_url_invalid")) {
-                        return ResultadoEnvio.MENSAJE_INVALIDO;
-                    }
-                }
-                return ResultadoEnvio.CHAT_INVALIDO;
+                String motivo = motivo400(e.getApiResponse());
+                log.warn("Telegram rechazó el aviso con 400 (motivo {})", motivo);
+                return motivo.equals("chat") ? ResultadoEnvio.CHAT_INVALIDO : ResultadoEnvio.MENSAJE_INVALIDO;
             }
             if (estado == 401 || estado == 404) {
                 log.error("Telegram rechazó el token del bot (estado {})", estado);
@@ -96,6 +92,28 @@ public class EnviadorTelegramOkHttp implements EnviadorTelegram {
         } catch (TelegramApiException | RuntimeException e) {
             return ResultadoEnvio.TEMPORAL;
         }
+    }
+
+    /**
+     * Motivo de un 400 de la Bot API (decisiones-tecnicas-java §11). Solo el chat es culpa del destinatario;
+     * lo demás (HTML, botón o un 400 que no se reconoce) es del mensaje y va a fallidos, donde queda visible.
+     * Devuelve una etiqueta fija: la descripción de Telegram no se registra (trae la URL del botón).
+     */
+    private static String motivo400(String apiResponse) {
+        if (apiResponse == null) {
+            return "otro";
+        }
+        String descripcion = apiResponse.toLowerCase(Locale.ROOT);
+        if (descripcion.contains("chat not found") || descripcion.contains("peer_id_invalid")) {
+            return "chat";
+        }
+        if (descripcion.contains("can't parse entities")) {
+            return "html";
+        }
+        if (descripcion.contains("inline keyboard button") || descripcion.contains("button_url_invalid")) {
+            return "boton";
+        }
+        return "otro";
     }
 
     private String escapar(String s) {

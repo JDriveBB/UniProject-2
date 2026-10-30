@@ -8,8 +8,8 @@ public enum ResultadoEnvio {
     TEMPORAL,
     /** 403: el usuario bloqueó el bot. Permanente para ese destinatario; se avisa al núcleo. */
     BLOQUEADO,
-    /** 400 por el chat (p. ej. "chat not found"). Permanente para ese destinatario. */
+    /** 400 por el chat ("chat not found", "PEER_ID_INVALID"). Permanente para ese destinatario. */
     CHAT_INVALIDO,
-    /** 400 por el mensaje ("can't parse entities", "BUTTON_URL_INVALID"). Permanente para el evento: va a fallidos. */
+    /** Cualquier otro 400: HTML ("can't parse entities"), botón ("inline keyboard button URL ... is invalid") o no reconocido. Permanente para el evento: va a fallidos. */
     MENSAJE_INVALIDO
 }

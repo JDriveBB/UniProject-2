@@ -107,14 +107,21 @@ class EnviadorTelegramOkHttpTest {
 
     @Test
     void chatInexistenteEsChatInvalido() throws Exception {
-        TelegramApiRequestException ex = mock(TelegramApiRequestException.class);
-        when(ex.getErrorCode()).thenReturn(400);
-        when(ex.getApiResponse()).thenReturn("Bad Request: chat not found");
-        when(cliente.execute(any(SendMessage.class))).thenThrow(ex);
+        TelegramApiRequestException ex1 = mock(TelegramApiRequestException.class);
+        when(ex1.getErrorCode()).thenReturn(400);
+        when(ex1.getApiResponse()).thenReturn("Bad Request: chat not found");
+        when(cliente.execute(any(SendMessage.class))).thenThrow(ex1);
 
-        ResultadoEnvio resultado = enviador.enviar(123L, aviso);
+        ResultadoEnvio resultado1 = enviador.enviar(123L, aviso);
+        assertThat(resultado1).isEqualTo(ResultadoEnvio.CHAT_INVALIDO);
 
-        assertThat(resultado).isEqualTo(ResultadoEnvio.CHAT_INVALIDO);
+        TelegramApiRequestException ex2 = mock(TelegramApiRequestException.class);
+        when(ex2.getErrorCode()).thenReturn(400);
+        when(ex2.getApiResponse()).thenReturn("Bad Request: PEER_ID_INVALID");
+        when(cliente.execute(any(SendMessage.class))).thenThrow(ex2);
+
+        ResultadoEnvio resultado2 = enviador.enviar(123L, aviso);
+        assertThat(resultado2).isEqualTo(ResultadoEnvio.CHAT_INVALIDO);
     }
 
     @Test
@@ -130,6 +137,37 @@ class EnviadorTelegramOkHttpTest {
         TelegramApiRequestException ex2 = mock(TelegramApiRequestException.class);
         when(ex2.getErrorCode()).thenReturn(400);
         when(ex2.getApiResponse()).thenReturn("Bad Request: BUTTON_URL_INVALID");
+        when(cliente.execute(any(SendMessage.class))).thenThrow(ex2);
+
+        ResultadoEnvio resultado2 = enviador.enviar(123L, aviso);
+        assertThat(resultado2).isEqualTo(ResultadoEnvio.MENSAJE_INVALIDO);
+    }
+
+    @Test
+    void botonRechazadoPorTelegramEsMensajeInvalido() throws Exception {
+        TelegramApiRequestException ex = mock(TelegramApiRequestException.class);
+        when(ex.getErrorCode()).thenReturn(400);
+        when(ex.getApiResponse()).thenReturn("Bad Request: inline keyboard button URL 'http://localhost:8080/hitos/7/evaluar' is invalid: Wrong HTTP URL");
+        when(cliente.execute(any(SendMessage.class))).thenThrow(ex);
+
+        ResultadoEnvio resultado = enviador.enviar(123L, aviso);
+
+        assertThat(resultado).isEqualTo(ResultadoEnvio.MENSAJE_INVALIDO);
+    }
+
+    @Test
+    void otro400NoReconocidoVaAFallidos() throws Exception {
+        TelegramApiRequestException ex1 = mock(TelegramApiRequestException.class);
+        when(ex1.getErrorCode()).thenReturn(400);
+        when(ex1.getApiResponse()).thenReturn("Bad Request: message is too long");
+        when(cliente.execute(any(SendMessage.class))).thenThrow(ex1);
+
+        ResultadoEnvio resultado1 = enviador.enviar(123L, aviso);
+        assertThat(resultado1).isEqualTo(ResultadoEnvio.MENSAJE_INVALIDO);
+
+        TelegramApiRequestException ex2 = mock(TelegramApiRequestException.class);
+        when(ex2.getErrorCode()).thenReturn(400);
+        when(ex2.getApiResponse()).thenReturn(null);
         when(cliente.execute(any(SendMessage.class))).thenThrow(ex2);
 
         ResultadoEnvio resultado2 = enviador.enviar(123L, aviso);
