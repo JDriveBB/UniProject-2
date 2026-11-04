@@ -11,15 +11,15 @@
   --color-texto: #161b26;
   --color-texto-secundario: #6b7380;
   /* Estados */
-  --color-exito: #1a8c4d;
+  --color-exito: #177d45; /* Figma: #1a8c4d (3,8:1). Oscurecido a 4,6:1 por accesibilidad; decision del usuario 2026-11-04 */
   --color-exito-fondo: #e5f7eb;
-  --color-aviso: #b87305;
+  --color-aviso: #9b6104; /* Figma: #b87305 (3,5:1). Oscurecido a 4,6:1 */
   --color-aviso-fondo: #fff2d9;
   --color-peligro: #cc2626;
   --color-peligro-fondo: #fcebeb;
   --color-info: #285cdb;
   --color-info-fondo: #e8f0ff;
-  --color-neutro: #737885;
+  --color-neutro: #696d79; /* Figma: #737885 (3,9:1). Oscurecido a 4,6:1 */
   --color-neutro-fondo: #f0f2f5;
   --color-critico: #7340bf;
   --color-critico-fondo: #f0e8fc;
