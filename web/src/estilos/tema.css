@@ -57,8 +57,10 @@
   --espacio-2: 8px;
   --espacio-3: 12px;
   --espacio-4: 16px;
+  --espacio-5: 20px;
   --espacio-6: 24px;
   --espacio-8: 32px;
+  --espacio-10: 40px;
   /* Radios, rellenos y sombras */
   --radio: 8px;
   --radio-tarjeta: 12px;
@@ -73,6 +75,20 @@
   --relleno-insignia: 4px 10px;
   --sombra: 0 8px 24px rgba(0, 0, 0, 0.06);
   --foco: 0 0 0 3px rgba(40, 92, 219, 0.35);
+  /* Ingreso, registro y formularios (bloque 26a, Figma P01a/P01b) */
+  --ancho-panel-marca: 620px;
+  --ancho-tarjeta-acceso: 400px;
+  --ancho-campo-en-linea: 280px;
+  --tamano-casilla: 18px;
+  --borde-casilla: 1.5px;
+  --radio-casilla: 4px;
+  /* Aclaración 1 del 26a (cotejo con Figma P01a/P01b) */
+  --espacio-20: 80px;
+  --espacio-campo: 6px;
+  --ancho-columna-marca: 460px;
+  --tamano-descripcion-marca: 16px;
+  --tamano-subtitulo-acceso: 15px;
+  --tamano-nota-acceso: 12px;
 }
 
 *,
@@ -118,7 +134,7 @@ a {
 }
 
 .marco__marca {
-  font-weight: 700;
+  font-weight: var(--peso-negrita);
   font-size: var(--tamano-titulo);
   color: var(--color-primario);
 }
@@ -144,7 +160,7 @@ a {
 .marco__enlace--activo {
   background: var(--color-info-fondo);
   color: var(--color-primario);
-  font-weight: 600;
+  font-weight: var(--peso-seminegrita);
 }
 
 .marco__usuario {
@@ -175,7 +191,7 @@ a {
 .tarjeta {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
+  border-radius: var(--radio-tarjeta);
   box-shadow: var(--sombra);
   padding: var(--espacio-6);
 }
@@ -202,17 +218,17 @@ a {
 .campo {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-1);
+  gap: var(--espacio-campo);
 }
 
 .campo__etiqueta {
-  font-weight: 600;
-  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  font-size: var(--tamano-etiqueta);
 }
 
 .campo__entrada {
   font: inherit;
-  padding: var(--espacio-2) var(--espacio-3);
+  padding: var(--relleno-campo);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio);
   background: var(--color-superficie);
@@ -231,8 +247,9 @@ a {
 
 .boton {
   font: inherit;
-  font-weight: 600;
-  padding: var(--espacio-2) var(--espacio-4);
+  font-size: var(--tamano-boton);
+  font-weight: var(--peso-seminegrita);
+  padding: var(--relleno-boton);
   border-radius: var(--radio);
   border: 1px solid transparent;
   cursor: pointer;
@@ -255,7 +272,7 @@ a {
 .boton--secundario {
   background: var(--color-superficie);
   color: var(--color-primario);
-  border-color: var(--color-borde);
+  border-color: var(--color-borde-tabla);
 }
 
 .boton--peligro {
@@ -291,15 +308,15 @@ a {
 
 .insignia {
   display: inline-block;
-  padding: 0 var(--espacio-2);
-  border-radius: 999px;
-  font-size: var(--tamano-pequeno);
-  font-weight: 600;
+  padding: var(--relleno-insignia);
+  border-radius: var(--radio-insignia);
+  font-size: var(--tamano-insignia);
+  font-weight: var(--peso-medio);
 }
 
 .insignia--neutro {
-  background: var(--color-fondo);
-  color: var(--color-texto-secundario);
+  background: var(--color-neutro-fondo);
+  color: var(--color-neutro);
 }
 
 .insignia--exito {
@@ -354,4 +371,305 @@ a {
   .cargando__indicador {
     animation: none;
   }
+}
+
+/* ===== Bloque 26a: acceso (P01a, P01b), casilla, tabla y páginas ===== */
+
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.enlace-fuerte {
+  color: var(--color-primario);
+  font-weight: var(--peso-seminegrita);
+  text-decoration: none;
+}
+
+.enlace-fuerte:hover {
+  text-decoration: underline;
+}
+
+/* Ingreso y registro: panel de marca a la izquierda y tarjeta centrada a la derecha. */
+.acceso {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--ancho-panel-marca) 1fr;
+  background: var(--color-fondo);
+}
+
+.acceso__marca {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+  padding: var(--espacio-10) var(--espacio-20);
+  background: var(--color-marca-fondo);
+  color: var(--color-texto-sobre-marca);
+}
+
+.acceso__nombre {
+  margin: 0;
+  font-size: var(--tamano-marca-ingreso);
+  font-weight: var(--peso-negrita);
+  line-height: 1.1;
+}
+
+.acceso__lema {
+  margin: 0;
+  max-width: var(--ancho-columna-marca);
+  font-size: var(--tamano-titulo);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-sobre-marca-secundario);
+}
+
+.acceso__descripcion {
+  margin: 0;
+  max-width: var(--ancho-columna-marca);
+  font-size: var(--tamano-descripcion-marca);
+  font-weight: var(--peso-regular);
+  color: var(--color-texto-sobre-marca-secundario);
+}
+
+.acceso__contenido {
+  display: grid;
+  place-items: center;
+  padding: var(--espacio-6);
+}
+
+.tarjeta-acceso {
+  width: 100%;
+  max-width: calc(var(--ancho-tarjeta-acceso) + 2 * var(--espacio-10));
+  display: flex;
+  flex-direction: column;
+  padding: var(--espacio-10);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta-ingreso);
+  box-shadow: var(--sombra);
+}
+
+.tarjeta-acceso,
+.tarjeta-acceso__formulario {
+  gap: var(--espacio-5);
+}
+
+.tarjeta-acceso--registro,
+.tarjeta-acceso--registro .tarjeta-acceso__formulario {
+  gap: var(--espacio-4);
+}
+
+/* Título y subtítulo se separan igual que el resto de hijos de la tarjeta (Aclaración 1, F5). */
+.tarjeta-acceso__cabecera {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+}
+
+.tarjeta-acceso__titulo {
+  margin: 0;
+  font-size: var(--tamano-titulo-pagina);
+  font-weight: var(--peso-negrita);
+  line-height: 1.2;
+}
+
+.tarjeta-acceso__subtitulo {
+  margin: 0;
+  font-size: var(--tamano-subtitulo-acceso);
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-acceso__formulario {
+  display: flex;
+  flex-direction: column;
+}
+
+.tarjeta-acceso__pie {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espacio-campo);
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-acceso__nota {
+  margin: 0;
+  font-size: var(--tamano-nota-acceso);
+  color: var(--color-texto-secundario);
+}
+
+.boton--acceso {
+  width: 100%;
+  padding: var(--relleno-boton-ingreso);
+  font-size: var(--tamano-boton-ingreso);
+}
+
+/* 960px: las variables CSS no valen dentro de @media. */
+@media (max-width: 960px) {
+  .acceso {
+    grid-template-columns: 1fr;
+  }
+
+  .acceso__marca {
+    padding: var(--espacio-6);
+  }
+
+  .acceso__nombre {
+    font-size: var(--tamano-titulo-pagina);
+  }
+}
+
+/* Casilla: el input real queda oculto a la vista (sigue siendo accesible) y se dibuja la marca. */
+.casilla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+}
+
+.casilla__etiqueta {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-2);
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.casilla__marca {
+  position: relative;
+  flex: 0 0 var(--tamano-casilla);
+  width: var(--tamano-casilla);
+  height: var(--tamano-casilla);
+  margin-top: 1px;
+  border: var(--borde-casilla) solid var(--color-borde);
+  border-radius: var(--radio-casilla);
+  background: var(--color-superficie);
+}
+
+.casilla__entrada:checked + .casilla__marca {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+}
+
+.casilla__entrada:checked + .casilla__marca::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--color-texto-sobre-primario);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.casilla__entrada:focus-visible + .casilla__marca {
+  box-shadow: var(--foco);
+}
+
+.casilla__entrada[aria-invalid='true'] + .casilla__marca {
+  border-color: var(--color-peligro);
+}
+
+/* Tabla del sistema de diseño (P04). */
+.tabla-contenedor {
+  overflow-x: auto;
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio-tabla);
+  background: var(--color-superficie);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--tamano-base);
+}
+
+.tabla th {
+  padding: var(--espacio-3) var(--espacio-4);
+  text-align: left;
+  background: var(--color-tabla-encabezado-fondo);
+  color: var(--color-tabla-encabezado-texto);
+  font-size: var(--tamano-tabla-encabezado);
+  font-weight: var(--peso-seminegrita);
+  border-bottom: 1px solid var(--color-borde-tabla);
+}
+
+.tabla td {
+  padding: var(--espacio-3) var(--espacio-4);
+  border-bottom: 1px solid var(--color-borde-tabla);
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla__vacia {
+  text-align: center;
+  color: var(--color-texto-secundario);
+}
+
+/* Páginas dentro del marco. */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-6);
+}
+
+.pagina__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+}
+
+.pagina__titulo {
+  margin: 0;
+  font-size: var(--tamano-titulo-pagina);
+  font-weight: var(--peso-negrita);
+  line-height: 1.2;
+}
+
+.pagina__descripcion {
+  margin: var(--espacio-1) 0 0;
+  color: var(--color-texto-secundario);
+}
+
+.pagina__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.pagina__subtitulo {
+  margin: 0;
+  font-size: var(--tamano-titulo);
+  font-weight: var(--peso-seminegrita);
+}
+
+.pila {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+.formulario-en-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espacio-3);
+}
+
+.formulario-en-linea > .campo {
+  flex: 1 1 var(--ancho-campo-en-linea);
 }

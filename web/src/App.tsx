@@ -1,8 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { Marco } from './componentes/Marco';
+import { AdminDocentes } from './paginas/AdminDocentes';
 import { Ingreso } from './paginas/Ingreso';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
+import { Registro } from './paginas/Registro';
 import { rutas } from './rutas';
 import { useSesion } from './sesion/ContextoSesion';
 import { RutaProtegida } from './sesion/RutaProtegida';
@@ -27,7 +29,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/ingresar" element={<Ingreso />} />
-      <Route path="/registro" element={<PaginaPendiente titulo="Crear cuenta" bloque="26a" />} />
+      <Route path="/registro" element={<Registro />} />
       <Route element={<RutaProtegida />}>
         <Route element={<Marco />}>
           <Route path="/" element={<Inicio />} />
@@ -46,7 +48,7 @@ export function App() {
             <Route path="/hitos/:idHitoEquipo/evaluar" element={<PaginaPendiente titulo="Evaluar hito" bloque="26e" />} />
           </Route>
           <Route element={<RutaProtegida roles={['ADMINISTRADOR']} />}>
-            <Route path="/admin/docentes" element={<PaginaPendiente titulo="Docentes" bloque="26a" />} />
+            <Route path="/admin/docentes" element={<AdminDocentes />} />
           </Route>
         </Route>
       </Route>

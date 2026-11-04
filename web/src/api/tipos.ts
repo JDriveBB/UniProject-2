@@ -14,3 +14,26 @@ export interface UsuarioSesion {
   rol: RolPlataforma;
   telegramVinculado: boolean;
 }
+
+/** POST /api/cuentas/registro. contrasena: 10 a 72 bytes; autorizaTratamientoDatos debe ser true (Ley 1581). */
+export interface SolicitudRegistro {
+  nombre: string;
+  email: string;
+  contrasena: string;
+  autorizaTratamientoDatos: boolean;
+}
+
+/** POST /api/admin/docentes. */
+export interface SolicitudHabilitarCorreo {
+  email: string;
+}
+
+/** fechaHabilitacion: instante UTC (date-time). registrado: el correo ya se usó para crear una cuenta. */
+export interface CorreoHabilitadoVista {
+  idCorreoHabilitado: number;
+  email: string;
+  rol: RolPlataforma;
+  idProyecto: number | null;
+  fechaHabilitacion: string;
+  registrado: boolean;
+}
