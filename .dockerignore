@@ -2,11 +2,13 @@
 .claude
 .idea
 .vscode
-.env
-.env.*
+**/.env
+**/.env.*
 **/target
 Archivos_contexto
 docs
 infra
 *.md
 .worktrees/
+web/node_modules
+web/dist

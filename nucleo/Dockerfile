@@ -1,4 +1,12 @@
 # syntax=docker/dockerfile:1
+# Frontend (decisión 25-1): el SPA se compila con Node y se copia como recursos estáticos del núcleo.
+FROM node:26.13.0-trixie-slim AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
+
 # Construcción: se compila con el wrapper (Maven 3.9.16) dentro del JDK 25.
 FROM eclipse-temurin:25-jdk-noble AS construccion
 WORKDIR /fuente
@@ -9,6 +17,7 @@ COPY nucleo/pom.xml nucleo/
 COPY agente-telegram/pom.xml agente-telegram/
 COPY eventos-contrato/src eventos-contrato/src
 COPY nucleo/src nucleo/src
+COPY --from=web /web/dist nucleo/src/main/resources/static
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -pl nucleo -am package -DskipTests
 
