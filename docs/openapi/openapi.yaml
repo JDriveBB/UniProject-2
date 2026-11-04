@@ -1,0 +1,1575 @@
+openapi: 3.1.0
+info:
+  title: API de UniProject
+  version: 1.0.0
+  description: |
+    API REST del núcleo de UniProject (Spring Boot 4.1, mismo origen que el SPA). Todo va bajo /api.
+    Sesión: cookie JSESSIONID (HttpOnly, SameSite=Lax), creada por POST /api/sesion/login y rotada al entrar.
+    CSRF: GET /api/sesion/csrf deja la cookie XSRF-TOKEN; todo POST, PUT y DELETE debe mandar la cabecera
+    X-XSRF-TOKEN con ese valor (si falta o no coincide: 403 CSRF_INVALIDO). El SPA la pide al cargar y después
+    de login y logout. Errores en formato RespuestaError (codigo, mensaje, detalles); la 401 no trae cuerpo.
+    Fechas límite: date (vencen al terminar el día en America/Bogota). Instantes: date-time UTC.
+    Ningún endpoint expone telegram_chat_id ni hashes de contraseña (Ley 1581).
+  license:
+    name: Uso académico - Diseño de Software I
+servers:
+  - url: http://localhost:8080
+    description: Docker Compose local
+security:
+  - sesion: []
+tags:
+  - name: sesion
+  - name: administracion
+  - name: proyectos
+  - name: equipos
+  - name: tareas
+  - name: evidencias
+  - name: evaluacion
+  - name: trazabilidad
+  - name: notificaciones
+  - name: perfil
+paths:
+  /api/sesion/csrf:
+    get:
+      tags: [sesion]
+      operationId: pedirCsrf
+      summary: Deja la cookie XSRF-TOKEN
+      security: []
+      responses:
+        '204':
+          description: Cookie XSRF-TOKEN lista
+  /api/sesion/login:
+    post:
+      tags: [sesion]
+      operationId: iniciarSesion
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudLogin'}
+      responses:
+        '200':
+          description: Sesión iniciada; rota la cookie de sesión y borra la de CSRF
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UsuarioSesion'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401':
+          description: CREDENCIALES_INVALIDAS
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/sesion/logout:
+    post:
+      tags: [sesion]
+      operationId: cerrarSesion
+      security: []
+      responses:
+        '204':
+          description: Sesión cerrada (auditada si había usuario)
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/sesion/yo:
+    get:
+      tags: [sesion]
+      operationId: usuarioActual
+      responses:
+        '200':
+          description: Usuario de la sesión
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UsuarioSesion'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+  /api/cuentas/registro:
+    post:
+      tags: [sesion]
+      operationId: registrarCuenta
+      summary: Crea la cuenta de un correo habilitado (K2, R-10)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudRegistro'}
+      responses:
+        '201':
+          description: Cuenta creada (no inicia sesión)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UsuarioSesion'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/admin/docentes:
+    post:
+      tags: [administracion]
+      operationId: habilitarDocente
+      summary: Solo ADMINISTRADOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudHabilitarCorreo'}
+      responses:
+        '201':
+          description: Correo de docente habilitado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CorreoHabilitadoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    get:
+      tags: [administracion]
+      operationId: listarDocentesHabilitados
+      responses:
+        '200':
+          description: Correos de docentes habilitados
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos:
+    post:
+      tags: [proyectos]
+      operationId: crearProyecto
+      summary: Solo DOCENTE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudProyecto'}
+      responses:
+        '201':
+          description: Proyecto creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProyectoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    get:
+      tags: [proyectos]
+      operationId: listarProyectos
+      summary: Proyectos que el usuario puede ver
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ProyectoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+  /api/proyectos/{idProyecto}:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [proyectos]
+      operationId: detalleProyecto
+      responses:
+        '200':
+          description: Proyecto con hitos, rúbricas y equipos
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProyectoDetalle'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    put:
+      tags: [proyectos]
+      operationId: actualizarProyecto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudProyecto'}
+      responses:
+        '200':
+          description: Proyecto actualizado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProyectoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/hitos:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [proyectos]
+      operationId: crearHito
+      summary: Crea también los hito_equipo de los equipos existentes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudHito'}
+      responses:
+        '201':
+          description: Hito creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HitoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/equipos:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [equipos]
+      operationId: crearEquipo
+      summary: Crea también los hito_equipo de los hitos existentes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudEquipo'}
+      responses:
+        '201':
+          description: Equipo creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/correos:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [proyectos]
+      operationId: habilitarCorreos
+      summary: Habilita correos de ESTUDIANTE o MONITOR en el proyecto (K2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCorreos'}
+      responses:
+        '201':
+          description: Resultado por correo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoHabilitacion'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    get:
+      tags: [proyectos]
+      operationId: listarCorreos
+      responses:
+        '200':
+          description: Correos habilitados del proyecto
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/monitores:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [proyectos]
+      operationId: listarMonitores
+      responses:
+        '200':
+          description: Monitores del proyecto
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/MonitorVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/monitores/{idMonitor}:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+      - $ref: '#/components/parameters/idMonitor'
+    delete:
+      tags: [proyectos]
+      operationId: quitarMonitor
+      responses:
+        '204':
+          description: Monitor retirado
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/proyectos/{idProyecto}/panel:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [trazabilidad]
+      operationId: panelProyecto
+      summary: RF10, solo el docente dueño
+      responses:
+        '200':
+          description: Un renglón por equipo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PanelProyecto'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/hitos/{idHito}:
+    parameters:
+      - $ref: '#/components/parameters/idHito'
+    put:
+      tags: [proyectos]
+      operationId: actualizarHito
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudHito'}
+      responses:
+        '200':
+          description: Hito actualizado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HitoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/hitos/{idHito}/criterios:
+    parameters:
+      - $ref: '#/components/parameters/idHito'
+    post:
+      tags: [proyectos]
+      operationId: crearCriterio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCriterio'}
+      responses:
+        '201':
+          description: Criterio creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CriterioVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/hitos/{idHito}/criterios/{idCriterio}:
+    parameters:
+      - $ref: '#/components/parameters/idHito'
+      - $ref: '#/components/parameters/idCriterio'
+    put:
+      tags: [proyectos]
+      operationId: actualizarCriterio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCriterio'}
+      responses:
+        '200':
+          description: Criterio actualizado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CriterioVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    delete:
+      tags: [proyectos]
+      operationId: eliminarCriterio
+      responses:
+        '204':
+          description: Criterio eliminado
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/miembros:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    post:
+      tags: [equipos]
+      operationId: agregarMiembro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudMiembro'}
+      responses:
+        '201':
+          description: Equipo con el nuevo miembro
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/miembros/{idUsuario}:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+      - $ref: '#/components/parameters/idUsuario'
+    delete:
+      tags: [equipos]
+      operationId: quitarMiembro
+      responses:
+        '200':
+          description: Equipo sin ese miembro (sus tareas no cambian)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/equipos/{idEquipo}/lider:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: cambiarLider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudLider'}
+      responses:
+        '200':
+          description: Equipo con el nuevo líder
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/historial:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    get:
+      tags: [trazabilidad]
+      operationId: historialEquipo
+      summary: Restricción 4e, desde log_auditoria
+      parameters:
+        - name: limite
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 1000, default: 200}
+      responses:
+        '200':
+          description: Entradas, de la más reciente a la más antigua
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EntradaHistorial'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/equipos/{idEquipo}/reporte.pdf:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    get:
+      tags: [trazabilidad]
+      operationId: reporteEquipo
+      summary: RF15, solo el docente dueño; se genera al pedirlo y no se guarda
+      responses:
+        '200':
+          description: Reporte de trazabilidad (Content-Disposition attachment)
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/notificaciones:
+    get:
+      tags: [notificaciones]
+      operationId: bandeja
+      summary: Bandeja interna (P10, N1)
+      responses:
+        '200':
+          description: Notificaciones del usuario
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Bandeja'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+  /api/notificaciones/{idNotificacion}/leida:
+    parameters:
+      - $ref: '#/components/parameters/idNotificacion'
+    post:
+      tags: [notificaciones]
+      operationId: marcarLeida
+      responses:
+        '204':
+          description: Marcada como leída
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/notificaciones/leidas:
+    post:
+      tags: [notificaciones]
+      operationId: marcarTodasLeidas
+      responses:
+        '204':
+          description: Todas marcadas como leídas
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/perfil/telegram/codigo:
+    post:
+      tags: [perfil]
+      operationId: generarCodigoTelegram
+      summary: Código de vinculación de un solo uso (D7)
+      responses:
+        '201':
+          description: Código y enlace profundo al bot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CodigoGenerado'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/perfil/telegram:
+    delete:
+      tags: [perfil]
+      operationId: desvincularTelegram
+      responses:
+        '204':
+          description: Telegram desvinculado
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/tareas/mias:
+    get:
+      tags: [tareas]
+      operationId: misTareas
+      responses:
+        '200':
+          description: Tareas asignadas al usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/MiTareaVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+  /api/tareas/{idTarea}:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    get:
+      tags: [tareas]
+      operationId: detalleTarea
+      responses:
+        '200':
+          description: Tarea con su historial de avance
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TareaDetalle'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    put:
+      tags: [tareas]
+      operationId: editarTarea
+      summary: Solo el líder; el encargado se cambia con la reasignación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudTarea'}
+      responses:
+        '200':
+          description: Tarea editada y recalculada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TareaVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/dependencias:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    post:
+      tags: [tareas]
+      operationId: agregarDependencias
+      summary: RF2; los prerrequisitos que formarían un ciclo se rechazan uno a uno
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudDependencias'}
+      responses:
+        '200':
+          description: Aceptados, cíclicos y la tarea recalculada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoDependenciasVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/dependencias/{idPrerrequisito}:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+      - $ref: '#/components/parameters/idPrerrequisito'
+    delete:
+      tags: [tareas]
+      operationId: quitarDependencia
+      responses:
+        '200':
+          description: Tarea recalculada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TareaVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/avance:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    put:
+      tags: [tareas]
+      operationId: actualizarAvance
+      summary: RF12, RF13; 100 la completa; 409 TAREA_BLOQUEADA con los prerrequisitos pendientes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudAvance'}
+      responses:
+        '200':
+          description: Tarea actualizada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TareaVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/evidencias:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    post:
+      tags: [evidencias]
+      operationId: adjuntarEvidencia
+      summary: Archivo PDF, PNG o JPEG de hasta 10 MB (tipo por bytes mágicos) o enlace http(s)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo: {type: string, format: binary}
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudEnlace'}
+      responses:
+        '201':
+          description: Evidencia registrada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EvidenciaVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    get:
+      tags: [evidencias]
+      operationId: listarEvidencias
+      responses:
+        '200':
+          description: Evidencias de la tarea
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EvidenciaVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/evidencias/{idEvidencia}/archivo:
+    parameters:
+      - $ref: '#/components/parameters/idEvidencia'
+    get:
+      tags: [evidencias]
+      operationId: descargarEvidencia
+      responses:
+        '200':
+          description: El archivo, con su tipo
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+            image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/tareas/{idTarea}/comentarios:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    get:
+      tags: [tareas]
+      operationId: listarComentarios
+      responses:
+        '200':
+          description: Comentarios de la tarea
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ComentarioVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    post:
+      tags: [tareas]
+      operationId: comentarTarea
+      summary: RF14 (monitor incluido); solo hitos en curso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudComentario'}
+      responses:
+        '201':
+          description: Comentario creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ComentarioVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/correcciones:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    get:
+      tags: [tareas]
+      operationId: listarCorrecciones
+      responses:
+        '200':
+          description: Solicitudes de corrección de la tarea
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CorreccionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    post:
+      tags: [tareas]
+      operationId: solicitarCorreccion
+      summary: El líder pide corregir una evidencia (evento tarea.correccion)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PeticionCorreccion'}
+      responses:
+        '201':
+          description: Corrección solicitada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CorreccionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/reasignacion:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    post:
+      tags: [tareas]
+      operationId: reasignarTarea
+      summary: RF11; la parcial crea una tarea nueva con id_tarea_origen (evento tarea.reasignada)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudReasignacion'}
+      responses:
+        '200':
+          description: Tarea reasignada (y la nueva si fue parcial)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoReasignacion'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/tareas/{idTarea}/apoyo:
+    parameters:
+      - $ref: '#/components/parameters/idTarea'
+    post:
+      tags: [tareas]
+      operationId: solicitarApoyo
+      summary: Solo el encargado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudApoyo'}
+      responses:
+        '201':
+          description: Solicitud de apoyo registrada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApoyoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/hitos-equipo/{idHitoEquipo}/tareas:
+    parameters:
+      - $ref: '#/components/parameters/idHitoEquipo'
+    get:
+      tags: [tareas]
+      operationId: tableroHito
+      responses:
+        '200':
+          description: Tablero del hito del equipo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TableroHito'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    post:
+      tags: [tareas]
+      operationId: crearTarea
+      summary: Solo el líder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudTarea'}
+      responses:
+        '201':
+          description: Tarea creada y recalculada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TareaVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/hitos-equipo/{idHitoEquipo}/ruta-critica:
+    parameters:
+      - $ref: '#/components/parameters/idHitoEquipo'
+    get:
+      tags: [tareas]
+      operationId: rutaCritica
+      summary: RF3 (CPM con horas estimadas y avance)
+      responses:
+        '200':
+          description: Nodos con tiempos y holgura
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RutaCriticaVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/hitos-equipo/{idHitoEquipo}/apoyos:
+    parameters:
+      - $ref: '#/components/parameters/idHitoEquipo'
+    get:
+      tags: [tareas]
+      operationId: listarApoyos
+      responses:
+        '200':
+          description: Solicitudes de apoyo del hito
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ApoyoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/hitos-equipo/{idHitoEquipo}/carga:
+    parameters:
+      - $ref: '#/components/parameters/idHitoEquipo'
+    get:
+      tags: [tareas]
+      operationId: cargaEquipo
+      responses:
+        '200':
+          description: Carga de trabajo por integrante
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CargaIntegrante'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/hitos-equipo/{idHitoEquipo}/envio:
+    parameters:
+      - $ref: '#/components/parameters/idHitoEquipo'
+    post:
+      tags: [evaluacion]
+      operationId: enviarHito
+      summary: RF7; 409 PRERREQUISITOS_INCOMPLETOS con los títulos en detalles (evento hito.enviado)
+      responses:
+        '201':
+          description: Hito enviado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvioVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/hitos-equipo/{idHitoEquipo}/evaluacion:
+    parameters:
+      - $ref: '#/components/parameters/idHitoEquipo'
+    post:
+      tags: [evaluacion]
+      operationId: evaluarHito
+      summary: RF8; rúbrica completa, nota grupal opcional (si falta, la calculada), ICE (C1); evento hito.evaluado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudEvaluacion'}
+      responses:
+        '201':
+          description: Evaluación registrada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EvaluacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    get:
+      tags: [evaluacion]
+      operationId: consultarEvaluacion
+      summary: El estudiante ve solo su fila; el monitor, sin notas individuales (19-9)
+      responses:
+        '200':
+          description: Evaluación vigente con carácter provisional o definitivo (E1)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EvaluacionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/evaluaciones/{idEvaluacion}/nota-grupal:
+    parameters:
+      - $ref: '#/components/parameters/idEvaluacion'
+    put:
+      tags: [evaluacion]
+      operationId: cambiarNotaGrupal
+      summary: Mientras no haya notas individuales confirmadas (409 NOTAS_CONFIRMADAS)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CambioNotaGrupal'}
+      responses:
+        '200':
+          description: Evaluación con la nueva nota grupal y sugeridas recalculadas
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EvaluacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/evaluaciones/{idEvaluacion}/notas/{idEstudiante}:
+    parameters:
+      - $ref: '#/components/parameters/idEvaluacion'
+      - $ref: '#/components/parameters/idEstudiante'
+    put:
+      tags: [evaluacion]
+      operationId: confirmarNota
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ConfirmacionNota'}
+      responses:
+        '200':
+          description: Nota individual confirmada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EvaluacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+components:
+  securitySchemes:
+    sesion:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+  parameters:
+    idProyecto: {name: idProyecto, in: path, required: true, schema: {type: integer, format: int64}}
+    idMonitor: {name: idMonitor, in: path, required: true, schema: {type: integer, format: int64}}
+    idHito: {name: idHito, in: path, required: true, schema: {type: integer, format: int64}}
+    idCriterio: {name: idCriterio, in: path, required: true, schema: {type: integer, format: int64}}
+    idEquipo: {name: idEquipo, in: path, required: true, schema: {type: integer, format: int64}}
+    idUsuario: {name: idUsuario, in: path, required: true, schema: {type: integer, format: int64}}
+    idNotificacion: {name: idNotificacion, in: path, required: true, schema: {type: integer, format: int64}}
+    idTarea: {name: idTarea, in: path, required: true, schema: {type: integer, format: int64}}
+    idPrerrequisito: {name: idPrerrequisito, in: path, required: true, schema: {type: integer, format: int64}}
+    idEvidencia: {name: idEvidencia, in: path, required: true, schema: {type: integer, format: int64}}
+    idHitoEquipo:
+      name: idHitoEquipo
+      in: path
+      required: true
+      description: id_hito_equipo (R-7, el "hito" de los eventos y de las rutas web)
+      schema: {type: integer, format: int64}
+    idEvaluacion: {name: idEvaluacion, in: path, required: true, schema: {type: integer, format: int64}}
+    idEstudiante: {name: idEstudiante, in: path, required: true, schema: {type: integer, format: int64}}
+  responses:
+    Invalida:
+      description: VALIDACION (detalles campo por campo), CUERPO_INVALIDO u otro código propio
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/RespuestaError'}
+    NoAutenticado:
+      description: Sin sesión o sesión vencida (2 h de inactividad). Sin cuerpo
+    Prohibido:
+      description: ACCESO_DENEGADO (auditado) o CSRF_INVALIDO (falta o no coincide X-XSRF-TOKEN)
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/RespuestaError'}
+    NoEncontrado:
+      description: NO_ENCONTRADO
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/RespuestaError'}
+    Conflicto:
+      description: Regla de negocio (p. ej. TAREA_BLOQUEADA, HITO_NO_EDITABLE, PRERREQUISITOS_INCOMPLETOS)
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/RespuestaError'}
+  schemas:
+    Id: {type: integer, format: int64}
+    IdNulo: {type: [integer, 'null'], format: int64}
+    Decimal: {type: number}
+    DecimalNulo: {type: [number, 'null']}
+    Fecha: {type: string, format: date}
+    FechaNula: {type: [string, 'null'], format: date}
+    Instante: {type: string, format: date-time}
+    InstanteNulo: {type: [string, 'null'], format: date-time}
+    TextoNulo: {type: [string, 'null']}
+    RolPlataforma: {type: string, enum: [ADMINISTRADOR, DOCENTE, ESTUDIANTE, MONITOR]}
+    RolEquipo: {type: string, enum: [LIDER, INTEGRANTE]}
+    EstadoHitoEquipo: {type: string, enum: [EN_CURSO, ENVIADO, EVALUADO]}
+    EstadoTarea: {type: string, enum: [PENDIENTE, EN_PROGRESO, COMPLETADA]}
+    NivelRiesgo: {type: [string, 'null'], enum: [BAJO, MEDIO, ALTO, null]}
+    TipoEvidencia: {type: string, enum: [PDF, IMAGEN, ENLACE]}
+    EstadoSolicitudCorreccion: {type: string, enum: [PENDIENTE, ATENDIDA]}
+    EstadoEnvioNotificacion: {type: string, enum: [EN_COLA, SIN_TELEGRAM]}
+    CaracterNota: {type: string, enum: [PROVISIONAL, DEFINITIVA]}
+    RespuestaError:
+      type: object
+      required: [codigo, mensaje, detalles]
+      properties:
+        codigo: {type: string, examples: [ACCESO_DENEGADO]}
+        mensaje: {type: string}
+        detalles: {type: array, items: {type: string}}
+    SolicitudLogin:
+      type: object
+      required: [email, contrasena]
+      properties:
+        email: {type: string, maxLength: 254}
+        contrasena: {type: string, maxLength: 200}
+    SolicitudRegistro:
+      type: object
+      required: [nombre, email, contrasena, autorizaTratamientoDatos]
+      properties:
+        nombre: {type: string, maxLength: 120}
+        email: {type: string, format: email, maxLength: 254}
+        contrasena: {type: string, minLength: 10, maxLength: 72}
+        autorizaTratamientoDatos: {type: boolean, const: true, description: Autorización Ley 1581}
+    UsuarioSesion:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        email: {type: string}
+        rol: {$ref: '#/components/schemas/RolPlataforma'}
+        telegramVinculado: {type: boolean}
+    SolicitudHabilitarCorreo:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+    CorreoHabilitadoVista:
+      type: object
+      properties:
+        idCorreoHabilitado: {$ref: '#/components/schemas/Id'}
+        email: {type: string}
+        rol: {$ref: '#/components/schemas/RolPlataforma'}
+        idProyecto: {$ref: '#/components/schemas/IdNulo'}
+        fechaHabilitacion: {$ref: '#/components/schemas/Instante'}
+        registrado: {type: boolean}
+    SolicitudProyecto:
+      type: object
+      required: [nombre, fechaInicio, fechaFin, usaMonitores]
+      properties:
+        nombre: {type: string, maxLength: 150}
+        descripcion: {type: [string, 'null'], maxLength: 2000}
+        fechaInicio: {$ref: '#/components/schemas/Fecha'}
+        fechaFin: {$ref: '#/components/schemas/Fecha'}
+        usaMonitores: {type: boolean}
+    ProyectoVista:
+      type: object
+      properties:
+        idProyecto: {$ref: '#/components/schemas/Id'}
+        idDocente: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        descripcion: {$ref: '#/components/schemas/TextoNulo'}
+        fechaInicio: {$ref: '#/components/schemas/Fecha'}
+        fechaFin: {$ref: '#/components/schemas/Fecha'}
+        usaMonitores: {type: boolean}
+    ProyectoDetalle:
+      type: object
+      properties:
+        proyecto: {$ref: '#/components/schemas/ProyectoVista'}
+        hitos: {type: array, items: {$ref: '#/components/schemas/HitoVista'}}
+        equipos: {type: array, items: {$ref: '#/components/schemas/EquipoVista'}}
+    SolicitudHito:
+      type: object
+      required: [nombreHito, orden, fechaInicio, fechaLimite]
+      properties:
+        nombreHito: {type: string, maxLength: 150}
+        descripcion: {type: [string, 'null'], maxLength: 2000}
+        orden: {type: integer, minimum: 1}
+        fechaInicio: {$ref: '#/components/schemas/Fecha'}
+        fechaLimite: {$ref: '#/components/schemas/Fecha'}
+        diasInactividadAlerta: {type: [integer, 'null'], minimum: 1, maximum: 60}
+        notificarDocenteInactividad: {type: [boolean, 'null']}
+    HitoVista:
+      type: object
+      properties:
+        idHito: {$ref: '#/components/schemas/Id'}
+        idProyecto: {$ref: '#/components/schemas/Id'}
+        nombreHito: {type: string}
+        descripcion: {$ref: '#/components/schemas/TextoNulo'}
+        orden: {type: integer}
+        fechaInicio: {$ref: '#/components/schemas/Fecha'}
+        fechaLimite: {$ref: '#/components/schemas/Fecha'}
+        diasInactividadAlerta: {type: integer}
+        notificarDocenteInactividad: {type: boolean}
+        criterios: {type: array, items: {$ref: '#/components/schemas/CriterioVista'}}
+    SolicitudCriterio:
+      type: object
+      required: [descripcion, pesoPorcentaje, puntajeMaximo]
+      properties:
+        descripcion: {type: string, maxLength: 500}
+        pesoPorcentaje: {type: number, exclusiveMinimum: 0, maximum: 100}
+        puntajeMaximo: {type: number, exclusiveMinimum: 0}
+    CriterioVista:
+      type: object
+      properties:
+        idCriterio: {$ref: '#/components/schemas/Id'}
+        idHito: {$ref: '#/components/schemas/Id'}
+        descripcion: {type: string}
+        pesoPorcentaje: {$ref: '#/components/schemas/Decimal'}
+        puntajeMaximo: {$ref: '#/components/schemas/Decimal'}
+    SolicitudEquipo:
+      type: object
+      required: [nombreEquipo]
+      properties:
+        nombreEquipo: {type: string, maxLength: 100}
+    SolicitudMiembro:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+    SolicitudLider:
+      type: object
+      required: [idUsuario]
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+    EquipoVista:
+      type: object
+      properties:
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        idProyecto: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+        miembros: {type: array, items: {$ref: '#/components/schemas/MiembroVista'}}
+        hitos: {type: array, items: {$ref: '#/components/schemas/HitoEquipoVista'}}
+    MiembroVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        rolEquipo: {$ref: '#/components/schemas/RolEquipo'}
+    HitoEquipoVista:
+      type: object
+      properties:
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        idHito: {$ref: '#/components/schemas/Id'}
+        estado: {$ref: '#/components/schemas/EstadoHitoEquipo'}
+    SolicitudCorreos:
+      type: object
+      required: [emails, rol]
+      properties:
+        emails: {type: array, minItems: 1, maxItems: 200, items: {type: string, format: email, maxLength: 254}}
+        rol: {type: string, enum: [ESTUDIANTE, MONITOR]}
+    ResultadoHabilitacion:
+      type: object
+      properties:
+        habilitados: {type: array, items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}}
+        yaHabilitados: {type: array, items: {type: string}}
+        conOtroRol: {type: array, items: {type: string}}
+    MonitorVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        email: {type: string}
+    PanelProyecto:
+      type: object
+      properties:
+        idProyecto: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        generadoEn: {$ref: '#/components/schemas/Instante'}
+        equipos: {type: array, items: {$ref: '#/components/schemas/PanelEquipo'}}
+    PanelEquipo:
+      type: object
+      properties:
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+        enRojo: {type: boolean, description: Integrantes inactivos o tareas bloqueadas hace más de 48 h}
+        tareasTotales: {type: integer}
+        tareasCompletadas: {type: integer}
+        tareasRiesgoAlto: {type: integer}
+        avancePromedio: {type: integer, minimum: 0, maximum: 100}
+        integrantesInactivos: {type: array, items: {$ref: '#/components/schemas/IntegranteInactivo'}}
+        tareasBloqueadas: {type: array, items: {$ref: '#/components/schemas/TareaBloqueada'}}
+    IntegranteInactivo:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        ultimaActividad: {$ref: '#/components/schemas/Instante'}
+        diasSinActividad: {type: integer}
+    TareaBloqueada:
+      type: object
+      properties:
+        idTarea: {$ref: '#/components/schemas/Id'}
+        titulo: {type: string}
+        fechaBloqueo: {$ref: '#/components/schemas/Instante'}
+        horasBloqueada: {type: integer}
+    EntradaHistorial:
+      type: object
+      properties:
+        idLog: {$ref: '#/components/schemas/Id'}
+        fechaHora: {$ref: '#/components/schemas/Instante'}
+        idUsuario: {$ref: '#/components/schemas/IdNulo'}
+        autor: {type: string}
+        accion: {type: string}
+        entidad: {type: string}
+        idRegistro: {$ref: '#/components/schemas/IdNulo'}
+        campo: {$ref: '#/components/schemas/TextoNulo'}
+        valorAnterior: {$ref: '#/components/schemas/TextoNulo'}
+        valorNuevo: {$ref: '#/components/schemas/TextoNulo'}
+        detalle: {type: string}
+    Bandeja:
+      type: object
+      properties:
+        noLeidas: {type: integer}
+        notificaciones: {type: array, items: {$ref: '#/components/schemas/NotificacionVista'}}
+    NotificacionVista:
+      type: object
+      properties:
+        idNotificacion: {$ref: '#/components/schemas/Id'}
+        tipo: {type: string, description: 'Clave del evento, p. ej. hito.enviado'}
+        mensaje: {type: string, description: Texto plano; escapar al pintar}
+        entidadReferencia: {type: string}
+        idReferencia: {$ref: '#/components/schemas/Id'}
+        enlace: {type: string, description: 'Ruta del SPA (RutasWeb), la misma del aviso de Telegram'}
+        fechaCreacion: {$ref: '#/components/schemas/Instante'}
+        estadoEnvio: {$ref: '#/components/schemas/EstadoEnvioNotificacion'}
+        leida: {type: boolean}
+    CodigoGenerado:
+      type: object
+      properties:
+        codigo: {type: string}
+        venceEn: {$ref: '#/components/schemas/Instante'}
+        enlace: {type: string, description: 'Enlace profundo t.me/<bot>?start=<codigo>'}
+    SolicitudTarea:
+      type: object
+      required: [titulo, horasEstimadas]
+      properties:
+        titulo: {type: string, maxLength: 150}
+        descripcion: {type: [string, 'null'], maxLength: 2000}
+        idEncargado: {$ref: '#/components/schemas/IdNulo'}
+        horasEstimadas: {type: number, exclusiveMinimum: 0, maximum: 9999.99}
+        fechaLimite: {$ref: '#/components/schemas/FechaNula'}
+        esPrerrequisitoCritico: {type: [boolean, 'null']}
+    TareaVista:
+      type: object
+      properties:
+        idTarea: {$ref: '#/components/schemas/Id'}
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        titulo: {type: string}
+        descripcion: {$ref: '#/components/schemas/TextoNulo'}
+        idEncargado: {$ref: '#/components/schemas/IdNulo'}
+        encargado: {$ref: '#/components/schemas/TextoNulo'}
+        idTareaOrigen: {$ref: '#/components/schemas/IdNulo'}
+        estado: {$ref: '#/components/schemas/EstadoTarea'}
+        porcentajeAvance: {type: integer, minimum: 0, maximum: 100}
+        horasEstimadas: {$ref: '#/components/schemas/Decimal'}
+        fechaLimite: {$ref: '#/components/schemas/FechaNula'}
+        fechaLimiteEfectiva: {$ref: '#/components/schemas/Fecha'}
+        fechaCompletada: {$ref: '#/components/schemas/InstanteNulo'}
+        esPrerrequisitoCritico: {type: boolean}
+        bloqueada: {type: boolean}
+        fechaBloqueo: {$ref: '#/components/schemas/InstanteNulo'}
+        enRutaCritica: {type: boolean}
+        holguraHoras: {$ref: '#/components/schemas/DecimalNulo'}
+        nivelRiesgo: {$ref: '#/components/schemas/NivelRiesgo'}
+        prerrequisitos: {type: array, items: {$ref: '#/components/schemas/Id'}}
+    TareaDetalle:
+      type: object
+      properties:
+        tarea: {$ref: '#/components/schemas/TareaVista'}
+        editable: {type: boolean}
+        avances: {type: array, items: {$ref: '#/components/schemas/AvanceVista'}}
+    AvanceVista:
+      type: object
+      properties:
+        idRegistro: {$ref: '#/components/schemas/Id'}
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        usuario: {type: string}
+        porcentajeAvance: {type: integer}
+        observacion: {$ref: '#/components/schemas/TextoNulo'}
+        fechaHora: {$ref: '#/components/schemas/Instante'}
+    MiTareaVista:
+      type: object
+      properties:
+        idTarea: {$ref: '#/components/schemas/Id'}
+        titulo: {type: string}
+        estado: {$ref: '#/components/schemas/EstadoTarea'}
+        porcentajeAvance: {type: integer}
+        fechaLimite: {$ref: '#/components/schemas/Fecha'}
+        bloqueada: {type: boolean}
+        nivelRiesgo: {$ref: '#/components/schemas/NivelRiesgo'}
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        nombreHito: {type: string}
+        proyecto: {type: string}
+    TableroHito:
+      type: object
+      properties:
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        idHito: {$ref: '#/components/schemas/Id'}
+        nombreHito: {type: string}
+        fechaLimite: {$ref: '#/components/schemas/Fecha'}
+        estado: {$ref: '#/components/schemas/EstadoHitoEquipo'}
+        editable: {type: boolean}
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+        idProyecto: {$ref: '#/components/schemas/Id'}
+        nombreProyecto: {type: string}
+        tareas: {type: array, items: {$ref: '#/components/schemas/TareaVista'}}
+    SolicitudDependencias:
+      type: object
+      required: [prerrequisitos]
+      properties:
+        prerrequisitos: {type: array, minItems: 1, maxItems: 50, items: {$ref: '#/components/schemas/Id'}}
+    ResultadoDependenciasVista:
+      type: object
+      properties:
+        aceptados: {type: array, items: {$ref: '#/components/schemas/Id'}}
+        ciclicos: {type: array, items: {$ref: '#/components/schemas/Id'}}
+        tarea: {$ref: '#/components/schemas/TareaVista'}
+    RutaCriticaVista:
+      type: object
+      properties:
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        duracionTotalHoras: {$ref: '#/components/schemas/Decimal'}
+        criticas: {type: array, items: {$ref: '#/components/schemas/Id'}}
+        nodos: {type: array, items: {$ref: '#/components/schemas/NodoRutaCritica'}}
+    NodoRutaCritica:
+      type: object
+      properties:
+        idTarea: {$ref: '#/components/schemas/Id'}
+        titulo: {type: string}
+        horasEstimadas: {$ref: '#/components/schemas/Decimal'}
+        porcentajeAvance: {type: integer}
+        critica: {type: boolean}
+        inicioTempranoHoras: {$ref: '#/components/schemas/Decimal'}
+        finTempranoHoras: {$ref: '#/components/schemas/Decimal'}
+        inicioTardioHoras: {$ref: '#/components/schemas/Decimal'}
+        finTardioHoras: {$ref: '#/components/schemas/Decimal'}
+        holguraHoras: {$ref: '#/components/schemas/Decimal'}
+        prerrequisitos: {type: array, items: {$ref: '#/components/schemas/Id'}}
+    SolicitudAvance:
+      type: object
+      required: [porcentajeAvance]
+      properties:
+        porcentajeAvance: {type: integer, minimum: 0, maximum: 100}
+        observacion: {type: [string, 'null'], maxLength: 500}
+    SolicitudEnlace:
+      type: object
+      required: [url]
+      properties:
+        url: {type: string, maxLength: 2048, description: 'Debe empezar por http:// o https://'}
+    EvidenciaVista:
+      type: object
+      properties:
+        idEvidencia: {$ref: '#/components/schemas/Id'}
+        idTarea: {$ref: '#/components/schemas/Id'}
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        autor: {type: string}
+        tipoEvidencia: {$ref: '#/components/schemas/TipoEvidencia'}
+        enlace: {$ref: '#/components/schemas/TextoNulo'}
+        nombreArchivo: {$ref: '#/components/schemas/TextoNulo'}
+        descarga: {type: [string, 'null'], description: 'Ruta /api/evidencias/{id}/archivo si es archivo'}
+        fechaSubida: {$ref: '#/components/schemas/Instante'}
+    SolicitudComentario:
+      type: object
+      required: [contenido]
+      properties:
+        contenido: {type: string, maxLength: 2000}
+    ComentarioVista:
+      type: object
+      properties:
+        idComentario: {$ref: '#/components/schemas/Id'}
+        idTarea: {$ref: '#/components/schemas/Id'}
+        idAutor: {$ref: '#/components/schemas/Id'}
+        autor: {type: string}
+        rolAutor: {$ref: '#/components/schemas/RolPlataforma'}
+        contenido: {type: string}
+        fechaHora: {$ref: '#/components/schemas/Instante'}
+    PeticionCorreccion:
+      type: object
+      required: [idEvidencia, observaciones]
+      properties:
+        idEvidencia: {$ref: '#/components/schemas/Id'}
+        observaciones: {type: string, maxLength: 1000}
+    CorreccionVista:
+      type: object
+      properties:
+        idSolicitud: {$ref: '#/components/schemas/Id'}
+        idTarea: {$ref: '#/components/schemas/Id'}
+        idEvidencia: {$ref: '#/components/schemas/Id'}
+        idLider: {$ref: '#/components/schemas/Id'}
+        lider: {type: string}
+        idEstudiante: {$ref: '#/components/schemas/Id'}
+        estudiante: {type: string}
+        observaciones: {type: string}
+        estado: {$ref: '#/components/schemas/EstadoSolicitudCorreccion'}
+        fechaSolicitud: {$ref: '#/components/schemas/Instante'}
+        fechaAtencion: {$ref: '#/components/schemas/InstanteNulo'}
+    SolicitudReasignacion:
+      type: object
+      required: [idNuevoEncargado, tipo]
+      properties:
+        idNuevoEncargado: {$ref: '#/components/schemas/Id'}
+        tipo: {type: string, enum: [TOTAL, PARCIAL]}
+        tituloParcial: {type: [string, 'null'], maxLength: 150}
+        horasParcial: {type: [number, 'null'], exclusiveMinimum: 0}
+        motivo: {type: [string, 'null'], maxLength: 500}
+    ResultadoReasignacion:
+      type: object
+      properties:
+        tarea: {$ref: '#/components/schemas/TareaVista'}
+        tareaNueva:
+          oneOf:
+            - $ref: '#/components/schemas/TareaVista'
+            - type: 'null'
+    SolicitudApoyo:
+      type: object
+      required: [mensaje]
+      properties:
+        mensaje: {type: string, maxLength: 500}
+    ApoyoVista:
+      type: object
+      properties:
+        idLog: {$ref: '#/components/schemas/Id'}
+        idTarea: {$ref: '#/components/schemas/Id'}
+        titulo: {type: string}
+        idAutor: {$ref: '#/components/schemas/IdNulo'}
+        autor: {type: string}
+        mensaje: {type: string}
+        fechaHora: {$ref: '#/components/schemas/Instante'}
+    CargaIntegrante:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        rolEquipo: {type: string}
+        tareasPendientes: {type: integer}
+        tareasCompletadas: {type: integer}
+        horasRestantes: {$ref: '#/components/schemas/Decimal'}
+    EnvioVista:
+      type: object
+      properties:
+        idEnvio: {$ref: '#/components/schemas/Id'}
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        idUsuarioEnvia: {$ref: '#/components/schemas/Id'}
+        enviadoPor: {type: string}
+        fechaEnvio: {$ref: '#/components/schemas/Instante'}
+    CalificacionSolicitada:
+      type: object
+      required: [idCriterio, nota]
+      properties:
+        idCriterio: {$ref: '#/components/schemas/Id'}
+        nota: {type: number, minimum: 0, description: No puede superar el puntaje máximo del criterio}
+        retroalimentacion: {type: [string, 'null'], maxLength: 2000}
+    SolicitudEvaluacion:
+      type: object
+      required: [criterios]
+      properties:
+        criterios: {type: array, minItems: 1, items: {$ref: '#/components/schemas/CalificacionSolicitada'}}
+        notaGrupal: {type: [number, 'null'], minimum: 0, maximum: 5, description: 'Si falta, la calculada de la rúbrica'}
+        retroalimentacion: {type: [string, 'null'], maxLength: 4000}
+    CambioNotaGrupal:
+      type: object
+      required: [notaGrupal]
+      properties:
+        notaGrupal: {type: number, minimum: 0, maximum: 5}
+    ConfirmacionNota:
+      type: object
+      required: [notaFinal]
+      properties:
+        notaFinal: {type: number, minimum: 0, maximum: 5}
+    EvaluacionVista:
+      type: object
+      properties:
+        idEvaluacion: {$ref: '#/components/schemas/Id'}
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        idEnvio: {$ref: '#/components/schemas/Id'}
+        fechaEnvio: {$ref: '#/components/schemas/Instante'}
+        fechaEvaluacion: {$ref: '#/components/schemas/Instante'}
+        notaGrupal: {$ref: '#/components/schemas/Decimal'}
+        notaCalculada: {type: [number, 'null'], description: Solo para el docente}
+        retroalimentacion: {$ref: '#/components/schemas/TextoNulo'}
+        caracter: {$ref: '#/components/schemas/CaracterNota'}
+        criterios: {type: array, items: {$ref: '#/components/schemas/CriterioEvaluadoVista'}}
+        notas: {type: array, items: {$ref: '#/components/schemas/NotaIndividualVista'}}
+    CriterioEvaluadoVista:
+      type: object
+      properties:
+        idCriterio: {$ref: '#/components/schemas/Id'}
+        descripcion: {type: string}
+        pesoPorcentaje: {$ref: '#/components/schemas/Decimal'}
+        puntajeMaximo: {$ref: '#/components/schemas/Decimal'}
+        nota: {$ref: '#/components/schemas/Decimal'}
+        retroalimentacion: {$ref: '#/components/schemas/TextoNulo'}
+    NotaIndividualVista:
+      type: object
+      properties:
+        idEstudiante: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        factorAjuste: {type: [number, 'null'], description: ICE; nulo para el propio estudiante}
+        notaSugerida: {type: [number, 'null'], description: Nula para el propio estudiante}
+        notaFinal: {$ref: '#/components/schemas/DecimalNulo'}
+        fechaConfirmacion: {$ref: '#/components/schemas/InstanteNulo'}
