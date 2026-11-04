@@ -20,3 +20,8 @@ desktop.ini
 
 # Registros
 *.log
+
+# Frontend (bloque 25): dependencias, build y la copia del SPA que hace el Dockerfile
+web/node_modules/
+web/dist/
+nucleo/src/main/resources/static/
