@@ -5,21 +5,12 @@ import { mensajeDeError } from '../api/cliente';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Campo } from '../componentes/Campo';
-import { Tarjeta } from '../componentes/Tarjeta';
+import { MarcoAcceso } from '../componentes/MarcoAcceso';
 import { rutas } from '../rutas';
 import { useSesion } from '../sesion/ContextoSesion';
+import { destinoSeguro, vieneDeRegistro } from '../sesion/destino';
 
-/** Solo rutas internas: evita redirecciones abiertas con state manipulado. */
-function destinoSeguro(estado: unknown): string {
-  if (typeof estado === 'object' && estado !== null && 'desde' in estado) {
-    const desde = (estado as { desde: unknown }).desde;
-    if (typeof desde === 'string' && desde.startsWith('/') && !desde.startsWith('//')) {
-      return desde;
-    }
-  }
-  return '/';
-}
-
+/** P01a. Tras ingresar vuelve a la ruta protegida de origen (solo rutas internas) o a la vista del rol. */
 export function Ingreso() {
   const { sesion, ingresar } = useSesion();
   const ubicacion = useLocation();
@@ -32,6 +23,8 @@ export function Ingreso() {
   if (sesion.estado === 'autenticado') {
     return <Navigate to={destinoSeguro(ubicacion.state)} replace />;
   }
+
+  const cuentaCreada = vieneDeRegistro(ubicacion.state);
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -48,34 +41,42 @@ export function Ingreso() {
   }
 
   return (
-    <div className="pagina-centrada">
-      <Tarjeta titulo="Ingresar a UniProject">
-        <form className="formulario" onSubmit={(e) => void alEnviar(e)} noValidate>
-          {error !== null && <Alerta tipo="error">{error}</Alerta>}
-          <Campo
-            etiqueta="Correo institucional"
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Campo
-            etiqueta="Contraseña"
-            type="password"
-            autoComplete="current-password"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            required
-          />
-          <Boton type="submit" cargando={enviando}>
-            Ingresar
-          </Boton>
-        </form>
-        <p className="texto-secundario">
-          ¿Tu docente ya habilitó tu correo? <Link to={rutas.registro()}>Crea tu cuenta</Link>
-        </p>
-      </Tarjeta>
-    </div>
+    <MarcoAcceso titulo="Iniciar sesión" subtitulo="Ingresa con tu correo institucional." variante="ingreso">
+      <form className="tarjeta-acceso__formulario" onSubmit={(e) => void alEnviar(e)} noValidate>
+        {cuentaCreada && error === null && (
+          <Alerta tipo="exito">Cuenta creada. Ya puedes ingresar con tu correo y tu contraseña.</Alerta>
+        )}
+        {error !== null && <Alerta tipo="error">{error}</Alerta>}
+        <Campo
+          etiqueta="Correo"
+          type="email"
+          autoComplete="username"
+          placeholder="nombre@uninorte.edu.co"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Campo
+          etiqueta="Contraseña"
+          type="password"
+          autoComplete="current-password"
+          value={contrasena}
+          onChange={(e) => setContrasena(e.target.value)}
+          required
+        />
+        <Boton type="submit" cargando={enviando} className="boton--acceso">
+          Ingresar
+        </Boton>
+      </form>
+      <p className="tarjeta-acceso__pie">
+        <span>¿No tienes cuenta?</span>
+        <Link className="enlace-fuerte" to={rutas.registro()}>
+          Crear cuenta
+        </Link>
+      </p>
+      <p className="tarjeta-acceso__nota">
+        Al ingresar, el sistema te lleva a tu vista según tu rol: docente, estudiante, líder de equipo o monitor.
+      </p>
+    </MarcoAcceso>
   );
 }
