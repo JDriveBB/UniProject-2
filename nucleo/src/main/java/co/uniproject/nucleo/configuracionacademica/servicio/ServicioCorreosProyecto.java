@@ -11,6 +11,7 @@ import co.uniproject.nucleo.configuracionacademica.repositorio.ProyectoRepositor
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.CorreoHabilitadoVista;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioCuentas;
+import co.uniproject.nucleo.seguridad.cuentas.ServicioSupresion;
 import co.uniproject.nucleo.seguridad.dominio.CorreoHabilitado;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
 import co.uniproject.nucleo.seguridad.dominio.Usuario;
@@ -76,7 +77,11 @@ public class ServicioCorreosProyecto {
                 .collect(Collectors.toSet());
         Set<String> pedidos = new LinkedHashSet<>();
         for (String email : solicitud.emails()) {
-            pedidos.add(ServicioCuentas.normalizarEmail(email));
+            String normalizado = ServicioCuentas.normalizarEmail(email);
+            if (ServicioSupresion.esCorreoReservado(normalizado)) {
+                throw ServicioSupresion.correoReservado();
+            }
+            pedidos.add(normalizado);
         }
         Instant ahora = Instant.now(reloj);
         List<CorreoHabilitadoVista> habilitados = new ArrayList<>();
@@ -87,7 +92,7 @@ public class ServicioCorreosProyecto {
                 yaHabilitados.add(email);
                 continue;
             }
-            Optional<Usuario> cuenta = usuarios.findByEmail(email);
+            Optional<Usuario> cuenta = usuarios.findByEmail(email).filter(u -> u.getFechaAnonimizacion() == null);
             if (cuenta.isPresent() && cuenta.get().getRolPlataforma() != rol) {
                 conOtroRol.add(email);
                 continue;

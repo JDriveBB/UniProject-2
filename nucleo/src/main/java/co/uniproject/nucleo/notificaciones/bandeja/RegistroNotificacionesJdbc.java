@@ -26,6 +26,9 @@ public class RegistroNotificacionesJdbc implements RegistroNotificaciones {
         int filas = 0;
         for (DestinatariosEvento.Destino d : DestinatariosEvento.de(evento.data())) {
             Persona p = d.persona();
+            if (anonimizada(p.id())) {
+                continue;
+            }
             EstadoEnvioNotificacion estado = p.chatId() != null
                     ? EstadoEnvioNotificacion.EN_COLA
                     : EstadoEnvioNotificacion.SIN_TELEGRAM;
@@ -42,5 +45,14 @@ public class RegistroNotificacionesJdbc implements RegistroNotificaciones {
                     .update();
         }
         return filas;
+    }
+
+    /** Bloque 27: una cuenta anonimizada no recibe avisos nuevos en la bandeja (el agente ya la omite: chat null). */
+    private boolean anonimizada(long idUsuario) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM usuario WHERE id_usuario = :id "
+                        + "AND fecha_anonimizacion IS NOT NULL)")
+                .param("id", idUsuario)
+                .query(Boolean.class)
+                .single();
     }
 }

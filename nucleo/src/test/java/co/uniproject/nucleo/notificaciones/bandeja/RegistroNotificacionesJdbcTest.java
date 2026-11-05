@@ -29,7 +29,7 @@ class RegistroNotificacionesJdbcTest {
 
     @BeforeEach
     void setUp() {
-        DataSource ds = PostgresPrueba.baseLimpia("3");
+        DataSource ds = PostgresPrueba.baseLimpia("4");
         jdbc = JdbcClient.create(ds);
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         bandeja = new RegistroNotificacionesJdbc(jdbc);

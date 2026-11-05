@@ -61,11 +61,12 @@ public class ServicioCuentas {
 
     /**
      * Valida correo y contraseña. Correo inexistente y contraseña errada responden igual y cuestan un bcrypt cada uno,
-     * para no revelar qué correos tienen cuenta. Ambos casos quedan en la auditoría, sin el correo ni la contraseña.
+     * para no revelar qué correos tienen cuenta. Una cuenta anonimizada (bloque 27) cuenta como inexistente. Ambos casos quedan en la auditoría, sin el correo ni la contraseña.
      */
     @Transactional
     public Optional<UsuarioAutenticado> autenticar(String email, String contrasena) {
-        Optional<Usuario> usuario = usuarios.findByEmail(normalizarEmail(email));
+        Optional<Usuario> usuario = usuarios.findByEmail(normalizarEmail(email))
+                .filter(u -> u.getFechaAnonimizacion() == null);
         boolean valida = bytes(contrasena) <= MAXIMO_BYTES_CONTRASENA
                 && codificador.matches(contrasena, usuario.map(Usuario::getPasswordHash).orElse(hashFicticio))
                 && usuario.isPresent();
@@ -125,6 +126,9 @@ public class ServicioCuentas {
     @Transactional
     public CorreoHabilitadoVista habilitarDocente(long idAdministrador, String emailSolicitado) {
         String email = normalizarEmail(emailSolicitado);
+        if (ServicioSupresion.esCorreoReservado(email)) {
+            throw ServicioSupresion.correoReservado();
+        }
         boolean pendiente = correos.findByEmailAndFechaUsoIsNull(email).stream()
                 .anyMatch(c -> c.getRolPlataforma() == RolPlataforma.DOCENTE);
         if (pendiente || usuarios.existsByEmail(email)) {

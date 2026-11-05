@@ -45,6 +45,9 @@ public class Usuario {
     @Column(name = "telegram_chat_id", insertable = false, updatable = false)
     private Long telegramChatId;
 
+    @Column(name = "fecha_anonimizacion", insertable = false, updatable = false)
+    private Instant fechaAnonimizacion;
+
     public Long getIdUsuario() {
         return idUsuario;
     }
@@ -112,5 +115,10 @@ public class Usuario {
     /** Solo lectura: lo escribe ServicioVinculacion (JdbcClient). */
     public Long getTelegramChatId() {
         return telegramChatId;
+    }
+
+    /** Solo lectura: lo escribe ServicioSupresion (JdbcClient). null = cuenta activa (V4, Ley 1581). */
+    public Instant getFechaAnonimizacion() {
+        return fechaAnonimizacion;
     }
 }
