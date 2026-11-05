@@ -548,6 +548,67 @@ paths:
           description: Telegram desvinculado
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+  /api/perfil/datos:
+    get:
+      tags: [perfil]
+      operationId: verDatosPersonales
+      summary: 'Derecho a conocer (Ley 1581): datos de la cuenta y fecha de la autorización'
+      responses:
+        '200':
+          description: 'Datos personales de la cuenta, sin hash de contraseña ni identificador de Telegram'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DatosPersonales'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/perfil/nombre:
+    put:
+      tags: [perfil]
+      operationId: rectificarNombre
+      summary: 'Derecho a rectificar (Ley 1581). La auditoría registra el cambio sin el nombre'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudNombre'}
+      responses:
+        '200':
+          description: 'Nombre actualizado, también en los avisos de la bandeja que lo mostraban'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UsuarioSesion'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/perfil/supresion:
+    post:
+      tags: [perfil]
+      operationId: suprimirCuenta
+      summary: 'Derecho de supresión y revocatoria (Ley 1581). Anonimiza la cuenta y no se puede deshacer'
+      description: |
+        Pide la contraseña actual (400 CONTRASENA_INCORRECTA si no coincide). En una sola transacción reemplaza
+        nombre, correo y contraseña por valores anónimos, borra el chat y los códigos de Telegram, la bandeja propia
+        y las habilitaciones pendientes de su correo, y quita el nombre de los avisos y eventos que lo mostraban.
+        Los registros académicos (tareas, avances, comentarios, evidencias, notas) se conservan ligados a la cuenta
+        anonimizada. Cierra esta sesión y las demás abiertas de la cuenta. Repetirla no cambia nada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudSupresion'}
+      responses:
+        '204':
+          description: 'Cuenta anonimizada; se cierra la sesión y se borra la cookie XSRF-TOKEN'
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'CUENTA_ADMINISTRADOR, DOCENTE_CON_PROYECTOS_ACTIVOS o LIDER_DE_EQUIPO_ACTIVO'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/tareas/mias:
     get:
       tags: [tareas]
@@ -1303,6 +1364,27 @@ components:
         codigo: {type: string}
         venceEn: {$ref: '#/components/schemas/Instante'}
         enlace: {type: string, description: 'Enlace profundo t.me/<bot>?start=<codigo>'}
+    DatosPersonales:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        email: {type: string}
+        rol: {$ref: '#/components/schemas/RolPlataforma'}
+        telegramVinculado: {type: boolean}
+        autorizaTratamientoDatos: {type: boolean}
+        fechaAutorizacion: {$ref: '#/components/schemas/InstanteNulo'}
+        fechaRegistro: {$ref: '#/components/schemas/Instante'}
+    SolicitudNombre:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: {type: string, minLength: 1, maxLength: 120}
+    SolicitudSupresion:
+      type: object
+      required: [contrasena]
+      properties:
+        contrasena: {type: string, maxLength: 200, description: 'Contraseña actual, como confirmación'}
     SolicitudTarea:
       type: object
       required: [titulo, horasEstimadas]

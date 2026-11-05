@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -50,7 +51,8 @@ public class ConfiguracionSeguridad {
     @Bean
     @Order(2)
     public SecurityFilterChain cadenaWeb(HttpSecurity http, ManejadorAccesoDenegado accesoDenegado,
-                                         SecurityContextRepository repositorioContexto) throws Exception {
+                                         SecurityContextRepository repositorioContexto, JdbcClient jdbc)
+            throws Exception {
         http.authorizeHttpRequests(a -> a
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/sesion/csrf").permitAll()
@@ -61,6 +63,7 @@ public class ConfiguracionSeguridad {
                 .anyRequest().permitAll())
             .csrf(csrf -> csrf.spa())
             .securityContext(c -> c.securityContextRepository(repositorioContexto))
+            .addFilterBefore(new FiltroCuentaSuprimida(jdbc), AuthorizationFilter.class)
             .exceptionHandling(e -> e
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 .accessDeniedHandler(accesoDenegado))
