@@ -251,3 +251,15 @@ Detalle y código en las specs `bloque-12b`…`bloque-14b`. Aquí, la decisión 
 | Permisos (4a, 4b, RF13, RF14) | Interfaz `Permisos` con consultas `EXISTS`; id inexistente → 403 | Una regla, un lugar, probada con una matriz de casos; no revela qué ids existen |
 | Errores de la API | `RespuestaError(codigo, mensaje, detalles)`; 403 auditados | El SPA muestra `mensaje` y decide por `codigo`; RF7 devuelve en `detalles` las tareas que faltan |
 | Evidencias (restricción 5) | Archivos en volumen Docker (10 MB, PDF/PNG/JPEG por bytes mágicos) + enlaces http(s) | Gratis y local; la descarga pasa por la API con permisos. Supuesto 7: lo pesado va como enlace |
+
+## 14. Derechos del titular y supresión por anonimización (2026-11-04, `instrucciones-agy/bloque-27-anonimizacion.md`)
+
+Detalle, opciones y porqué en la tabla 27-1…27-16 de la spec. Resumen:
+
+| Tema | Decisión |
+|---|---|
+| Canal | Solo el titular, desde el perfil, con su contraseña; rutas sin `{id}` (`GET /api/perfil/datos`, `PUT /api/perfil/nombre`, `POST /api/perfil/supresion`). El admin no suprime cuentas ajenas |
+| Supresión | `UPDATE` (nunca `DELETE`) de `usuario` a valores anónimos + V4 `fecha_anonimizacion` y `usuario_anonimizado_ck`. Registros académicos, comentarios y evidencias se conservan ligados al id; `nombre_archivo` se reemplaza |
+| Datos derivados | Se borran códigos de vinculación, bandeja propia y habilitaciones pendientes; el nombre se quita de la bandeja ajena (palabra completa, mismo equipo) y de todas las cargas de `evento_saliente` (por id, campos de persona). `log_auditoria` y su trigger no se tocan (solo ids) |
+| Bloqueos (409) | Administrador; docente con proyecto activo; líder de equipo de proyecto activo |
+| Sesiones e ingreso | Filtro en la cadena web: sesión de cuenta anonimizada → 401. `autenticar` la trata como inexistente. El mismo correo puede crear una cuenta nueva solo con una nueva habilitación |
