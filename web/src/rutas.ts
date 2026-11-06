@@ -24,4 +24,6 @@ export const rutas = {
   reportes: () => '/reportes',
   tablero: () => '/tablero',
   rutaCriticaActual: () => '/ruta-critica',
+  /* Bloque 26c: tablero en un hito concreto (pestañas de P04 y «Volver al tablero» de P06). */
+  tableroEnHito: (idEquipo: number, idHitoEquipo: number) => `/equipos/${idEquipo}/tablero?hito=${idHitoEquipo}`,
 } as const;

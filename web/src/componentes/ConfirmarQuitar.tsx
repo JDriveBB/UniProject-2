@@ -3,13 +3,17 @@ import type { KeyboardEvent } from 'react';
 
 /**
  * Confirmación en la propia pantalla (decisión 26b-15): sin window.confirm. El foco entra en "Cancelar" (la opción
- * segura) y Escape cancela. Quien la muestra devuelve el foco al cerrarla.
+ * segura) y Escape cancela. Quien la muestra devuelve el foco al cerrarla. 26c: también confirma «Enviar a revisión»
+ * (textos propios en textoConfirmar y textoOcupado).
  */
-export function ConfirmarQuitar({ pregunta, ocupado, alConfirmar, alCancelar }: {
+export function ConfirmarQuitar({ pregunta, ocupado, alConfirmar, alCancelar, textoConfirmar = 'Sí, quitar',
+                                  textoOcupado = 'Quitando…' }: {
   pregunta: string;
   ocupado: boolean;
   alConfirmar: () => void;
   alCancelar: () => void;
+  textoConfirmar?: string;
+  textoOcupado?: string;
 }) {
   const idPregunta = useId();
   const cancelar = useRef<HTMLButtonElement>(null);
@@ -31,7 +35,7 @@ export function ConfirmarQuitar({ pregunta, ocupado, alConfirmar, alCancelar }: 
         {pregunta}
       </p>
       <button type="button" className="boton-texto boton-texto--peligro" disabled={ocupado} onClick={alConfirmar}>
-        {ocupado ? 'Quitando…' : 'Sí, quitar'}
+        {ocupado ? textoOcupado : textoConfirmar}
       </button>
       <button ref={cancelar} type="button" className="boton-texto" disabled={ocupado} onClick={alCancelar}>
         Cancelar

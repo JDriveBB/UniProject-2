@@ -39,3 +39,9 @@ export function rangoFechas(inicio: string, fin: string): string {
 export function decimalEsCo(valor: number): string {
   return String(valor).replace('.', ',');
 }
+
+/** Fecha de calendario de la API ("aaaa-mm-dd") → "dd/mm/aaaa" (Figma P04/P06). Sin zona horaria. "—" si no es fecha. */
+export function fechaDia(fecha: string): string {
+  const m = FECHA_ISO.exec(fecha);
+  return m === null ? '—' : `${m[3]}/${m[2]}/${m[1]}`;
+}

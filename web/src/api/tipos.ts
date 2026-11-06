@@ -174,3 +174,99 @@ export interface Bandeja {
   noLeidas: number;
   notificaciones: NotificacionVista[];
 }
+
+/* ===== Bloque 26c: tablero, tareas, dependencias, ruta crítica y envío (docs/openapi/openapi.yaml) ===== */
+
+export type EstadoTarea = 'PENDIENTE' | 'EN_PROGRESO' | 'COMPLETADA';
+export type NivelRiesgo = 'BAJO' | 'MEDIO' | 'ALTO';
+
+/** Horas: número JSON (Decimal). Fechas "aaaa-mm-dd"; fechaCompletada y fechaBloqueo, instantes UTC. */
+export interface TareaVista {
+  idTarea: number;
+  idHitoEquipo: number;
+  titulo: string;
+  descripcion: string | null;
+  idEncargado: number | null;
+  encargado: string | null;
+  idTareaOrigen: number | null;
+  estado: EstadoTarea;
+  porcentajeAvance: number;
+  horasEstimadas: number;
+  fechaLimite: string | null;
+  fechaLimiteEfectiva: string;
+  fechaCompletada: string | null;
+  esPrerrequisitoCritico: boolean;
+  bloqueada: boolean;
+  fechaBloqueo: string | null;
+  enRutaCritica: boolean;
+  holguraHoras: number | null;
+  nivelRiesgo: NivelRiesgo | null;
+  prerrequisitos: number[];
+}
+
+/** GET /api/hitos-equipo/{id}/tareas. editable: decisión E1 (EN_CURSO sí; ENVIADO no; EVALUADO hasta que vence). */
+export interface TableroHito {
+  idHitoEquipo: number;
+  idHito: number;
+  nombreHito: string;
+  fechaLimite: string;
+  estado: EstadoHitoEquipo;
+  editable: boolean;
+  idEquipo: number;
+  nombreEquipo: string;
+  idProyecto: number;
+  nombreProyecto: string;
+  tareas: TareaVista[];
+}
+
+/** POST /api/hitos-equipo/{id}/tareas (solo el líder). horasEstimadas > 0 y ≤ 9999,99 con 2 decimales. */
+export interface SolicitudTarea {
+  titulo: string;
+  descripcion: string | null;
+  idEncargado: number | null;
+  horasEstimadas: number;
+  fechaLimite: string | null;
+  esPrerrequisitoCritico: boolean | null;
+}
+
+/** POST /api/tareas/{id}/dependencias: de 1 a 50 prerrequisitos. */
+export interface SolicitudDependencias {
+  prerrequisitos: number[];
+}
+
+export interface ResultadoDependencias {
+  aceptados: number[];
+  ciclicos: number[];
+  tarea: TareaVista;
+}
+
+export interface NodoRutaCritica {
+  idTarea: number;
+  titulo: string;
+  horasEstimadas: number;
+  porcentajeAvance: number;
+  critica: boolean;
+  inicioTempranoHoras: number;
+  finTempranoHoras: number;
+  inicioTardioHoras: number;
+  finTardioHoras: number;
+  holguraHoras: number;
+  prerrequisitos: number[];
+}
+
+/** GET /api/hitos-equipo/{id}/ruta-critica. nodos en orden topológico (el núcleo los ordena). */
+export interface RutaCriticaVista {
+  idHitoEquipo: number;
+  duracionTotalHoras: number;
+  criticas: number[];
+  nodos: NodoRutaCritica[];
+}
+
+/** POST /api/hitos-equipo/{id}/envio (RF7). */
+export interface EnvioVista {
+  idEnvio: number;
+  idHitoEquipo: number;
+  idUsuarioEnvia: number;
+  enviadoPor: string;
+  fechaEnvio: string;
+}
