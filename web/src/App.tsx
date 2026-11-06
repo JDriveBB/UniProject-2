@@ -16,6 +16,7 @@ import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { ElegirPanel, PanelProyectoDeRuta } from './paginas/PanelDocente';
 import { Perfil } from './paginas/Perfil';
 import { Registro } from './paginas/Registro';
+import { Reportes } from './paginas/Reportes';
 import { RestablecerContrasena } from './paginas/RestablecerContrasena';
 import { RutaCriticaDeRuta } from './paginas/RutaCritica';
 import { TableroDeRuta } from './paginas/Tablero';
@@ -62,7 +63,7 @@ export function App() {
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
             <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />
             <Route path="/panel" element={<ElegirPanel />} />
-            <Route path="/reportes" element={<PaginaPendiente titulo="Reportes" bloque="26f" />} />
+            <Route path="/reportes" element={<Reportes />} />
             <Route path="/proyectos/:idProyecto/panel" element={<PanelProyectoDeRuta />} />
             <Route path="/hitos/:idHitoEquipo/evaluar" element={<EvaluarHitoDeRuta />} />
           </Route>
