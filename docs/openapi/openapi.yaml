@@ -525,6 +525,9 @@ paths:
       tags: [trazabilidad]
       operationId: historialEquipo
       summary: Restricción 4e, desde log_auditoria
+      description: |
+        Docente dueño o integrantes del equipo; el monitor y cualquier otro usuario reciben 403; los estudiantes
+        reciben solo su propia nota confirmada y sin valor anterior de la nota grupal.
       parameters:
         - name: limite
           in: query

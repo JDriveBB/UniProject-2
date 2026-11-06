@@ -21,11 +21,14 @@ public class ServicioHistorial {
             + "coalesce(l.valor_nuevo, x.valor_nuevo) AS valor_nuevo "
             + "FROM log_auditoria l LEFT JOIN usuario u ON u.id_usuario = l.id_usuario_accion "
             + "LEFT JOIN texto_auditoria x ON x.id_log = l.id_log "
-            + "WHERE (l.entidad_afectada IN ('equipo', 'miembro_equipo') AND l.id_registro_afectado = :equipo) "
+            + "WHERE ((l.entidad_afectada IN ('equipo', 'miembro_equipo') AND l.id_registro_afectado = :equipo) "
             + "OR (l.entidad_afectada = 'hito_equipo' AND l.id_registro_afectado IN "
             + "(SELECT id_hito_equipo FROM hito_equipo WHERE id_equipo = :equipo)) "
             + "OR (l.entidad_afectada = 'tarea' AND l.id_registro_afectado IN (SELECT t.id_tarea FROM tarea t "
-            + "JOIN hito_equipo he ON he.id_hito_equipo = t.id_hito_equipo WHERE he.id_equipo = :equipo)) ";
+            + "JOIN hito_equipo he ON he.id_hito_equipo = t.id_hito_equipo WHERE he.id_equipo = :equipo))) ";
+
+    private static final String FILTRO_NOTAS = "AND NOT (CAST(:filtrarNotas AS boolean) AND l.accion = 'CONFIRMAR_NOTA' "
+            + "AND l.campo_modificado IS DISTINCT FROM :campoPropio) ";
 
     private final Permisos permisos;
     private final JdbcClient jdbc;
@@ -38,8 +41,35 @@ public class ServicioHistorial {
     /** Más reciente primero; limite se ajusta a 1..1000. */
     @Transactional(readOnly = true)
     public List<EntradaHistorial> consultar(UsuarioAutenticado usuario, long idEquipo, int limite) {
-        permisos.exigir(permisos.puedeVerEquipo(usuario.idUsuario(), idEquipo));
-        return entradas(idEquipo, false, Math.clamp(limite, 1, 1000));
+        permisos.exigir(permisos.puedeVerHistorialEquipo(usuario.idUsuario(), idEquipo));
+        boolean esDocente = esDocenteDuenio(usuario.idUsuario(), idEquipo);
+        int tope = Math.clamp(limite, 1, 1000);
+        List<EntradaHistorial> lista = jdbc.sql(DEL_EQUIPO + FILTRO_NOTAS + "ORDER BY l.fecha_hora DESC, l.id_log DESC LIMIT :tope")
+                .param("equipo", idEquipo)
+                .param("filtrarNotas", !esDocente)
+                .param("campoPropio", "nota_final:" + usuario.idUsuario())
+                .param("tope", tope)
+                .query(ServicioHistorial::fila)
+                .list();
+        if (esDocente) {
+            return lista;
+        }
+        return lista.stream()
+                .map(e -> "nota_grupal".equals(e.campo())
+                        ? new EntradaHistorial(e.idLog(), e.fechaHora(), e.idUsuario(), e.autor(), e.accion(),
+                                e.entidad(), e.idRegistro(), e.campo(), null, e.valorNuevo(),
+                                detalle(e.campo(), null, e.valorNuevo()))
+                        : e)
+                .toList();
+    }
+
+    private boolean esDocenteDuenio(long idUsuario, long idEquipo) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM equipo e JOIN proyecto p ON p.id_proyecto = e.id_proyecto "
+                        + "WHERE e.id_equipo = :equipo AND p.id_docente = :usuario)")
+                .param("equipo", idEquipo)
+                .param("usuario", idUsuario)
+                .query(Boolean.class)
+                .single();
     }
 
     /** Sin permisos: lo llama ServicioReporte, que ya los exigió. */
