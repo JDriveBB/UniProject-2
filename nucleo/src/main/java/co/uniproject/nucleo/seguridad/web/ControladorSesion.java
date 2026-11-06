@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.seguridad.web;
 
 import co.uniproject.nucleo.comun.web.RespuestaError;
+import co.uniproject.nucleo.seguridad.CredencialesSesion;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioCuentas;
 import co.uniproject.nucleo.seguridad.cuentas.UsuarioSesion;
@@ -38,12 +39,14 @@ public class ControladorSesion {
     private final ServicioCuentas cuentas;
     private final SecurityContextRepository repositorioContexto;
     private final RegistroAuditoria auditoria;
+    private final CredencialesSesion credenciales;
 
     public ControladorSesion(ServicioCuentas cuentas, SecurityContextRepository repositorioContexto,
-                             RegistroAuditoria auditoria) {
+                             RegistroAuditoria auditoria, CredencialesSesion credenciales) {
         this.cuentas = cuentas;
         this.repositorioContexto = repositorioContexto;
         this.auditoria = auditoria;
+        this.credenciales = credenciales;
     }
 
     /** Deja la cookie XSRF-TOKEN. El SPA la llama al cargar y después de login y logout. */
@@ -56,6 +59,7 @@ public class ControladorSesion {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody SolicitudLogin solicitud, HttpServletRequest peticion,
                                    HttpServletResponse respuesta) {
+        int version = credenciales.versionPorCorreo(solicitud.email());
         Optional<UsuarioAutenticado> autenticado = cuentas.autenticar(solicitud.email(), solicitud.contrasena());
         if (autenticado.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RespuestaError("CREDENCIALES_INVALIDAS",
@@ -68,6 +72,7 @@ public class ControladorSesion {
                 List.of(new SimpleGrantedAuthority("ROLE_" + usuario.rol().name()))));
         SecurityContextHolder.setContext(contexto);
         repositorioContexto.saveContext(contexto, peticion, respuesta);
+        peticion.getSession().setAttribute(CredencialesSesion.ATRIBUTO, version);
         borrarCookieCsrf(respuesta);
         return ResponseEntity.ok(cuentas.sesion(usuario.idUsuario()));
     }

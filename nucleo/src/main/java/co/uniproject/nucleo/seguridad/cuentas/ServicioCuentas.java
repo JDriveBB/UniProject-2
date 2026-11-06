@@ -59,6 +59,15 @@ public class ServicioCuentas {
         return email.strip().toLowerCase(Locale.ROOT);
     }
 
+    /** Reglas de contraseña del registro (26a), también para cambio y restablecimiento (28-7). */
+    static void exigirContrasenaValida(String contrasena) {
+        if (contrasena == null || contrasena.length() < MINIMO_CARACTERES_CONTRASENA
+                || bytes(contrasena) > MAXIMO_BYTES_CONTRASENA) {
+            throw new SolicitudInvalidaException("CONTRASENA_INVALIDA",
+                    "La contraseña debe tener al menos 10 caracteres y no más de 72 bytes");
+        }
+    }
+
     /**
      * Valida correo y contraseña. Correo inexistente y contraseña errada responden igual y cuestan un bcrypt cada uno,
      * para no revelar qué correos tienen cuenta. Una cuenta anonimizada (bloque 27) cuenta como inexistente. Ambos casos quedan en la auditoría, sin el correo ni la contraseña.
@@ -177,10 +186,7 @@ public class ServicioCuentas {
     }
 
     private Usuario nuevoUsuario(String nombre, String email, String contrasena, RolPlataforma rol, Instant ahora) {
-        if (contrasena.length() < MINIMO_CARACTERES_CONTRASENA || bytes(contrasena) > MAXIMO_BYTES_CONTRASENA) {
-            throw new SolicitudInvalidaException("CONTRASENA_INVALIDA",
-                    "La contraseña debe tener al menos 10 caracteres y no más de 72 bytes");
-        }
+        exigirContrasenaValida(contrasena);
         Usuario u = new Usuario();
         u.setNombre(nombre.strip());
         u.setEmail(email);

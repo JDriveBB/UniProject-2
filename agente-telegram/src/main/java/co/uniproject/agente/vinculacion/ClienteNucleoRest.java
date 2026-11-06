@@ -1,8 +1,12 @@
 package co.uniproject.agente.vinculacion;
 
+import co.uniproject.eventos.interno.CodigoRecuperacionEmitido;
 import co.uniproject.eventos.interno.ContratoInterno;
 import co.uniproject.eventos.interno.SolicitudBloqueo;
+import co.uniproject.eventos.interno.SolicitudCodigoRecuperacion;
 import co.uniproject.eventos.interno.SolicitudVinculacion;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -13,6 +17,7 @@ import org.springframework.web.client.RestClient;
 public class ClienteNucleoRest implements ClienteNucleo {
 
     private static final Logger log = LoggerFactory.getLogger(ClienteNucleoRest.class);
+    private static final Pattern PATRON_RECUPERACION = Pattern.compile(ContratoInterno.PATRON_CODIGO_RECUPERACION);
 
     private final RestClient rest;
 
@@ -66,6 +71,33 @@ public class ClienteNucleoRest implements ClienteNucleo {
             }
         } catch (RuntimeException e) {
             log.warn("El núcleo no registró el bloqueo (excepción {})", e.getClass().getName());
+        }
+    }
+
+    @Override
+    public CodigoRecuperacion pedirCodigoRecuperacion(UUID solicitud, long chatId) {
+        try {
+            ResponseEntity<CodigoRecuperacionEmitido> respuesta = rest.post()
+                    .uri(ContratoInterno.RUTA_RECUPERACIONES)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new SolicitudCodigoRecuperacion(solicitud, chatId))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                    .toEntity(CodigoRecuperacionEmitido.class);
+            int estado = respuesta.getStatusCode().value();
+            CodigoRecuperacionEmitido cuerpo = respuesta.getBody();
+            if (estado == 200 && cuerpo != null && cuerpo.codigo() != null
+                    && PATRON_RECUPERACION.matcher(cuerpo.codigo()).matches()) {
+                return CodigoRecuperacion.emitido(cuerpo.codigo());
+            }
+            if (estado == 404 || estado == 410) {
+                return CodigoRecuperacion.descartada();
+            }
+            log.warn("El núcleo no entregó el código de recuperación (estado {})", estado);
+            return CodigoRecuperacion.error();
+        } catch (RuntimeException e) {
+            log.warn("El núcleo no entregó el código de recuperación (excepción {})", e.getClass().getName());
+            return CodigoRecuperacion.error();
         }
     }
 }

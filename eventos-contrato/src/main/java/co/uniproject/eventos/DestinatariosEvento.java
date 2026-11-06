@@ -1,10 +1,12 @@
 package co.uniproject.eventos;
 
+import co.uniproject.eventos.datos.ContrasenaCambiada;
 import co.uniproject.eventos.datos.DatosEvento;
 import co.uniproject.eventos.datos.EquipoInactividad;
 import co.uniproject.eventos.datos.HitoEnviado;
 import co.uniproject.eventos.datos.HitoEvaluado;
 import co.uniproject.eventos.datos.Persona;
+import co.uniproject.eventos.datos.RecuperacionSolicitada;
 import co.uniproject.eventos.datos.TareaCorreccion;
 import co.uniproject.eventos.datos.TareaReasignada;
 import co.uniproject.eventos.datos.TareaRutaCriticaRiesgo;
@@ -47,6 +49,8 @@ public final class DestinatariosEvento {
                 candidatos.add(new Destino(t.integranteAnterior(), Papel.ANTERIOR));
             }
             case TareaCorreccion t -> candidatos.add(new Destino(t.responsable(), Papel.UNICO));
+            case RecuperacionSolicitada r -> candidatos.add(new Destino(r.titular(), Papel.UNICO));
+            case ContrasenaCambiada c -> candidatos.add(new Destino(c.titular(), Papel.UNICO));
         }
         Set<Long> vistos = new HashSet<>();
         List<Destino> resultado = new ArrayList<>();

@@ -53,6 +53,16 @@ uniproject:
     usuario-bot: ${TELEGRAM_BOT_USERNAME:}
   vinculacion:
     vigencia: 15m
+  recuperacion:
+    vigencia: 15m
+    entregas-maximas: 3
+    intentos-maximos: 5
+    ventana: 1h
+    maximo-por-correo: 3
+    maximo-por-ip: 10
+    maximo-canjes-por-ip: 20
+    maximo-cambios-por-cuenta: 10
+    cron-limpieza: "0 30 * * * *"
   outbox:
     intervalo-ms: 2000
     tamano-lote: 50

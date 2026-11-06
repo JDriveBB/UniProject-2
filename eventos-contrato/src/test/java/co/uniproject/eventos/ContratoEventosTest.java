@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -138,5 +139,32 @@ class ContratoEventosTest {
         assertThatThrownBy(() -> CODEC.leer(("{\"type\":\"" + largo + "\"}").getBytes(StandardCharsets.UTF_8)))
                 .isInstanceOf(EventoInvalidoException.class)
                 .hasMessage(("type ausente o desconocido: " + largo).substring(0, 500) + "...");
+    }
+
+    @Test
+    void eventosDeCuentaNoAdmitenCamposExtra() {
+        for (DatosEvento datos : List.of(EjemplosEventos.recuperacionSolicitada(),
+                EjemplosEventos.contrasenaCambiada(OrigenCambioContrasena.RECUPERACION))) {
+            String json = CODEC.serializar(EventoCloud.nuevo(datos, RELOJ));
+            assertThat(json).doesNotContain("\"codigo\"");
+            JsonNode conCodigo = CODEC.mapeador().readTree(json);
+            ((ObjectNode) conCodigo.get("data")).put("codigo", "A".repeat(43));
+            byte[] cuerpoConCodigo = CODEC.mapeador().writeValueAsString(conCodigo).getBytes(StandardCharsets.UTF_8);
+            assertThatThrownBy(() -> CODEC.leer(cuerpoConCodigo)).isInstanceOf(EventoInvalidoException.class);
+            JsonNode conCorreo = CODEC.mapeador().readTree(json);
+            ((ObjectNode) conCorreo.get("data").get("titular")).put("email", "a@u.edu.co");
+            byte[] cuerpoConCorreo = CODEC.mapeador().writeValueAsString(conCorreo).getBytes(StandardCharsets.UTF_8);
+            assertThatThrownBy(() -> CODEC.leer(cuerpoConCorreo)).isInstanceOf(EventoInvalidoException.class);
+        }
+    }
+
+    @Test
+    void patronDelCodigoDeRecuperacion() {
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(43))).isTrue();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "aZ09_-".repeat(7) + "b")).isTrue();
+
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(42))).isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(44))).isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(42) + "+")).isFalse();
     }
 }

@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.comun.web;
 
 import co.uniproject.nucleo.comun.error.AccesoDenegadoException;
+import co.uniproject.nucleo.comun.error.DemasiadasSolicitudesException;
 import co.uniproject.nucleo.comun.error.RecursoNoEncontradoException;
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
@@ -58,6 +59,11 @@ public class ManejadorErrores {
     @ExceptionHandler(SolicitudInvalidaException.class)
     public ResponseEntity<RespuestaError> solicitudInvalida(SolicitudInvalidaException e) {
         return respuesta(HttpStatus.BAD_REQUEST, e.getCodigo(), e.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DemasiadasSolicitudesException.class)
+    public ResponseEntity<RespuestaError> demasiadasSolicitudes(DemasiadasSolicitudesException e) {
+        return respuesta(HttpStatus.TOO_MANY_REQUESTS, "DEMASIADAS_SOLICITUDES", e.getMessage(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

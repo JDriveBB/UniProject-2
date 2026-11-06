@@ -8,7 +8,9 @@ info:
     El agente de Telegram los recibe desde la quorum queue notificaciones.telegram (enlazada con la clave #),
     con confirmación manual, reintento diferido y cola de fallidos notificaciones.telegram.fallidos.
     Cada mensaje es un CloudEvent 1.0 en modo estructurado. Los JSON Schema (draft-07) del módulo
-    eventos-contrato son la fuente de verdad; este documento los referencia.
+    eventos-contrato son la fuente de verdad; este documento los referencia. Los dos eventos de cuenta
+    (bloque 28) no llevan secretos: el código de recuperación lo pide el agente al núcleo por el endpoint
+    interno justo antes de enviarlo.
   license:
     name: Uso académico - Diseño de Software I
 defaultContentType: application/cloudevents+json
@@ -61,6 +63,20 @@ channels:
         $ref: '#/components/messages/TareaCorreccion'
     bindings:
       $ref: '#/components/channelBindings/eventos'
+  cuentaRecuperacionSolicitada:
+    address: cuenta.recuperacion.solicitada
+    messages:
+      cuentaRecuperacionSolicitada:
+        $ref: '#/components/messages/CuentaRecuperacionSolicitada'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  cuentaContrasenaCambiada:
+    address: cuenta.contrasena.cambiada
+    messages:
+      cuentaContrasenaCambiada:
+        $ref: '#/components/messages/CuentaContrasenaCambiada'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
 operations:
   publicarTareaRutaCriticaRiesgo:
     action: send
@@ -102,6 +118,20 @@ operations:
     summary: El líder pide rehacer la entrega de una tarea (RF5).
     channel:
       $ref: '#/channels/tareaCorreccion'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarCuentaRecuperacionSolicitada:
+    action: send
+    summary: Alguien pide restablecer la contraseña de una cuenta con Telegram vinculado (bloque 28). Sin el código.
+    channel:
+      $ref: '#/channels/cuentaRecuperacionSolicitada'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarCuentaContrasenaCambiada:
+    action: send
+    summary: La contraseña se cambió desde el perfil o con un enlace de recuperación; aviso de seguridad al titular.
+    channel:
+      $ref: '#/channels/cuentaContrasenaCambiada'
     bindings:
       $ref: '#/components/operationBindings/publicacion'
 components:
@@ -171,3 +201,19 @@ components:
         schemaFormat: application/schema+json;version=draft-07
         schema:
           $ref: '../../eventos-contrato/src/main/resources/esquemas/tarea.correccion.schema.json'
+    CuentaRecuperacionSolicitada:
+      name: cuenta.recuperacion.solicitada
+      title: Recuperación de contraseña solicitada
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/cuenta.recuperacion.solicitada.schema.json'
+    CuentaContrasenaCambiada:
+      name: cuenta.contrasena.cambiada
+      title: Contraseña cambiada
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/cuenta.contrasena.cambiada.schema.json'

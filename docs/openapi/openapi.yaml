@@ -101,6 +101,50 @@ paths:
         '400': {$ref: '#/components/responses/Invalida'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '409': {$ref: '#/components/responses/Conflicto'}
+  /api/cuentas/recuperacion:
+    post:
+      tags: [sesion]
+      operationId: solicitarRecuperacion
+      summary: 'Olvidé mi contraseña: pide un enlace de un solo uso por Telegram'
+      description: |
+        Responde siempre 202 sin cuerpo, exista o no la cuenta, para no revelar qué correos tienen cuenta. Solo si
+        la cuenta existe, no está anonimizada y tiene Telegram vinculado, el bot envía al chat vinculado un enlace y
+        un código que vencen en 15 minutos y sirven una vez. Pedir otro anula el anterior. Límite por hora: 3 por
+        correo y 10 por dirección IP (429 DEMASIADAS_SOLICITUDES, también igual exista o no la cuenta).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudRecuperacion'}
+      responses:
+        '202':
+          description: 'Solicitud recibida (la misma respuesta exista o no la cuenta)'
+        '400': {$ref: '#/components/responses/Invalida'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes'}
+  /api/cuentas/recuperacion/restablecer:
+    post:
+      tags: [sesion]
+      operationId: restablecerContrasena
+      summary: 'Crea una contraseña nueva con el código recibido por Telegram'
+      description: |
+        Mismas reglas de contraseña que el registro (400 CONTRASENA_INVALIDA). Un código inexistente, vencido,
+        usado, anulado, reemplazado o mal escrito responde igual: 400 CODIGO_INVALIDO. Cinco intentos fallidos con
+        el mismo enlace lo anulan. Al restablecer se cierran todas las sesiones de la cuenta y el bot avisa al
+        titular. Límite: 20 intentos por dirección IP cada hora (429 DEMASIADAS_SOLICITUDES).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudRestablecer'}
+      responses:
+        '204':
+          description: 'Contraseña cambiada; se inicia sesión con la nueva'
+        '400': {$ref: '#/components/responses/Invalida'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes'}
   /api/admin/docentes:
     post:
       tags: [administracion]
@@ -609,6 +653,28 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/perfil/contrasena:
+    post:
+      tags: [perfil]
+      operationId: cambiarContrasena
+      summary: 'Cambia la contraseña con la actual y cierra las demás sesiones'
+      description: |
+        No necesita Telegram. 400 CONTRASENA_INCORRECTA si la actual no coincide, CONTRASENA_INVALIDA si la nueva
+        no cumple las reglas del registro y CONTRASENA_REPETIDA si es igual a la actual. Esta sesión sigue abierta
+        con un identificador nuevo; las demás reciben 401 en su siguiente petición. Si hay Telegram vinculado, el
+        bot avisa al titular. Límite: 10 intentos por cuenta cada hora (429 DEMASIADAS_SOLICITUDES).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCambioContrasena'}
+      responses:
+        '204':
+          description: 'Contraseña cambiada'
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes'}
   /api/tareas/mias:
     get:
       tags: [tareas]
@@ -1115,6 +1181,11 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/RespuestaError'}
+    DemasiadasSolicitudes:
+      description: 'DEMASIADAS_SOLICITUDES: se pasó el límite por correo, dirección IP o cuenta en la ventana de una hora'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/RespuestaError'}
   schemas:
     Id: {type: integer, format: int64}
     IdNulo: {type: [integer, 'null'], format: int64}
@@ -1155,6 +1226,23 @@ components:
         email: {type: string, format: email, maxLength: 254}
         contrasena: {type: string, minLength: 10, maxLength: 72}
         autorizaTratamientoDatos: {type: boolean, const: true, description: Autorización Ley 1581}
+    SolicitudRecuperacion:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, maxLength: 254}
+    SolicitudRestablecer:
+      type: object
+      required: [codigo, contrasenaNueva]
+      properties:
+        codigo: {type: string, maxLength: 100, description: 'Código del mensaje de Telegram (43 caracteres). Secreto: no se registra'}
+        contrasenaNueva: {type: string, minLength: 10, maxLength: 72}
+    SolicitudCambioContrasena:
+      type: object
+      required: [contrasenaActual, contrasenaNueva]
+      properties:
+        contrasenaActual: {type: string, maxLength: 200}
+        contrasenaNueva: {type: string, minLength: 10, maxLength: 72}
     UsuarioSesion:
       type: object
       properties:

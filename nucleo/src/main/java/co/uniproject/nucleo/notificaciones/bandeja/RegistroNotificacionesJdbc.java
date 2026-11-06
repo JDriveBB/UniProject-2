@@ -21,6 +21,9 @@ public class RegistroNotificacionesJdbc implements RegistroNotificaciones {
 
     @Override
     public int registrar(EventoCloud evento) {
+        if (!MensajesBandeja.vaALaBandeja(evento.data())) {
+            return 0;
+        }
         MensajesBandeja.ReferenciaBandeja referencia = MensajesBandeja.referencia(evento.data());
         OffsetDateTime fecha = OffsetDateTime.ofInstant(evento.time(), ZoneOffset.UTC);
         int filas = 0;

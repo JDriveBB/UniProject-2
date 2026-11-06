@@ -35,7 +35,7 @@ class RegistroEventosJdbcTest {
 
     @BeforeEach
     void setUp() {
-        ds = PostgresPrueba.baseLimpia("1");
+        ds = PostgresPrueba.baseLimpia("5");
         jdbc = JdbcClient.create(ds);
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         reloj = Clock.fixed(Instant.parse("2026-10-24T19:05:00Z"), ZoneId.of("America/Bogota"));

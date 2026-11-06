@@ -8,4 +8,7 @@ public final class RutasWeb {
     public static String tableroEquipo(long equipoId) { return "/equipos/" + equipoId + "/tablero"; }
     public static String evaluarHito(long hitoId) { return "/hitos/" + hitoId + "/evaluar"; }
     public static String evaluacionHito(long hitoId) { return "/hitos/" + hitoId + "/evaluacion"; }
+    public static String ingresar() { return "/ingresar"; }
+    /** Decisión 28-15: el código va en el fragmento (#), que el navegador no manda al servidor ni en Referer. */
+    public static String restablecerContrasena(String codigo) { return "/restablecer-contrasena#codigo=" + codigo; }
 }
