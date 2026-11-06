@@ -168,6 +168,14 @@
   --ancho-col-fecha-hora: 220px;
   --ancho-col-autor: 240px;
   --ancho-col-avance-historial: 150px;
+
+  /* Bloque 26e: evaluación del hito (P09) y resultado. Provisional, sin Figma. */
+  --ancho-campo-nota: 110px;
+  --alto-retroalimentacion: 56px;
+  --ancho-col-ice: 90px;
+  --ancho-col-nota: 120px;
+  --ancho-col-estado-nota: 200px;
+  --ancho-col-confirmar: 130px;
 }
 
 *,
@@ -2095,4 +2103,127 @@ a {
   color: var(--color-texto-secundario);
   white-space: nowrap;
 }
+
+/* ===== Bloque 26e: evaluación del hito (P09) y resultado de la evaluación. Provisional, sin Figma ===== */
+
+/* Criterios y campos de calificación */
+.criterios-evaluacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.criterio-evaluacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: var(--espacio-tarjeta);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+  min-width: 0;
+}
+
+.criterio-evaluacion__titulo {
+  margin: 0;
+  font-weight: var(--peso-seminegrita);
+  overflow-wrap: anywhere;
+}
+
+.criterio-evaluacion__meta {
+  margin: 0;
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+}
+
+.criterio-evaluacion__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--espacio-5);
+}
+
+.campo--nota {
+  flex: 0 0 var(--ancho-campo-nota);
+  min-width: 0;
+}
+
+.campo--retroalimentacion {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.campo--retroalimentacion .campo__entrada--area {
+  min-height: var(--alto-retroalimentacion);
+}
+
+/* Nota grupal y acciones */
+.nota-grupal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espacio-3);
+}
+
+.pie-evaluacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--separacion-botones);
+}
+
+/* Tabla de evaluación y notas individuales */
+.tabla--evaluacion {
+  table-layout: fixed;
+}
+
+.tabla--evaluacion td {
+  overflow-wrap: anywhere;
+}
+
+.tabla__col-ice {
+  width: var(--ancho-col-ice);
+}
+
+.tabla__col-nota {
+  width: var(--ancho-col-nota);
+}
+
+.tabla__col-estado-nota {
+  width: var(--ancho-col-estado-nota);
+}
+
+.tabla__col-confirmar {
+  width: var(--ancho-col-confirmar);
+}
+
+/* Textos y estados */
+.texto-largo {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.estado-nota {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-1);
+}
+
+/* Entregas de tareas */
+.entrega {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  padding: var(--relleno-evidencia);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
 

@@ -66,3 +66,11 @@ export function fechaDia(fecha: string): string {
   const m = FECHA_ISO.exec(fecha);
   return m === null ? '—' : `${m[3]}/${m[2]}/${m[1]}`;
 }
+
+/** Hoy en Bogotá, para comparar con fechas límite (el núcleo vence al empezar el día siguiente: FechasDominio.venceEn). */
+export function fechaIsoBogota(instante: Date): string {
+  const partes = FECHA_BOGOTA.formatToParts(instante);
+  const valor = (tipo: Intl.DateTimeFormatPartTypes) => partes.find((p) => p.type === tipo)?.value ?? '';
+  return `${valor('year')}-${valor('month')}-${valor('day')}`;
+}
+

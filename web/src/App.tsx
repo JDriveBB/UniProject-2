@@ -3,6 +3,8 @@ import { Marco } from './componentes/Marco';
 import { AdminDocentes } from './paginas/AdminDocentes';
 import { NuevoProyecto, ProyectoDeRuta } from './paginas/ConfigurarProyecto';
 import { DetalleTareaDeRuta } from './paginas/DetalleTarea';
+import { EvaluacionHitoDeRuta } from './paginas/EvaluacionHito';
+import { EvaluarHitoDeRuta } from './paginas/EvaluarHito';
 import { Ingreso } from './paginas/Ingreso';
 import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
@@ -47,7 +49,7 @@ export function App() {
           <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<RutaCriticaDeRuta />} />
           <Route path="/tareas/:idTarea" element={<DetalleTareaDeRuta />} />
           <Route path="/mis-tareas" element={<MisTareas />} />
-          <Route path="/hitos/:idHitoEquipo/evaluacion" element={<PaginaPendiente titulo="Evaluación del hito" bloque="26e" />} />
+          <Route path="/hitos/:idHitoEquipo/evaluacion" element={<EvaluacionHitoDeRuta />} />
           <Route path="/notificaciones" element={<PaginaPendiente titulo="Notificaciones" bloque="26f" />} />
           <Route path="/perfil" element={<PaginaPendiente titulo="Perfil" bloque="26f" />} />
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
@@ -55,7 +57,7 @@ export function App() {
             <Route path="/panel" element={<PaginaPendiente titulo="Panel del docente" bloque="26f" />} />
             <Route path="/reportes" element={<PaginaPendiente titulo="Reportes" bloque="26f" />} />
             <Route path="/proyectos/:idProyecto/panel" element={<PaginaPendiente titulo="Panel del docente" bloque="26f" />} />
-            <Route path="/hitos/:idHitoEquipo/evaluar" element={<PaginaPendiente titulo="Evaluar hito" bloque="26e" />} />
+            <Route path="/hitos/:idHitoEquipo/evaluar" element={<EvaluarHitoDeRuta />} />
           </Route>
           <Route element={<RutaProtegida roles={['ESTUDIANTE']} />}>
             <Route path="/tablero" element={<MiTablero />} />
