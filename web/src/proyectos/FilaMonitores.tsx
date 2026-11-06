@@ -4,13 +4,13 @@ import { habilitarCorreos, listarMonitores, quitarMonitor } from '../api/proyect
 import type { MonitorVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
-import { Campo } from '../componentes/Campo';
+import { CampoArea } from '../componentes/CampoArea';
 import { ConfirmarQuitar } from '../componentes/ConfirmarQuitar';
 import { Insignia } from '../componentes/Insignia';
-import { validarCorreo } from '../cuentas/validacion';
 import { agregarMonitor } from './equipos';
-import { mensajeErrorApi } from './errores';
+import { CAMPOS_CORREO, mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
+import { mensajeResultadoMonitores, separarCorreos, validarLoteCorreos } from './correos';
 import { preguntaQuitarMonitor, quitarMonitorDelProyecto } from './quitar';
 import type { ApiQuitar } from './quitar';
 
@@ -26,15 +26,18 @@ export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: n
   const base = useId();
   const [lista, setLista] = useState<EstadoMonitores>({ estado: 'cargando' });
   const [abierto, setAbierto] = useState(false);
-  const [email, setEmail] = useState('');
+  const [textoCorreos, setTextoCorreos] = useState('');
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [porQuitar, setPorQuitar] = useState<MonitorVista | null>(null);
   const volverA = useRef<string | null>(null);
-  const errorEmail = intentado ? (validarCorreo(email) ?? undefined) : undefined;
+  const focoEnAlerta = useRef(false);
   const idAgregar = base + '-agregar';
   const idTitulo = base + '-titulo';
+  const idArea = base + '-correos';
+  const idMensaje = base + '-mensaje';
+  const errorCorreos = intentado ? (validarLoteCorreos(textoCorreos) ?? undefined) : undefined;
   const idQuitar = (idUsuario: number) => `${base}-quitar-${idUsuario}`;
 
   const cargar = useCallback(async () => {
@@ -57,9 +60,17 @@ export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: n
     }
   }, [porQuitar, lista, idTitulo]);
 
+  /* Tras agregar, el foco va al aviso de resultado (bloque 31). */
+  useEffect(() => {
+    if (mensaje !== null && focoEnAlerta.current) {
+      document.getElementById(idMensaje)?.focus();
+      focoEnAlerta.current = false;
+    }
+  }, [mensaje, idMensaje]);
+
   function cerrar() {
     setAbierto(false);
-    setEmail('');
+    setTextoCorreos('');
     setIntentado(false);
   }
 
@@ -67,17 +78,34 @@ export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: n
     evento.preventDefault();
     setIntentado(true);
     setMensaje(null);
-    if (validarCorreo(email) !== null) {
+    const err = validarLoteCorreos(textoCorreos);
+    if (err !== null) {
+      document.getElementById(idArea)?.focus();
       return;
     }
     setEnviando(true);
-    const r = await agregarMonitor({ habilitarCorreos }, idProyecto, email);
-    setEnviando(false);
-    setMensaje(r);
-    if (r.tipo !== 'error') {
-      alHabilitarCorreo?.();
-      cerrar();
+    try {
+      const correos = separarCorreos(textoCorreos);
+      const r = await agregarMonitor({ habilitarCorreos }, idProyecto, correos);
+      if (r.conOtroRol.length === 0) {
+        setTextoCorreos('');
+        setIntentado(false);
+        setAbierto(false);
+      } else {
+        setTextoCorreos(r.conOtroRol.join('\n'));
+        setIntentado(false);
+      }
+      if (r.asignados.length > 0 || r.habilitados.length > 0) {
+        alHabilitarCorreo?.();
+      }
       await cargar();
+      setMensaje(mensajeResultadoMonitores(r));
+      focoEnAlerta.current = true;
+    } catch (e) {
+      setMensaje({ tipo: 'error', texto: mensajeErrorApi(e, CAMPOS_CORREO) });
+      focoEnAlerta.current = true;
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -143,15 +171,16 @@ export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: n
       )}
       {abierto && (
         <form className="formulario-en-linea" onSubmit={(ev) => void alAgregar(ev)} noValidate>
-          <Campo
+          <CampoArea
+            id={idArea}
             etiqueta="Correo del monitor"
-            type="email"
+            ayuda="Escribe o pega uno o varios correos, separados por espacio o salto de línea."
             placeholder="nombre@uninorte.edu.co"
             autoComplete="off"
-            maxLength={254}
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-            error={errorEmail}
+            value={textoCorreos}
+            onChange={(ev) => setTextoCorreos(ev.target.value)}
+            error={errorCorreos}
+            rows={3}
             required
           />
           <Boton type="submit" cargando={enviando}>
@@ -162,7 +191,11 @@ export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: n
           </Boton>
         </form>
       )}
-      {mensaje !== null && <Alerta tipo={mensaje.tipo}>{mensaje.texto}</Alerta>}
+      {mensaje !== null && (
+        <Alerta id={idMensaje} tabIndex={-1} tipo={mensaje.tipo}>
+          {mensaje.texto}
+        </Alerta>
+      )}
     </div>
   );
 }
