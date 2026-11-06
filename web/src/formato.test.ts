@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decimalEsCo, fechaCorta, fechaDia, fechaHora, rangoFechas } from './formato';
+import { decimalEsCo, fechaCorta, fechaDia, fechaHora, fechaIsoBogota, rangoFechas } from './formato';
 
 describe('fechaCorta', () => {
   it('usa la hora de Bogotá (UTC-5) y acepta microsegundos', () => {
@@ -40,3 +40,12 @@ describe('fechaHora', () => {
     expect(fechaHora('no-es-fecha')).toBe('—');
   });
 });
+
+describe('fechaIsoBogota', () => {
+  it('convierte un instante a la fecha ISO de calendario en Bogotá', () => {
+    expect(fechaIsoBogota(new Date('2026-09-23T04:59:00Z'))).toBe('2026-09-22');
+    expect(fechaIsoBogota(new Date('2026-09-23T05:00:00Z'))).toBe('2026-09-23');
+    expect(fechaIsoBogota(new Date('2026-12-31T23:00:00Z'))).toBe('2026-12-31');
+  });
+});
+

@@ -55,6 +55,7 @@ export function TableroDeRuta() {
  * P04 Tablero del equipo (Figma nodo 6:2) con P05 Nueva tarea como modal (nodo 6:200). Hito por ?hito= o el actual
  * (26c-2). Botones según la nota de Figma (26c-7): «Nueva tarea» solo el líder y «Ver ruta crítica» cualquier integrante (decisión 26c-1);
  * "Enviar a revisión" pide confirmación previa (26g): P08a si faltan prerrequisitos críticos, P08b si se envió (26d-11);
+ * "Evaluar hito" (docente del proyecto, hito en revisión) y "Ver evaluación" (hito evaluado) llevan a P09 o al resultado (26e-12);
  * docente y monitor, solo lectura. El servidor responde 403 de todas formas.
  */
 function TableroEquipo({ idRuta }: { idRuta: string }) {
@@ -156,6 +157,10 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   const verRuta = rol !== null;
   const puedeCrear = rol === 'LIDER' && editable;
   const puedeEnviar = rol !== null && editable;
+  const esDocente = ubicado.proyecto.idDocente === usuario.idUsuario;
+  const estadoActual = tablero !== null ? tablero.estado : hito.estado;
+  const puedeEvaluar = esDocente && estadoActual === 'ENVIADO';
+  const verEvaluacion = estadoActual === 'EVALUADO';
   const codigos = tablero === null ? new Map<number, string>() : codigosDeTareas(tablero.tareas);
 
   function reintentar() {
@@ -198,11 +203,19 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   return (
     <div className="pagina">
       <EncabezadoPagina titulo="Tablero del equipo" descripcion={descripcion}>
-        {(verRuta || puedeCrear || puedeEnviar) && (
+        {(verRuta || puedeCrear || puedeEnviar || puedeEvaluar || verEvaluacion) && (
           <div className="pagina__acciones">
             {verRuta && (
               <Link id={idRutaCritica} className="boton boton--secundario" to={rutas.rutaCritica(hito.idHitoEquipo)}>
                 Ver ruta crítica
+              </Link>
+            )}
+            {verEvaluacion && (
+              <Link
+                className="boton boton--secundario"
+                to={esDocente ? rutas.evaluarHito(hito.idHitoEquipo) : rutas.evaluacionHito(hito.idHitoEquipo)}
+              >
+                Ver evaluación
               </Link>
             )}
             {puedeCrear && (
@@ -223,6 +236,14 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
               >
                 Enviar a revisión
               </Boton>
+            )}
+            {puedeEvaluar && (
+              <Link
+                className="boton boton--primario"
+                to={rutas.evaluarHito(hito.idHitoEquipo)}
+              >
+                Evaluar hito
+              </Link>
             )}
           </div>
         )}

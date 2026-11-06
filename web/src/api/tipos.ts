@@ -386,3 +386,60 @@ export interface MiTareaVista {
   nombreHito: string;
   proyecto: string;
 }
+
+/* Tipos del Bloque 26e (evaluación del hito, notas individuales) */
+
+export type CaracterNota = 'PROVISIONAL' | 'DEFINITIVA';
+
+export interface CalificacionSolicitada {
+  idCriterio: number;
+  nota: number;
+  retroalimentacion: string | null;
+}
+
+export interface SolicitudEvaluacion {
+  criterios: CalificacionSolicitada[];
+  notaGrupal: number | null;
+  retroalimentacion: string | null;
+}
+
+export interface CambioNotaGrupal {
+  notaGrupal: number;
+}
+
+export interface ConfirmacionNota {
+  notaFinal: number;
+}
+
+export interface CriterioEvaluadoVista {
+  idCriterio: number;
+  descripcion: string;
+  pesoPorcentaje: number;
+  puntajeMaximo: number;
+  nota: number;
+  retroalimentacion: string | null;
+}
+
+export interface NotaIndividualVista {
+  idEstudiante: number;
+  nombre: string;
+  factorAjuste: number | null;
+  notaSugerida: number | null;
+  notaFinal: number | null;
+  fechaConfirmacion: string | null;
+}
+
+export interface EvaluacionVista {
+  idEvaluacion: number;
+  idHitoEquipo: number;
+  idEnvio: number;
+  fechaEnvio: string;
+  fechaEvaluacion: string;
+  notaGrupal: number;
+  notaCalculada: number | null;
+  retroalimentacion: string | null;
+  caracter: CaracterNota;
+  criterios: CriterioEvaluadoVista[];
+  notas: NotaIndividualVista[];
+}
+
