@@ -7,7 +7,7 @@ import type {
   SolicitudHito,
   SolicitudProyecto,
 } from '../api/tipos';
-import type { BorradorCriterio, BorradorHito, BorradorProyecto } from './borrador';
+import { sinAlerta, type BorradorCriterio, type BorradorHito, type BorradorProyecto } from './borrador';
 import { centesimas } from './validacion';
 
 /** Una llamada al API. claveHito/claveCriterio: para asignar los ids de lo creado y nombrar el paso que falló. */
@@ -32,16 +32,18 @@ export function solicitudProyecto(b: BorradorProyecto): SolicitudProyecto {
   };
 }
 
-/** PUT reemplaza todo el hito: se reenvían el orden y la descripción que P03 no edita. */
+/** PUT reemplaza todo el hito: se reenvían el orden y la descripción que P03 no edita. Días vacíos = null (sin alerta) y sin notificar (30f-1, 30f-3). */
 export function solicitudHito(h: BorradorHito): SolicitudHito {
+  const dias = h.diasInactividad.trim();
+  const sin = sinAlerta(dias);
   return {
     nombreHito: h.nombre.trim(),
     descripcion: h.descripcion,
     orden: h.orden,
     fechaInicio: h.fechaInicio,
     fechaLimite: h.fechaLimite,
-    diasInactividadAlerta: Number(h.diasInactividad.trim()),
-    notificarDocenteInactividad: h.notificarDocente,
+    diasInactividadAlerta: sin ? null : Number(dias),
+    notificarDocenteInactividad: sin ? false : h.notificarDocente,
   };
 }
 
@@ -58,9 +60,15 @@ function proyectoCambio(s: ProyectoVista, n: SolicitudProyecto): boolean {
     || s.fechaFin !== n.fechaFin || s.usaMonitores !== n.usaMonitores;
 }
 
+function notificacionEfectiva(dias: number | null, notificar: boolean | null): boolean {
+  return dias !== null && notificar === true;
+}
+
 function hitoCambio(s: HitoVista, n: SolicitudHito): boolean {
   return s.nombreHito !== n.nombreHito || s.fechaInicio !== n.fechaInicio || s.fechaLimite !== n.fechaLimite
-    || s.diasInactividadAlerta !== n.diasInactividadAlerta || s.notificarDocenteInactividad !== n.notificarDocenteInactividad;
+    || s.diasInactividadAlerta !== n.diasInactividadAlerta
+    || notificacionEfectiva(s.diasInactividadAlerta, s.notificarDocenteInactividad)
+      !== notificacionEfectiva(n.diasInactividadAlerta, n.notificarDocenteInactividad);
 }
 
 function enCentesimas(valor: number): number {

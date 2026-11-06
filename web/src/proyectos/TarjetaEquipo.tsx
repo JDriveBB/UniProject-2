@@ -28,11 +28,12 @@ const API_QUITAR: Pick<ApiQuitar, 'quitarMiembro'> = { quitarMiembro };
  * Una tarjeta de equipo de P03: integrantes, "Líder" o "Designar líder" y "Quitar" (Aclaración 2), y
  * "+ Agregar estudiante" (26b-7).
  */
-export function TarjetaEquipo({ idProyecto, equipo, editable, alActualizar }: {
+export function TarjetaEquipo({ idProyecto, equipo, editable, alActualizar, alHabilitarCorreo }: {
   idProyecto: number;
   equipo: EquipoVista;
   editable: boolean;
   alActualizar: (equipo: EquipoVista) => void;
+  alHabilitarCorreo?: () => void;
 }) {
   const base = useId();
   const [abierto, setAbierto] = useState(false);
@@ -74,10 +75,12 @@ export function TarjetaEquipo({ idProyecto, equipo, editable, alActualizar }: {
     const r = await agregarEstudiante(API_EQUIPOS, idProyecto, equipo.idEquipo, email);
     setOcupado(false);
     if (r.tipo === 'agregado') {
+      alHabilitarCorreo?.();
       alActualizar(r.equipo);
       cerrar();
       setMensaje({ tipo: 'exito', texto: 'Estudiante agregado al equipo.' });
     } else if (r.tipo === 'pendiente') {
+      alHabilitarCorreo?.();
       cerrar();
       setMensaje({ tipo: 'aviso', texto: r.mensaje });
     } else {

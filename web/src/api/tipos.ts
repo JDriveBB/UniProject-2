@@ -79,12 +79,13 @@ export interface HitoVista {
   orden: number;
   fechaInicio: string;
   fechaLimite: string;
-  diasInactividadAlerta: number;
+  /** null = el hito no tiene alerta de inactividad (bloque 30). */
+  diasInactividadAlerta: number | null;
   notificarDocenteInactividad: boolean;
   criterios: CriterioVista[];
 }
 
-/** POST /api/proyectos/{id}/hitos y PUT /api/hitos/{id} (reemplaza todo). diasInactividadAlerta: 1 a 60 (null = 3). */
+/** POST /api/proyectos/{id}/hitos y PUT /api/hitos/{id} (reemplaza todo). diasInactividadAlerta: 1 a 60 (null = sin alerta). */
 export interface SolicitudHito {
   nombreHito: string;
   descripcion: string | null;

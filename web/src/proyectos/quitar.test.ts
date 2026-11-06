@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ErrorApi } from '../api/cliente';
-import type { EquipoVista, MiembroVista } from '../api/tipos';
+import type { CorreoHabilitadoVista, EquipoVista, MiembroVista } from '../api/tipos';
 import {
   bloqueoParaQuitar,
   ES_LIDER_AHORA,
+  pendientesDe,
   preguntaQuitarIntegrante,
   preguntaQuitarMonitor,
+  preguntaRetirarCorreo,
   quitarIntegrante,
   quitarMonitorDelProyecto,
+  retirarHabilitacion,
   sePuedeQuitar,
   textoIntegranteQuitado,
   YA_NO_ES_MIEMBRO,
@@ -24,8 +27,7 @@ describe('quitar integrantes y monitores', () => {
       '¿Quitar a Luis del equipo? Sus tareas y su historial se conservan, y el líder puede reasignar sus tareas.',
     );
     expect(preguntaQuitarMonitor('Carlos Ruiz')).toBe(
-      '¿Quitar a Carlos Ruiz de los monitores del proyecto? Su historial se conserva, pero con ese correo no se '
-        + 'podrá volver a agregar desde aquí.',
+      '¿Quitar a Carlos Ruiz de los monitores del proyecto? Su historial se conserva y puedes volver a agregarlo con su correo.',
     );
     expect(textoIntegranteQuitado('Luis')).toBe('Luis salió del equipo. Sus tareas y su historial se conservan.');
   });
@@ -90,5 +92,70 @@ describe('quitar integrantes y monitores', () => {
     expect(bloqueoParaQuitar(miembros, 9)).toBe(ES_LIDER_AHORA);
     expect(bloqueoParaQuitar(miembros, 7)).toBe(YA_NO_ES_MIEMBRO);
     expect(ES_LIDER_AHORA).toBe('Esa persona es ahora el líder del equipo. Designa a otro líder antes de quitarla.');
+  });
+
+  it('retirar un correo pendiente', async () => {
+    const llamadas: string[] = [];
+    const falsa = {
+      async retirarCorreo(idProyecto: number, idCorreoHabilitado: number) {
+        llamadas.push(`${idProyecto}:${idCorreoHabilitado}`);
+      },
+    };
+    expect(await retirarHabilitacion(falsa, 1, { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' })).toEqual({
+      mensaje: { tipo: 'exito', texto: 'Se retiró la habilitación de ana@uninorte.edu.co.' },
+      recargar: true,
+    });
+    expect(llamadas).toEqual(['1:40']);
+
+    const falla = (error: ErrorApi) => ({
+      async retirarCorreo(): Promise<void> {
+        throw error;
+      },
+    });
+
+    const msg409 = 'Esa persona ya creó su cuenta. Quítala de su equipo o de los monitores del proyecto';
+    expect(
+      await retirarHabilitacion(
+        falla(new ErrorApi(409, 'HABILITACION_USADA', msg409)),
+        1,
+        { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' },
+      ),
+    ).toEqual({
+      mensaje: { tipo: 'error', texto: msg409 },
+      recargar: true,
+    });
+
+    expect(
+      await retirarHabilitacion(
+        falla(new ErrorApi(404, 'NO_ENCONTRADO', 'No encontrado')),
+        1,
+        { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' },
+      ),
+    ).toEqual({
+      mensaje: null,
+      recargar: true,
+    });
+
+    expect(
+      await retirarHabilitacion(
+        falla(new ErrorApi(403, 'ACCESO_DENEGADO', 'Acceso denegado')),
+        1,
+        { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' },
+      ),
+    ).toEqual({
+      mensaje: { tipo: 'error', texto: 'Solo el docente del proyecto puede cambiarlo' },
+      recargar: false,
+    });
+
+    const correos: CorreoHabilitadoVista[] = [
+      { idCorreoHabilitado: 1, email: 'a@u.edu.co', rol: 'ESTUDIANTE', idProyecto: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: false },
+      { idCorreoHabilitado: 2, email: 'b@u.edu.co', rol: 'ESTUDIANTE', idProyecto: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: true },
+      { idCorreoHabilitado: 3, email: 'c@u.edu.co', rol: 'MONITOR', idProyecto: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: false },
+    ];
+    expect(pendientesDe(correos)).toEqual([correos[0], correos[2]]);
+
+    expect(preguntaRetirarCorreo('ana@uninorte.edu.co')).toBe(
+      '¿Retirar la habilitación de ana@uninorte.edu.co? Esa persona ya no podrá crear su cuenta para este proyecto. Puedes volver a habilitarla cuando quieras.',
+    );
   });
 });

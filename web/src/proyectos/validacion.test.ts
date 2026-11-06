@@ -66,7 +66,7 @@ describe('validación del proyecto y sus hitos', () => {
 
   it('hito: fechas dentro del proyecto y alerta de 1 a 60 días', () => {
     expect(
-      validarHito({ ...hito, fechaInicio: '2026-07-31', fechaLimite: '2026-12-01', diasInactividad: '' }, proyecto),
+      validarHito({ ...hito, fechaInicio: '2026-07-31', fechaLimite: '2026-12-01', diasInactividad: '0' }, proyecto),
     ).toEqual({
       fechaInicio: 'Debe estar dentro de las fechas del proyecto',
       fechaLimite: 'Debe estar dentro de las fechas del proyecto',
@@ -81,6 +81,20 @@ describe('validación del proyecto y sus hitos', () => {
       'Escribe un número entero de 1 a 60',
     );
     expect(validarHito({ ...hito, diasInactividad: '60' }, proyecto)).toEqual({});
+  });
+
+  it('hito: días vacíos = sin alerta', () => {
+    expect(validarHito({ ...hito, diasInactividad: '' }, proyecto)).toEqual({});
+    expect(validarHito({ ...hito, diasInactividad: '   ' }, proyecto)).toEqual({});
+    expect(validarHito({ ...hito, diasInactividad: '0' }, proyecto).diasInactividad).toBe(
+      'Escribe un número entero de 1 a 60',
+    );
+    expect(validarHito({ ...hito, diasInactividad: '61' }, proyecto).diasInactividad).toBe(
+      'Escribe un número entero de 1 a 60',
+    );
+    expect(validarHito({ ...hito, diasInactividad: 'abc' }, proyecto).diasInactividad).toBe(
+      'Escribe un número entero de 1 a 60',
+    );
   });
 
   it('criterio: texto, peso y puntaje como numeric(5,2) del núcleo; nombre del equipo', () => {

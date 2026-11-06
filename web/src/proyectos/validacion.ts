@@ -1,5 +1,5 @@
 import { decimalEsCo } from '../formato';
-import type { BorradorCriterio, BorradorHito, BorradorProyecto } from './borrador';
+import { sinAlerta, type BorradorCriterio, type BorradorHito, type BorradorProyecto } from './borrador';
 
 /** Límites del contrato (SolicitudProyecto, SolicitudHito, SolicitudCriterio, SolicitudEquipo del núcleo). */
 export const MAXIMO_NOMBRE_PROYECTO = 150;
@@ -85,9 +85,11 @@ export function validarHito(h: BorradorHito, proyecto: Pick<BorradorProyecto, 'f
   } else if (conProyecto && (h.fechaLimite < proyecto.fechaInicio || h.fechaLimite > proyecto.fechaFin)) {
     e.fechaLimite = 'Debe estar dentro de las fechas del proyecto';
   }
-  const dias = h.diasInactividad.trim();
-  if (!ENTERO.test(dias) || Number(dias) < MINIMO_DIAS || Number(dias) > MAXIMO_DIAS) {
-    e.diasInactividad = 'Escribe un número entero de 1 a 60';
+  if (!sinAlerta(h.diasInactividad)) {
+    const dias = h.diasInactividad.trim();
+    if (!ENTERO.test(dias) || Number(dias) < MINIMO_DIAS || Number(dias) > MAXIMO_DIAS) {
+      e.diasInactividad = 'Escribe un número entero de 1 a 60';
+    }
   }
   return e;
 }
