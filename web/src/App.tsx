@@ -10,8 +10,10 @@ import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
 import { MisTareas } from './paginas/MisTareas';
 import { NoEncontrada } from './paginas/NoEncontrada';
+import { OlvideContrasena } from './paginas/OlvideContrasena';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { Registro } from './paginas/Registro';
+import { RestablecerContrasena } from './paginas/RestablecerContrasena';
 import { RutaCriticaDeRuta } from './paginas/RutaCritica';
 import { TableroDeRuta } from './paginas/Tablero';
 import { rutas } from './rutas';
@@ -39,6 +41,8 @@ export function App() {
     <Routes>
       <Route path="/ingresar" element={<Ingreso />} />
       <Route path="/registro" element={<Registro />} />
+      <Route path="/olvide-contrasena" element={<OlvideContrasena />} />
+      <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
       <Route element={<RutaProtegida />}>
         <Route element={<Marco />}>
           <Route path="/" element={<Inicio />} />

@@ -40,6 +40,17 @@ function errorDeCorreo(email: string): string | null {
   return null;
 }
 
+/** Única regla de contraseña del cliente: registro, restablecer (26a-bis) y perfil (26f). Igual a ServicioCuentas.exigirContrasenaValida. */
+export function errorDeContrasena(contrasena: string): string | null {
+  if (contrasena.length < MINIMO_CARACTERES_CONTRASENA) {
+    return 'La contraseña debe tener al menos 10 caracteres';
+  }
+  if (bytesUtf8(contrasena) > MAXIMO_BYTES_CONTRASENA) {
+    return 'La contraseña es demasiado larga (máximo 72 bytes; las tildes y los emojis ocupan más de uno)';
+  }
+  return null;
+}
+
 /** Validación en el cliente para avisar antes de enviar (decisión 26a-2); no reemplaza la del servidor. */
 export function validarRegistro(d: DatosRegistro): ErroresRegistro {
   const errores: ErroresRegistro = {};
@@ -53,10 +64,9 @@ export function validarRegistro(d: DatosRegistro): ErroresRegistro {
   if (correo !== null) {
     errores.email = correo;
   }
-  if (d.contrasena.length < MINIMO_CARACTERES_CONTRASENA) {
-    errores.contrasena = 'La contraseña debe tener al menos 10 caracteres';
-  } else if (bytesUtf8(d.contrasena) > MAXIMO_BYTES_CONTRASENA) {
-    errores.contrasena = 'La contraseña es demasiado larga (máximo 72 bytes; las tildes y los emojis ocupan más de uno)';
+  const errorContrasena = errorDeContrasena(d.contrasena);
+  if (errorContrasena !== null) {
+    errores.contrasena = errorContrasena;
   }
   if (d.confirmacion !== d.contrasena) {
     errores.confirmacion = 'Las contraseñas no coinciden';
@@ -67,7 +77,7 @@ export function validarRegistro(d: DatosRegistro): ErroresRegistro {
   return errores;
 }
 
-export function hayErrores(errores: ErroresRegistro): boolean {
+export function hayErrores(errores: object): boolean {
   return Object.keys(errores).length > 0;
 }
 

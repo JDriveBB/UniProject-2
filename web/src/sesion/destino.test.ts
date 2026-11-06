@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { destinoSeguro, vieneDeRegistro } from './destino';
+import { destinoSeguro, vieneDeRegistro, vieneDeRestablecer } from './destino';
 
 describe('destino tras ingresar', () => {
   it('acepta rutas internas con parámetros', () => {
@@ -35,5 +35,13 @@ describe('destino tras ingresar', () => {
     expect(vieneDeRegistro({ cuentaCreada: 'true' })).toBe(false);
     expect(vieneDeRegistro({ desde: '/' })).toBe(false);
     expect(vieneDeRegistro(null)).toBe(false);
+  });
+
+  it('reconoce el aviso de contraseña restablecida solo con true', () => {
+    expect(vieneDeRestablecer({ contrasenaRestablecida: true })).toBe(true);
+    expect(vieneDeRestablecer({ contrasenaRestablecida: 'true' })).toBe(false);
+    expect(vieneDeRestablecer({ cuentaCreada: true })).toBe(false);
+    expect(vieneDeRestablecer(null)).toBe(false);
+    expect(vieneDeRestablecer(undefined)).toBe(false);
   });
 });

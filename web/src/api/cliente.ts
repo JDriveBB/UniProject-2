@@ -142,7 +142,8 @@ export function crearCliente(opciones: OpcionesCliente = {}): ClienteApi {
     const conCuerpo = cuerpo !== undefined;
     const r = await enviar(metodo, ruta, conCuerpo ? JSON.stringify(cuerpo) : undefined,
       conCuerpo ? 'application/json' : undefined, true);
-    if (r.status === 204) {
+    // 202 sin cuerpo: POST /api/cuentas/recuperacion (bloque 28).
+    if (r.status === 204 || r.status === 202) {
       return undefined as T;
     }
     return (await r.json()) as T;

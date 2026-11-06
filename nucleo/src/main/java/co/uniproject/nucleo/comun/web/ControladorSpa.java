@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class ControladorSpa {
 
-    @GetMapping({"/ingresar", "/registro", "/mis-tareas", "/notificaciones", "/perfil", "/panel", "/reportes",
-            "/tablero", "/ruta-critica", "/proyectos/**", "/equipos/**", "/hitos/**", "/tareas/**", "/admin/**"})
+    @GetMapping({"/ingresar", "/registro", "/olvide-contrasena", "/restablecer-contrasena", "/mis-tareas",
+            "/notificaciones", "/perfil", "/panel", "/reportes", "/tablero", "/ruta-critica", "/proyectos/**",
+            "/equipos/**", "/hitos/**", "/tareas/**", "/admin/**"})
     public String spa() {
         return "forward:/index.html";
     }

@@ -443,3 +443,13 @@ export interface EvaluacionVista {
   notas: NotaIndividualVista[];
 }
 
+/** POST /api/cuentas/recuperacion: siempre 202 sin cuerpo (bloque 28). */
+export interface SolicitudRecuperacion {
+  email: string;
+}
+
+/** El código es secreto: no se guarda ni se registra. */
+export interface SolicitudRestablecer {
+  codigo: string;
+  contrasenaNueva: string;
+}

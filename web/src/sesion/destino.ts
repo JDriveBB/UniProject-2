@@ -22,3 +22,9 @@ export function vieneDeRegistro(estado: unknown): boolean {
   return typeof estado === 'object' && estado !== null && 'cuentaCreada' in estado
     && (estado as { cuentaCreada: unknown }).cuentaCreada === true;
 }
+
+/** true si RestablecerContrasena mandó a ingresar tras cambiar la contraseña (state.contrasenaRestablecida, 26a-bis). */
+export function vieneDeRestablecer(estado: unknown): boolean {
+  return typeof estado === 'object' && estado !== null && 'contrasenaRestablecida' in estado
+    && (estado as { contrasenaRestablecida: unknown }).contrasenaRestablecida === true;
+}
