@@ -175,7 +175,7 @@
   --ancho-col-ice: 90px;
   --ancho-col-nota: 120px;
   --ancho-col-estado-nota: 200px;
-  --ancho-col-confirmar: 130px;
+  --ancho-col-confirmar: 150px;
 }
 
 *,
@@ -2198,6 +2198,10 @@ a {
 
 .tabla__col-confirmar {
   width: var(--ancho-col-confirmar);
+}
+
+.tabla__col-confirmar .boton {
+  white-space: nowrap;
 }
 
 /* Textos y estados */

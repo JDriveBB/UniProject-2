@@ -23,6 +23,10 @@ export const REENVIADO_ESTUDIANTE =
 export const EXPLICACION_ICE =
   'Nota sugerida = nota grupal × (0,5 + 0,5 × ICE), con máximo 5. El ICE compara las horas de las tareas que cada estudiante completó (las entregadas tarde cuentan la mitad) con el promedio del equipo: 1 es un aporte igual al promedio. Tú decides la nota final.';
 
+export const TITULO_CONFIRMAR_TODAS = '¿Confirmar todas las notas?';
+export const BOTON_CONFIRMAR_TODAS = 'Confirmar todas';
+export const BOTON_CANCELAR = 'Cancelar';
+
 export const NOTA_AJUSTADA: Marca = { texto: 'Ajustada por el docente', tono: 'info' };
 
 export const CARACTER: Record<CaracterNota, Marca> = {
@@ -55,6 +59,13 @@ export function textoConfirmarRegistro(fechaLimite: string, hoy: string): string
     return 'La fecha límite del hito ya pasó: la nota quedará como definitiva y el equipo ya no podrá editar sus tareas. Los estudiantes recibirán el aviso.';
   }
   return `La nota quedará como provisional: el equipo puede seguir editando hasta el ${fechaDia(fechaLimite)}. Los estudiantes recibirán el aviso.`;
+}
+
+export function textoConfirmarTodas(n: number): string {
+  if (n === 1) {
+    return 'Se confirmará 1 nota con los valores que ves. Cada confirmación queda en el registro de auditoría. Después de confirmar, la nota grupal ya no se podrá cambiar.';
+  }
+  return `Se confirmarán ${n} notas con los valores que ves. Cada confirmación queda en el registro de auditoría. Después de confirmar, la nota grupal ya no se podrá cambiar.`;
 }
 
 export function textoRegistrada(ev: EvaluacionVista): string {
