@@ -23,12 +23,19 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class LimitadorRecuperacion {
 
     public enum Tipo {
-        CORREO("correo"), IP("ip"), CANJE("canje"), CAMBIO("cambio");
+        CORREO("correo", false),
+        IP("ip", false),
+        CANJE("canje", false),
+        CAMBIO("cambio", false),
+        LOGIN_CORREO("correo", true),
+        LOGIN_IP("ip", true);
 
         private final String prefijo;
+        private final boolean login;
 
-        Tipo(String prefijo) {
+        Tipo(String prefijo, boolean login) {
             this.prefijo = prefijo;
+            this.login = login;
         }
     }
 
@@ -52,7 +59,9 @@ public class LimitadorRecuperacion {
                                  @Value("${uniproject.recuperacion.maximo-por-correo}") int porCorreo,
                                  @Value("${uniproject.recuperacion.maximo-por-ip}") int porIp,
                                  @Value("${uniproject.recuperacion.maximo-canjes-por-ip}") int canjesPorIp,
-                                 @Value("${uniproject.recuperacion.maximo-cambios-por-cuenta}") int cambiosPorCuenta) {
+                                 @Value("${uniproject.recuperacion.maximo-cambios-por-cuenta}") int cambiosPorCuenta,
+                                 @Value("${uniproject.recuperacion.maximo-login-por-correo}") int loginPorCorreo,
+                                 @Value("${uniproject.recuperacion.maximo-login-por-ip}") int loginPorIp) {
         this.jdbc = jdbc;
         this.tx = new TransactionTemplate(gestor);
         this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -61,11 +70,13 @@ public class LimitadorRecuperacion {
         maximos.put(Tipo.IP, porIp);
         maximos.put(Tipo.CANJE, canjesPorIp);
         maximos.put(Tipo.CAMBIO, cambiosPorCuenta);
+        maximos.put(Tipo.LOGIN_CORREO, loginPorCorreo);
+        maximos.put(Tipo.LOGIN_IP, loginPorIp);
     }
 
     /** Cuenta el intento y lanza DemasiadasSolicitudesException (429) si la clave pasó su máximo en la ventana. */
     public void exigir(Tipo tipo, String valor) {
-        String clave = tipo.prefijo + ":" + huella(valor);
+        String clave = clave(tipo, valor);
         Integer cuenta = tx.execute(estado -> jdbc.sql(CONTAR)
                 .param("clave", clave)
                 .param("segundos", ventana.toSeconds())
@@ -74,6 +85,35 @@ public class LimitadorRecuperacion {
         if (cuenta == null || cuenta > maximos.get(tipo)) {
             throw new DemasiadasSolicitudesException();
         }
+    }
+
+    /** Resta 1 (sin bajar de 0) al contador de esa clave en su propia transacción. */
+    public void devolver(Tipo tipo, String valor) {
+        String clave = clave(tipo, valor);
+        tx.executeWithoutResult(estado -> {
+            int actualizados = jdbc.sql(
+                    "UPDATE limite_recuperacion SET cuenta = cuenta - 1 WHERE clave = :clave AND cuenta > 1")
+                    .param("clave", clave)
+                    .update();
+            if (actualizados == 0) {
+                jdbc.sql("DELETE FROM limite_recuperacion WHERE clave = :clave AND cuenta <= 1")
+                        .param("clave", clave)
+                        .update();
+            }
+        });
+    }
+
+    /** Borra el contador de esa clave. */
+    public void reiniciar(Tipo tipo, String valor) {
+        String clave = clave(tipo, valor);
+        tx.executeWithoutResult(estado -> jdbc.sql("DELETE FROM limite_recuperacion WHERE clave = :clave")
+                .param("clave", clave)
+                .update());
+    }
+
+    private String clave(Tipo tipo, String valor) {
+        String texto = tipo.login ? "login:" + valor : valor;
+        return tipo.prefijo + ":" + huella(texto);
     }
 
     static String huella(String valor) {
