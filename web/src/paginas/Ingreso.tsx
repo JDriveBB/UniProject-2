@@ -8,7 +8,7 @@ import { Campo } from '../componentes/Campo';
 import { MarcoAcceso } from '../componentes/MarcoAcceso';
 import { rutas } from '../rutas';
 import { useSesion } from '../sesion/ContextoSesion';
-import { destinoSeguro, vieneDeRegistro, vieneDeRestablecer } from '../sesion/destino';
+import { destinoSeguro, vieneDeRegistro, vieneDeRestablecer, vieneDeSupresion } from '../sesion/destino';
 
 /** P01a. Tras ingresar vuelve a la ruta protegida de origen (solo rutas internas) o a la vista del rol. */
 export function Ingreso() {
@@ -26,6 +26,7 @@ export function Ingreso() {
 
   const cuentaCreada = vieneDeRegistro(ubicacion.state);
   const contrasenaRestablecida = vieneDeRestablecer(ubicacion.state);
+  const cuentaEliminada = vieneDeSupresion(ubicacion.state);
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -49,6 +50,9 @@ export function Ingreso() {
         )}
         {contrasenaRestablecida && error === null && (
           <Alerta tipo="exito">Tu contraseña se cambió. Inicia sesión con la nueva.</Alerta>
+        )}
+        {cuentaEliminada && error === null && (
+          <Alerta tipo="exito">Tu cuenta se eliminó: tus datos personales se anonimizaron y se cerraron todas tus sesiones.</Alerta>
         )}
         {error !== null && <Alerta tipo="error">{error}</Alerta>}
         <Campo

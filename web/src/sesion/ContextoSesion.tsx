@@ -12,7 +12,7 @@ interface ValorSesion {
   sesion: EstadoSesion;
   ingresar(email: string, contrasena: string): Promise<UsuarioSesion>;
   salir(): Promise<void>;
-  refrescar(): Promise<void>;
+  refrescar(): Promise<UsuarioSesion>;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
@@ -62,6 +62,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const refrescar = useCallback(async () => {
     const usuario = await api.get<UsuarioSesion>('/api/sesion/yo');
     setSesion({ estado: 'autenticado', usuario });
+    return usuario;
   }, []);
 
   const valor = useMemo(() => ({ sesion, ingresar, salir, refrescar }), [sesion, ingresar, salir, refrescar]);

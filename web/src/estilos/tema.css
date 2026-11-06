@@ -183,6 +183,11 @@
   /* Bloque 26f-2: bandeja de notificaciones (P10). Provisional, sin Figma. */
   --relleno-notificacion: 14px 16px;
   --borde-no-leida: 3px;
+
+  /* Bloque 26f-3: perfil. Provisional, sin Figma. */
+  --ancho-columna-perfil: 640px;
+  --ancho-etiqueta-perfil: 190px;
+  --fuente-codigo: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }
 
 *,
@@ -2338,4 +2343,78 @@ a {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--separacion-botones);
+}
+
+/* ===== Bloque 26f-3: perfil (datos, Telegram, contraseña, eliminar cuenta). Provisional, sin Figma ===== */
+.perfil {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, var(--ancho-columna-perfil)));
+  gap: var(--espacio-5);
+  align-items: start;
+}
+
+.perfil__columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  min-width: 0;
+}
+
+.datos-perfil {
+  display: grid;
+  grid-template-columns: var(--ancho-etiqueta-perfil) minmax(0, 1fr);
+  gap: var(--espacio-2) var(--espacio-4);
+  margin: 0;
+}
+
+.datos-perfil dt {
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.datos-perfil dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pasos-telegram {
+  margin: 0;
+  padding-left: var(--espacio-5);
+}
+
+.pasos-telegram li + li {
+  margin-top: var(--espacio-3);
+}
+
+.paso-telegram {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-2);
+}
+
+.codigo-telegram {
+  font-family: var(--fuente-codigo);
+  padding: var(--relleno-evidencia);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.lista-puntos {
+  margin: 0;
+  padding-left: var(--espacio-5);
+}
+
+.lista-puntos li + li {
+  margin-top: var(--espacio-1);
+}
+
+/* 960px: las variables CSS no valen dentro de @media. */
+@media (max-width: 960px) {
+  .perfil {
+    grid-template-columns: 1fr;
+  }
 }
