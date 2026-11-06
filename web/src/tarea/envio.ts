@@ -19,6 +19,10 @@ export interface ApiEnvio {
 
 export const SOLO_INTEGRANTES = 'Solo los integrantes del equipo pueden enviar el hito.';
 
+export function mensajeConfirmacionEnvio(nombreHito: string): string {
+  return `${nombreHito} pasará a En Revisión, las tareas quedarán bloqueadas para edición y el docente será notificado.`;
+}
+
 export function pendientesDelEnvio(
   titulos: string[],
   tareas: TareaVista[],

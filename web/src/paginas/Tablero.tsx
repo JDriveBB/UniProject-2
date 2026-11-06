@@ -11,6 +11,7 @@ import type { Mensaje } from '../proyectos/errores';
 import { idDeRuta } from '../proyectos/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
+import { ConfirmarEnvio } from '../tablero/ConfirmarEnvio';
 import { DialogoEnvio, type ResultadoDialogo } from '../tablero/DialogoEnvio';
 import { LeyendaMarcas } from '../tablero/LeyendaMarcas';
 import { codigosDeTareas } from '../tablero/marcas';
@@ -53,7 +54,7 @@ export function TableroDeRuta() {
 /**
  * P04 Tablero del equipo (Figma nodo 6:2) con P05 Nueva tarea como modal (nodo 6:200). Hito por ?hito= o el actual
  * (26c-2). Botones según la nota de Figma (26c-7): «Nueva tarea» solo el líder y «Ver ruta crítica» cualquier integrante (decisión 26c-1);
- * "Enviar a revisión" envía sin confirmación: P08a si faltan prerrequisitos críticos, P08b si se envió (26d-11);
+ * "Enviar a revisión" pide confirmación previa (26g): P08a si faltan prerrequisitos críticos, P08b si se envió (26d-11);
  * docente y monitor, solo lectura. El servidor responde 403 de todas formas.
  */
 function TableroEquipo({ idRuta }: { idRuta: string }) {
@@ -68,6 +69,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   const [vuelta, setVuelta] = useState(0);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
   const [dialogo, setDialogo] = useState<{ resultado: ResultadoDialogo; etiqueta: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [foco, setFoco] = useState<string | null>(null);
@@ -163,28 +165,33 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
 
   function elegirHito() {
     setMensaje(null);
+    setConfirmando(false);
   }
 
   async function enviar(h: HitoDelEquipo, t: TableroHito) {
     setMensaje(null);
     setEnviando(true);
-    const res = await enviarConResultado(
-      { enviarHito },
-      h.idHitoEquipo,
-      t.tareas,
-      codigosDeTareas(t.tareas)
-    );
-    setEnviando(false);
-    if (res.tipo === 'error') {
-      setMensaje({ tipo: 'error', texto: res.texto });
-      setFoco(idMensaje);
-    } else {
-      setDialogo({ resultado: res, etiqueta: etiquetaHito(h.orden, h.nombreHito) });
-      if (res.tipo === 'enviado' && idEquipo !== null) {
-        navigate(rutas.tableroEnHito(idEquipo, h.idHitoEquipo), { replace: true });
-        void ubicar(idEquipo);
+    try {
+      const res = await enviarConResultado(
+        { enviarHito },
+        h.idHitoEquipo,
+        t.tareas,
+        codigosDeTareas(t.tareas)
+      );
+      setConfirmando(false);
+      if (res.tipo === 'error') {
+        setMensaje({ tipo: 'error', texto: res.texto });
+        setFoco(idMensaje);
+      } else {
+        setDialogo({ resultado: res, etiqueta: etiquetaHito(h.orden, h.nombreHito) });
+        if (res.tipo === 'enviado' && idEquipo !== null) {
+          navigate(rutas.tableroEnHito(idEquipo, h.idHitoEquipo), { replace: true });
+          void ubicar(idEquipo);
+        }
+        setVuelta((v) => v + 1);
       }
-      setVuelta((v) => v + 1);
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -212,12 +219,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
               <Boton
                 id={idEnviar}
                 disabled={enviando}
-                cargando={enviando}
-                onClick={() => {
-                  if (tablero !== null) {
-                    void enviar(hito, tablero);
-                  }
-                }}
+                onClick={() => setConfirmando(true)}
               >
                 Enviar a revisión
               </Boton>
@@ -264,6 +266,21 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
             setMensaje(m);
             setVuelta((v) => v + 1);
             setFoco(idMensaje);
+          }}
+        />
+      )}
+      {confirmando && tablero !== null && (
+        <ConfirmarEnvio
+          nombreHito={etiquetaHito(hito.orden, hito.nombreHito)}
+          enviando={enviando}
+          alCancelar={() => {
+            if (!enviando) {
+              setConfirmando(false);
+              setFoco(idEnviar);
+            }
+          }}
+          alConfirmar={() => {
+            void enviar(hito, tablero);
           }}
         />
       )}

@@ -5,6 +5,7 @@ import { codigosDeTareas } from '../tablero/marcas';
 import {
   SOLO_INTEGRANTES,
   enviarConResultado,
+  mensajeConfirmacionEnvio,
   pendientesDelEnvio,
   type ApiEnvio,
 } from './envio';
@@ -112,5 +113,11 @@ describe('envío del hito', () => {
     };
     const resError = await enviarConResultado(apiError, 10, [], new Map());
     expect(resError).toEqual({ tipo: 'error', texto: 'Ocurrió un error inesperado. Recarga la página' });
+  });
+
+  it('mensaje de confirmación de envío interpola el nombre del hito', () => {
+    expect(mensajeConfirmacionEnvio('Hito 1 · Análisis')).toBe(
+      'Hito 1 · Análisis pasará a En Revisión, las tareas quedarán bloqueadas para edición y el docente será notificado.'
+    );
   });
 });
