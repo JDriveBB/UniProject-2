@@ -655,7 +655,8 @@ paths:
         nombre, correo y contraseña por valores anónimos, borra el chat y los códigos de Telegram, la bandeja propia
         y las habilitaciones pendientes de su correo, y quita el nombre de los avisos y eventos que lo mostraban.
         Los registros académicos (tareas, avances, comentarios, evidencias, notas) se conservan ligados a la cuenta
-        anonimizada. Cierra esta sesión y las demás abiertas de la cuenta. Repetirla no cambia nada.
+        anonimizada. Cierra esta sesión y las demás abiertas de la cuenta. Repetirla no cambia nada. Límite: 10
+        intentos por cuenta cada hora (429 DEMASIADAS_SOLICITUDES, compartido con cambio de contraseña).
       requestBody:
         required: true
         content:
@@ -673,6 +674,7 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes'}
   /api/perfil/contrasena:
     post:
       tags: [perfil]

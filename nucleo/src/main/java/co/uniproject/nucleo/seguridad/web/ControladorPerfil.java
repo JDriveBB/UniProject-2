@@ -2,6 +2,7 @@ package co.uniproject.nucleo.seguridad.web;
 
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.DatosPersonales;
+import co.uniproject.nucleo.seguridad.cuentas.LimitadorRecuperacion;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioPerfil;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioSupresion;
 import co.uniproject.nucleo.seguridad.cuentas.UsuarioSesion;
@@ -31,10 +32,12 @@ public class ControladorPerfil {
 
     private final ServicioPerfil perfil;
     private final ServicioSupresion supresion;
+    private final LimitadorRecuperacion limitador;
 
-    public ControladorPerfil(ServicioPerfil perfil, ServicioSupresion supresion) {
+    public ControladorPerfil(ServicioPerfil perfil, ServicioSupresion supresion, LimitadorRecuperacion limitador) {
         this.perfil = perfil;
         this.supresion = supresion;
+        this.limitador = limitador;
     }
 
     @GetMapping("/datos")
@@ -53,6 +56,7 @@ public class ControladorPerfil {
     public ResponseEntity<Void> suprimir(@AuthenticationPrincipal UsuarioAutenticado usuario,
                                          @Valid @RequestBody SolicitudSupresion solicitud,
                                          HttpServletRequest peticion, HttpServletResponse respuesta) {
+        limitador.exigir(LimitadorRecuperacion.Tipo.CAMBIO, "usuario:" + usuario.idUsuario());
         supresion.suprimir(usuario.idUsuario(), solicitud.contrasena());
         HttpSession sesion = peticion.getSession(false);
         if (sesion != null) {

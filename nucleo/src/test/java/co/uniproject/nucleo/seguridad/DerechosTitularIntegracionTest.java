@@ -18,9 +18,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -44,6 +47,14 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
 
     @Autowired
     private ServicioSupresion supresion;
+
+    @Value("${uniproject.recuperacion.maximo-cambios-por-cuenta:10}")
+    private int maximoCambios;
+
+    @BeforeEach
+    void sinLimites() {
+        jdbc.sql("DELETE FROM limite_recuperacion").update();
+    }
 
     private record Escenario(long idProyecto, long idEquipo, long idHitoEquipo, long idDocente, String docente,
                              long idLider, String lider, long idEstudiante, String estudiante, String nombre,
@@ -94,6 +105,11 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
 
     private static HttpResponse<String> suprimir(Navegador n, String contrasena) {
         return n.post("/api/perfil/supresion", "{\"contrasena\":\"" + contrasena + "\"}");
+    }
+
+    private static HttpResponse<String> cambiar(Navegador n, String actual, String nueva) {
+        return n.post("/api/perfil/contrasena",
+                "{\"contrasenaActual\":\"" + actual + "\",\"contrasenaNueva\":\"" + nueva + "\"}");
     }
 
     private static String login(String email) {
@@ -467,5 +483,49 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
                 .isEqualTo(otro + "|Comentario de otro que debe quedar intacto");
         assertThat(texto("SELECT id_lider || '|' || observaciones FROM solicitud_correccion WHERE id_solicitud = :id", correccion))
                 .isEqualTo(titular + "|Observación de corrección del titular");
+    }
+
+    @Test
+    void limitaIntentosDeSupresionConContrasenaIncorrectaSinBorrarCuenta() {
+        Escenario e = escenario();
+        Navegador n = sesion(e.estudiante());
+        List<Integer> intentos = IntStream.range(0, maximoCambios)
+                .mapToObj(i -> suprimir(n, "ClaveIncorrecta").statusCode())
+                .toList();
+        assertThat(intentos).containsOnly(400);
+
+        HttpResponse<String> limitado = suprimir(n, CLAVE);
+        assertThat(limitado.statusCode()).isEqualTo(429);
+        assertThat(limitado.body()).contains("\"codigo\":\"DEMASIADAS_SOLICITUDES\"");
+
+        assertThat(texto("SELECT nombre FROM usuario WHERE id_usuario = :id", e.idEstudiante())).isEqualTo(e.nombre());
+        assertThat(texto("SELECT email FROM usuario WHERE id_usuario = :id", e.idEstudiante())).isEqualTo(e.estudiante());
+        assertThat(contar("SELECT count(*) FROM usuario WHERE fecha_anonimizacion IS NOT NULL AND id_usuario = :id",
+                e.idEstudiante())).isZero();
+        assertThat(contar("SELECT count(*) FROM log_auditoria WHERE accion = 'SUPRIMIR_CUENTA' "
+                + "AND id_registro_afectado = :id", e.idEstudiante())).isZero();
+    }
+
+    @Test
+    void intentosDeSupresionYCambioContrasenaCompartenCupo() {
+        Escenario e = escenario();
+        Navegador n = sesion(e.estudiante());
+        int mitad = maximoCambios / 2;
+        int resto = maximoCambios - mitad;
+
+        for (int i = 0; i < mitad; i++) {
+            assertThat(cambiar(n, "ClaveIncorrecta", "NuevaClave2026!").statusCode()).isEqualTo(400);
+        }
+        for (int i = 0; i < resto; i++) {
+            assertThat(suprimir(n, "ClaveIncorrecta").statusCode()).isEqualTo(400);
+        }
+
+        HttpResponse<String> supLimitado = suprimir(n, CLAVE);
+        assertThat(supLimitado.statusCode()).isEqualTo(429);
+        assertThat(supLimitado.body()).contains("\"codigo\":\"DEMASIADAS_SOLICITUDES\"");
+
+        HttpResponse<String> cambioLimitado = cambiar(n, CLAVE, "OtraClave2026!");
+        assertThat(cambioLimitado.statusCode()).isEqualTo(429);
+        assertThat(cambioLimitado.body()).contains("\"codigo\":\"DEMASIADAS_SOLICITUDES\"");
     }
 }
