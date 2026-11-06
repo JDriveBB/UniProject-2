@@ -1,4 +1,4 @@
-import type { RolPlataforma } from '../api/tipos';
+import type { EquipoVista, RolPlataforma } from '../api/tipos';
 import { rutas } from '../rutas';
 
 export interface EnlaceBarra {
@@ -12,6 +12,7 @@ const PANEL_PROYECTO = /^\/proyectos\/\d+\/panel\/?$/;
 const HISTORIAL = /^\/equipos\/\d+\/historial\/?$/;
 const TABLERO = /^\/equipos\/\d+\/tablero\/?$/;
 const RUTA_CRITICA = /^\/hitos\/\d+\/ruta-critica\/?$/;
+const TAREA = /^\/tareas\/\d+\/?$/;
 
 const ROLES: Record<RolPlataforma, string> = {
   ADMINISTRADOR: 'Administrador',
@@ -47,7 +48,7 @@ export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
   if (rol === 'ESTUDIANTE') {
     return [
       { texto: 'Tablero', a: rutas.tablero(), activo: ruta === rutas.tablero() || TABLERO.test(ruta) },
-      { texto: 'Mis tareas', a: rutas.misTareas(), activo: ruta === rutas.misTareas() },
+      { texto: 'Mis tareas', a: rutas.misTareas(), activo: ruta === rutas.misTareas() || TAREA.test(ruta) },
       {
         texto: 'Ruta crítica',
         a: rutas.rutaCriticaActual(),
@@ -61,9 +62,16 @@ export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
   return [{ texto: 'Docentes', a: rutas.adminDocentes(), activo: ruta.startsWith('/admin/') }];
 }
 
-/** Rol de plataforma bajo el nombre (26b-3). "Líder de equipo" es por equipo y no viene en la sesión. */
-export function etiquetaRol(rol: RolPlataforma): string {
+/** Rol bajo el nombre (26b-3). Un estudiante que lidera algún equipo ve "Líder de equipo" (decisión 26d-12). */
+export function etiquetaRol(rol: RolPlataforma, liderDeEquipo = false): string {
+  if (rol === 'ESTUDIANTE' && liderDeEquipo) {
+    return 'Líder de equipo';
+  }
   return ROLES[rol];
+}
+
+export function esLiderDeAlgunEquipo(equipos: Pick<EquipoVista, 'miembros'>[], idUsuario: number): boolean {
+  return equipos.some((e) => e.miembros.some((m) => m.idUsuario === idUsuario && m.rolEquipo === 'LIDER'));
 }
 
 /** Texto de la píldora: null sin no leídas; "99+" desde 100. */

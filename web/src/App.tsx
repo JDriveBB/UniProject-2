@@ -2,9 +2,11 @@ import { Navigate, Route, Routes } from 'react-router';
 import { Marco } from './componentes/Marco';
 import { AdminDocentes } from './paginas/AdminDocentes';
 import { NuevoProyecto, ProyectoDeRuta } from './paginas/ConfigurarProyecto';
+import { DetalleTareaDeRuta } from './paginas/DetalleTarea';
 import { Ingreso } from './paginas/Ingreso';
 import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
+import { MisTareas } from './paginas/MisTareas';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { Registro } from './paginas/Registro';
@@ -43,8 +45,8 @@ export function App() {
           <Route path="/equipos/:idEquipo/tablero" element={<TableroDeRuta />} />
           <Route path="/equipos/:idEquipo/historial" element={<PaginaPendiente titulo="Historial del equipo" bloque="26f" />} />
           <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<RutaCriticaDeRuta />} />
-          <Route path="/tareas/:idTarea" element={<PaginaPendiente titulo="Tarea" bloque="26d" />} />
-          <Route path="/mis-tareas" element={<PaginaPendiente titulo="Mis tareas" bloque="26d" />} />
+          <Route path="/tareas/:idTarea" element={<DetalleTareaDeRuta />} />
+          <Route path="/mis-tareas" element={<MisTareas />} />
           <Route path="/hitos/:idHitoEquipo/evaluacion" element={<PaginaPendiente titulo="Evaluación del hito" bloque="26e" />} />
           <Route path="/notificaciones" element={<PaginaPendiente titulo="Notificaciones" bloque="26f" />} />
           <Route path="/perfil" element={<PaginaPendiente titulo="Perfil" bloque="26f" />} />

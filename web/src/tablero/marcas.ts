@@ -13,10 +13,10 @@ const ESTADO_TAREA: Record<EstadoTarea, Marca> = {
   COMPLETADA: { texto: 'Completada', tono: 'exito' },
 };
 
-/** EN_CURSO = «En progreso» (Figma P04). ENVIADO y EVALUADO: sin Figma (decisión 26c-8, interpretación C3). */
+/** EN_CURSO = «En progreso» (Figma P04). ENVIADO = «En Revisión» morado (Figma P08b, 26d-11); EVALUADO sin Figma. */
 const ESTADO_HITO: Record<EstadoHitoEquipo, Marca> = {
   EN_CURSO: { texto: 'En progreso', tono: 'info' },
-  ENVIADO: { texto: 'Enviado a revisión', tono: 'aviso' },
+  ENVIADO: { texto: 'En Revisión', tono: 'critico' },
   EVALUADO: { texto: 'Evaluado', tono: 'exito' },
 };
 
