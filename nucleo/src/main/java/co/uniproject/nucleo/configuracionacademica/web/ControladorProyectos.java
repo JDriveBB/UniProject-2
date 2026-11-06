@@ -103,6 +103,14 @@ public class ControladorProyectos {
         return correos.listar(usuario, idProyecto);
     }
 
+    @DeleteMapping("/{idProyecto}/correos/{idCorreoHabilitado}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void retirarCorreo(@AuthenticationPrincipal UsuarioAutenticado usuario,
+                              @PathVariable("idProyecto") long idProyecto,
+                              @PathVariable("idCorreoHabilitado") long idCorreoHabilitado) {
+        correos.retirarCorreo(usuario, idProyecto, idCorreoHabilitado);
+    }
+
     @GetMapping("/{idProyecto}/monitores")
     public List<MonitorVista> listarMonitores(@AuthenticationPrincipal UsuarioAutenticado usuario,
                                               @PathVariable("idProyecto") long idProyecto) {

@@ -109,7 +109,7 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
         HttpResponse<String> h1 = docente.post("/api/proyectos/" + id + "/hitos",
                 hito("Diagramas", 1, "2026-08-03", "2026-09-15"));
         assertThat(h1.statusCode()).isEqualTo(201);
-        assertThat(h1.body()).contains("\"diasInactividadAlerta\":3").contains("\"notificarDocenteInactividad\":false");
+        assertThat(h1.body()).contains("\"diasInactividadAlerta\":null").contains("\"notificarDocenteInactividad\":false");
         crearEquipo(docente, id, "Equipo 2");
         assertThat(docente.post("/api/proyectos/" + id + "/hitos", hito("Prototipo", 2, "2026-09-16", "2026-10-30"))
                 .statusCode()).isEqualTo(201);
@@ -291,6 +291,155 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
         assertThat(mon.get("/api/proyectos/" + id).statusCode()).isEqualTo(403);
         assertThat(docente.post("/api/proyectos/" + id + "/correos", correos("DOCENTE", "x@u.edu.co")).body())
                 .contains("\"codigo\":\"ROL_INVALIDO\"");
+    }
+
+    @Test
+    void laAlertaDeInactividadEsOpcional() {
+        Navegador docente = docente();
+        long id = crearProyecto(docente, false);
+        HttpResponse<String> h1 = docente.post("/api/proyectos/" + id + "/hitos", "{\"nombreHito\":\"Con alerta\","
+                + "\"orden\":1,\"fechaInicio\":\"2026-08-03\",\"fechaLimite\":\"2026-09-15\","
+                + "\"diasInactividadAlerta\":4,\"notificarDocenteInactividad\":true}");
+        assertThat(h1.statusCode()).isEqualTo(201);
+        assertThat(h1.body()).contains("\"diasInactividadAlerta\":4");
+        long idHito = numero(h1.body(), "idHito");
+
+        HttpResponse<String> mod = docente.put("/api/hitos/" + idHito, "{\"nombreHito\":\"Con alerta\","
+                + "\"orden\":1,\"fechaInicio\":\"2026-08-03\",\"fechaLimite\":\"2026-09-15\","
+                + "\"diasInactividadAlerta\":null,\"notificarDocenteInactividad\":false}");
+        assertThat(mod.statusCode()).isEqualTo(200);
+        assertThat(mod.body()).contains("\"diasInactividadAlerta\":null");
+
+        assertThat(jdbc.sql("SELECT count(*) FROM hito WHERE id_hito = :id AND dias_inactividad_alerta IS NULL")
+                .param("id", idHito).query(Integer.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT coalesce(valor_anterior,'-') || '>' || coalesce(valor_nuevo,'-') "
+                        + "FROM log_auditoria WHERE entidad_afectada = 'hito' AND id_registro_afectado = :id "
+                        + "AND campo_modificado = 'dias_inactividad_alerta'")
+                .param("id", idHito).query(String.class).single()).isEqualTo("4>-");
+
+        HttpResponse<String> inv = docente.put("/api/hitos/" + idHito, "{\"nombreHito\":\"Con alerta\","
+                + "\"orden\":1,\"fechaInicio\":\"2026-08-03\",\"fechaLimite\":\"2026-09-15\","
+                + "\"diasInactividadAlerta\":0,\"notificarDocenteInactividad\":false}");
+        assertThat(inv.statusCode()).isEqualTo(400);
+        assertThat(inv.body()).contains("\"codigo\":\"VALIDACION\"");
+    }
+
+    @Test
+    void unMonitorQuitadoSePuedeVolverAPonerYOtroTambien() {
+        Navegador docente = docente();
+        long id = crearProyecto(docente, true);
+        String correoUno = correoUnico("mon");
+        String correoDos = correoUnico("mon");
+        long idUno = crearUsuario("Monitor Uno", correoUno, "MONITOR");
+        long idDos = crearUsuario("Monitor Dos", correoDos, "MONITOR");
+
+        HttpResponse<String> hUno = docente.post("/api/proyectos/" + id + "/correos",
+                correos("MONITOR", correoUno));
+        assertThat(hUno.statusCode()).isEqualTo(201);
+        assertThat(docente.delete("/api/proyectos/" + id + "/monitores/" + idUno).statusCode()).isEqualTo(204);
+
+        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado WHERE id_proyecto = :p AND email = :e")
+                .param("p", id).param("e", correoUno).query(Integer.class).single()).isEqualTo(0);
+        assertThat(docente.get("/api/proyectos/" + id + "/monitores").body()).doesNotContain("Monitor Uno");
+        Navegador sesionUno = sesion(correoUno);
+        assertThat(sesionUno.get("/api/proyectos/" + id).statusCode()).isEqualTo(403);
+
+        HttpResponse<String> hAmbos = docente.post("/api/proyectos/" + id + "/correos",
+                correos("MONITOR", correoUno, correoDos));
+        assertThat(hAmbos.statusCode()).isEqualTo(201);
+        assertThat(hAmbos.body()).contains("\"yaHabilitados\":[]");
+        assertThat(docente.get("/api/proyectos/" + id + "/monitores").body())
+                .contains("Monitor Uno").contains("Monitor Dos");
+        assertThat(sesionUno.get("/api/proyectos/" + id).statusCode()).isEqualTo(200);
+
+        long idDocente = jdbc.sql("SELECT id_docente FROM proyecto WHERE id_proyecto = :p")
+                .param("p", id).query(Long.class).single();
+        assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE entidad_afectada = 'correo_habilitado' "
+                        + "AND accion = 'ELIMINAR' AND id_usuario_accion = :doc")
+                .param("doc", idDocente).query(Integer.class).single()).isEqualTo(1);
+
+        assertThat(docente.delete("/api/proyectos/" + id + "/monitores/" + idDos).statusCode()).isEqualTo(204);
+        assertThat(docente.delete("/api/proyectos/" + id + "/monitores/" + idDos).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void seRetiraUnCorreoHabilitadoPendiente() {
+        Navegador docente = docente();
+        long id = crearProyecto(docente, true);
+        String correoEst = correoUnico("pend");
+        HttpResponse<String> rHab = docente.post("/api/proyectos/" + id + "/correos",
+                correos("ESTUDIANTE", correoEst));
+        assertThat(rHab.statusCode()).isEqualTo(201);
+        long idCorreo = numero(rHab.body(), "idCorreoHabilitado");
+
+        assertThat(docente.delete("/api/proyectos/" + id + "/correos/" + idCorreo).statusCode()).isEqualTo(204);
+        assertThat(docente.get("/api/proyectos/" + id + "/correos").body()).doesNotContain(correoEst);
+
+        Navegador n = new Navegador(puerto);
+        n.pedirCsrf();
+        HttpResponse<String> reg = n.post("/api/cuentas/registro", "{\"nombre\":\"Estudiante Pendiente\",\"email\":\""
+                + correoEst + "\",\"contrasena\":\"" + CLAVE + "\",\"autorizaTratamientoDatos\":true}");
+        assertThat(reg.statusCode()).isEqualTo(409);
+        assertThat(reg.body()).contains("\"codigo\":\"CORREO_NO_HABILITADO\"");
+
+        long idDocente = jdbc.sql("SELECT id_docente FROM proyecto WHERE id_proyecto = :p")
+                .param("p", id).query(Long.class).single();
+        assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE entidad_afectada = 'correo_habilitado' "
+                        + "AND id_registro_afectado = :id AND accion = 'ELIMINAR' AND id_usuario_accion = :doc "
+                        + "AND campo_modificado IS NULL AND valor_anterior IS NULL AND valor_nuevo IS NULL")
+                .param("id", idCorreo).param("doc", idDocente).query(Integer.class).single()).isEqualTo(1);
+
+        HttpResponse<String> rHab2 = docente.post("/api/proyectos/" + id + "/correos",
+                correos("ESTUDIANTE", correoEst));
+        assertThat(rHab2.statusCode()).isEqualTo(201);
+        assertThat(rHab2.body()).contains("\"yaHabilitados\":[]");
+        assertThat(docente.delete("/api/proyectos/" + id + "/correos/" + idCorreo).statusCode()).isEqualTo(404);
+
+        String correoMonPend = correoUnico("monpend");
+        HttpResponse<String> rMonPend = docente.post("/api/proyectos/" + id + "/correos",
+                correos("MONITOR", correoMonPend));
+        assertThat(rMonPend.statusCode()).isEqualTo(201);
+        long idMonPend = numero(rMonPend.body(), "idCorreoHabilitado");
+        assertThat(docente.delete("/api/proyectos/" + id + "/correos/" + idMonPend).statusCode()).isEqualTo(204);
+        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado WHERE id_correo_habilitado = :id")
+                .param("id", idMonPend).query(Integer.class).single()).isEqualTo(0);
+        assertThat(docente.get("/api/proyectos/" + id + "/monitores").body()).isEqualTo("[]");
+    }
+
+    @Test
+    void noSeRetiraUnCorreoYaRegistradoNiAjeno() {
+        Navegador docenteA = docente();
+        long idA = crearProyecto(docenteA, false);
+        String correoReg = correoUnico("reg");
+        HttpResponse<String> rHabA = docenteA.post("/api/proyectos/" + idA + "/correos",
+                correos("ESTUDIANTE", correoReg));
+        long idUsado = numero(rHabA.body(), "idCorreoHabilitado");
+        registrar(correoReg, "Estudiante Registrado");
+
+        HttpResponse<String> delUsado = docenteA.delete("/api/proyectos/" + idA + "/correos/" + idUsado);
+        assertThat(delUsado.statusCode()).isEqualTo(409);
+        assertThat(delUsado.body()).contains("\"codigo\":\"HABILITACION_USADA\"");
+        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado WHERE id_correo_habilitado = :id "
+                        + "AND fecha_uso IS NOT NULL")
+                .param("id", idUsado).query(Integer.class).single()).isEqualTo(1);
+
+        Navegador docenteB = docente();
+        long idBProyecto = crearProyecto(docenteB, false);
+        HttpResponse<String> rHabB = docenteB.post("/api/proyectos/" + idBProyecto + "/correos",
+                correos("ESTUDIANTE", correoUnico("pendb")));
+        long idB = numero(rHabB.body(), "idCorreoHabilitado");
+
+        assertThat(docenteB.delete("/api/proyectos/" + idA + "/correos/" + idUsado).statusCode()).isEqualTo(403);
+
+        assertThat(docenteA.delete("/api/proyectos/" + idA + "/correos/" + idB).statusCode()).isEqualTo(404);
+        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado WHERE id_correo_habilitado = :id")
+                .param("id", idB).query(Integer.class).single()).isEqualTo(1);
+
+        assertThat(docenteA.delete("/api/proyectos/" + idA + "/correos/999999999").statusCode()).isEqualTo(404);
+
+        assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE entidad_afectada = 'correo_habilitado' "
+                        + "AND accion = 'ELIMINAR' AND id_registro_afectado IN (:u, :b)")
+                .param("u", idUsado).param("b", idB).query(Integer.class).single()).isEqualTo(0);
     }
 
     @Test

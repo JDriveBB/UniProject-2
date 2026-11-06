@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * RF6 con datos reales (decisiones 20-5 y 20-6). Una consulta trae a cada candidato con su última actividad; aquí se
- * filtra por el periodo de su hito. RevisionInactividad decide si ya se le avisó.
+ * filtra por el periodo de su hito. RevisionInactividad decide si ya se le avisó. Los hitos sin alerta
+ * (dias_inactividad_alerta NULL, bloque 30) no se revisan; el panel del docente usa este mismo detector.
  */
 @Component
 public class DetectorInactividadDominio implements DetectorInactividad {
@@ -37,7 +38,7 @@ public class DetectorInactividadDominio implements DetectorInactividad {
             + "JOIN miembro_equipo m ON m.id_equipo = e.id_equipo JOIN usuario u ON u.id_usuario = m.id_usuario "
             + "JOIN miembro_equipo l ON l.id_equipo = e.id_equipo AND l.rol_equipo = 'LIDER' "
             + "JOIN usuario lu ON lu.id_usuario = l.id_usuario "
-            + "WHERE he.estado = 'EN_CURSO' AND h.fecha_inicio <= :hoy AND h.fecha_limite >= :hoy "
+            + "WHERE he.estado = 'EN_CURSO' AND h.dias_inactividad_alerta IS NOT NULL AND h.fecha_inicio <= :hoy AND h.fecha_limite >= :hoy "
             + "AND EXISTS (SELECT 1 FROM tarea t WHERE t.id_hito_equipo = he.id_hito_equipo "
             + "AND t.id_encargado = m.id_usuario AND t.estado <> 'COMPLETADA') "
             + "ORDER BY p.id_proyecto, m.id_usuario, h.fecha_limite, he.id_hito_equipo";

@@ -8,8 +8,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 /**
- * Crear o reemplazar un hito (RF1) con su alerta de inactividad (RF6). diasInactividadAlerta nulo = 3;
- * notificarDocenteInactividad nulo = false (la alerta siempre va al líder; el docente decide si también la recibe).
+ * Crear o reemplazar un hito (RF1) con su alerta de inactividad (RF6). diasInactividadAlerta nulo = sin alerta
+ * (bloque 30); con valor, de 1 a 60; notificarDocenteInactividad nulo = false (la alerta siempre va al líder; el
+ * docente decide si también la recibe; sin días no tiene efecto).
  */
 public record SolicitudHito(
         @NotBlank @Size(max = 150) String nombreHito,

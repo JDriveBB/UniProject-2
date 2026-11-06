@@ -51,7 +51,7 @@ class ProgramadorDominioTest {
 
     @BeforeEach
     void setUp() {
-        jdbc = JdbcClient.create(PostgresPrueba.baseLimpia("3"));
+        jdbc = JdbcClient.create(PostgresPrueba.baseLimpia("7"));
         Arrays.stream(SEMILLA).forEach(sql -> jdbc.sql(sql).update());
         evaluador = new EvaluadorRiesgoDominio(jdbc, RELOJ);
         detector = new DetectorInactividadDominio(jdbc);
@@ -130,6 +130,12 @@ class ProgramadorDominioTest {
     @Test
     void sinLiderNoHayAQuienAvisar() {
         sql("UPDATE miembro_equipo SET rol_equipo = 'INTEGRANTE' WHERE id_usuario = 2");
+        assertThat(detector.buscarInactivos(AHORA)).isEmpty();
+    }
+
+    @Test
+    void sinAlertaConfiguradaNoSeRevisa() {
+        sql("UPDATE hito SET dias_inactividad_alerta = NULL WHERE id_hito = 20");
         assertThat(detector.buscarInactivos(AHORA)).isEmpty();
     }
 
