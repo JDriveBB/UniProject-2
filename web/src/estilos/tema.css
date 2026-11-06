@@ -89,6 +89,34 @@
   --tamano-descripcion-marca: 16px;
   --tamano-subtitulo-acceso: 15px;
   --tamano-nota-acceso: 12px;
+  /* Marco y configuración de proyecto (bloque 26b, Figma P02/P03/P04) */
+  --relleno-barra: 14px 32px;
+  --tamano-contador: 11px;
+  --relleno-contador: 2px 7px;
+  --separacion-contador: 6px;
+  --tamano-rol-barra: 12px;
+  --foco-sobre-marca: 0 0 0 2px #ffffff;
+  --ancho-maximo-contenido: 1440px;
+  --relleno-contenido: 28px 32px;
+  --tamano-titulo-encabezado: 26px;
+  --separacion-botones: 10px;
+  --ancho-columna-izquierda: 560px;
+  --ancho-columna-derecha: 796px;
+  --espacio-tarjeta: 14px;
+  --tamano-titulo-tarjeta: 16px;
+  --tamano-subtitulo-tarjeta: 15px;
+  --tamano-etiqueta-marco: 13px;
+  --relleno-campo-marco: 10px 12px;
+  --alto-descripcion: 80px;
+  --ancho-campo-nombre-hito: 368px;
+  --ancho-campo-fecha-hito: 174px;
+  --ancho-campo-dias: 80px;
+  --relleno-fila-hito: 12px 14px;
+  --ancho-col-peso: 130px;
+  --ancho-col-puntaje: 150px;
+  --ancho-col-acciones: 90px;
+  --espacio-equipo: 10px;
+  --ancho-tarjeta-proyecto: 320px;
 }
 
 *,
@@ -124,56 +152,12 @@ a {
   flex-direction: column;
 }
 
-.marco__barra {
-  display: flex;
-  align-items: center;
-  gap: var(--espacio-4);
-  padding: var(--espacio-3) var(--espacio-6);
-  background: var(--color-superficie);
-  border-bottom: 1px solid var(--color-borde);
-}
-
-.marco__marca {
-  font-weight: var(--peso-negrita);
-  font-size: var(--tamano-titulo);
-  color: var(--color-primario);
-}
-
-.marco__nav {
-  display: flex;
-  gap: var(--espacio-2);
-  flex: 1;
-  flex-wrap: wrap;
-}
-
-.marco__enlace {
-  padding: var(--espacio-2) var(--espacio-3);
-  border-radius: var(--radio);
-  color: var(--color-texto);
-  text-decoration: none;
-}
-
-.marco__enlace:hover {
-  background: var(--color-fondo);
-}
-
-.marco__enlace--activo {
-  background: var(--color-info-fondo);
-  color: var(--color-primario);
-  font-weight: var(--peso-seminegrita);
-}
-
-.marco__usuario {
-  color: var(--color-texto-secundario);
-  font-size: var(--tamano-pequeno);
-}
-
 .marco__contenido {
   flex: 1;
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--ancho-maximo-contenido);
   margin: 0 auto;
-  padding: var(--espacio-6);
+  padding: var(--relleno-contenido);
 }
 
 .pagina-centrada {
@@ -189,11 +173,13 @@ a {
 }
 
 .tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-tarjeta);
   background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
+  border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tarjeta);
-  box-shadow: var(--sombra);
-  padding: var(--espacio-6);
+  padding: var(--espacio-5);
 }
 
 .tarjeta__cabecera {
@@ -201,12 +187,12 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: var(--espacio-4);
-  margin-bottom: var(--espacio-4);
 }
 
 .tarjeta__titulo {
   margin: 0;
-  font-size: var(--tamano-titulo);
+  font-size: var(--tamano-titulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
 }
 
 .formulario {
@@ -246,12 +232,14 @@ a {
 }
 
 .boton {
+  display: inline-block;
   font: inherit;
   font-size: var(--tamano-boton);
   font-weight: var(--peso-seminegrita);
   padding: var(--relleno-boton);
   border-radius: var(--radio);
   border: 1px solid transparent;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -271,7 +259,7 @@ a {
 
 .boton--secundario {
   background: var(--color-superficie);
-  color: var(--color-primario);
+  color: var(--color-texto);
   border-color: var(--color-borde-tabla);
 }
 
@@ -622,7 +610,7 @@ a {
 .pagina {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-6);
+  gap: var(--espacio-5);
 }
 
 .pagina__cabecera {
@@ -635,7 +623,7 @@ a {
 
 .pagina__titulo {
   margin: 0;
-  font-size: var(--tamano-titulo-pagina);
+  font-size: var(--tamano-titulo-encabezado);
   font-weight: var(--peso-negrita);
   line-height: 1.2;
 }
@@ -672,4 +660,455 @@ a {
 
 .formulario-en-linea > .campo {
   flex: 1 1 var(--ancho-campo-en-linea);
+}
+
+/* ===== Bloque 26b: barra superior (P02/P03/P04), proyectos y configuración (P03) ===== */
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+  padding: var(--relleno-barra);
+  background: var(--color-marca-fondo);
+  color: var(--color-texto-sobre-marca);
+}
+
+.barra :focus-visible {
+  box-shadow: var(--foco-sobre-marca);
+}
+
+.barra__izquierda,
+.barra__derecha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.barra__izquierda {
+  gap: var(--espacio-10);
+}
+
+.barra__derecha {
+  gap: var(--espacio-6);
+}
+
+.barra__marca {
+  font-size: var(--tamano-titulo);
+  font-weight: var(--peso-negrita);
+  color: var(--color-texto-sobre-marca);
+  text-decoration: none;
+}
+
+.barra__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-6);
+}
+
+.barra__enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--separacion-contador);
+  font-size: var(--tamano-base);
+  font-weight: var(--peso-regular);
+  color: var(--color-texto-sobre-marca-secundario);
+  text-decoration: none;
+}
+
+.barra__enlace:hover {
+  color: var(--color-texto-sobre-marca);
+}
+
+.barra__enlace--activo {
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-texto-sobre-marca);
+}
+
+.barra__contador {
+  padding: var(--relleno-contador);
+  border-radius: var(--radio-insignia);
+  background: var(--color-contador-fondo);
+  color: var(--color-texto-sobre-contador);
+  font-size: var(--tamano-contador);
+  font-weight: var(--peso-negrita);
+  line-height: 1.2;
+}
+
+.barra__usuario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-decoration: none;
+  line-height: 1.3;
+}
+
+.barra__nombre {
+  font-size: var(--tamano-base);
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-texto-sobre-marca);
+}
+
+.barra__rol {
+  font-size: var(--tamano-rol-barra);
+  color: var(--color-texto-sobre-marca-secundario);
+}
+
+.barra__salir {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--tamano-base);
+  color: var(--color-texto-sobre-marca-secundario);
+  cursor: pointer;
+}
+
+.barra__salir:hover {
+  color: var(--color-texto-sobre-marca);
+  text-decoration: underline;
+}
+
+/* Encabezado de página: botones a la derecha separados 10 px (P03). */
+.pagina__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--separacion-botones);
+}
+
+.pagina__vacio {
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+/* Las tarjetas separan sus hijos con gap; los párrafos no suman margen. */
+.tarjeta p {
+  margin: 0;
+}
+
+.tarjeta__subtitulo {
+  margin: 0;
+  font-size: var(--tamano-subtitulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+}
+
+/* P03: dos columnas de 560 y 796 px. */
+.configuracion {
+  display: grid;
+  grid-template-columns: minmax(0, var(--ancho-columna-izquierda)) minmax(0, var(--ancho-columna-derecha));
+  gap: var(--espacio-5);
+  align-items: start;
+}
+
+.configuracion__columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  min-width: 0;
+}
+
+/* Campos dentro del marco (P03); el ingreso y el registro (P01) quedan como estaban. */
+.marco__contenido .campo__etiqueta {
+  font-size: var(--tamano-etiqueta-marco);
+}
+
+.marco__contenido .campo__entrada {
+  padding: var(--relleno-campo-marco);
+  border-color: var(--color-borde-tabla);
+}
+
+.marco__contenido .campo__entrada[aria-invalid='true'] {
+  border-color: var(--color-peligro);
+}
+
+.marco__contenido .casilla__etiqueta {
+  font-size: var(--tamano-base);
+}
+
+.campo__entrada[readonly] {
+  background: var(--color-fondo);
+}
+
+.campo__entrada--area {
+  min-height: var(--alto-descripcion);
+  resize: vertical;
+}
+
+.casilla__entrada:disabled + .casilla__marca {
+  opacity: 0.6;
+}
+
+.fila-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-5);
+}
+
+.fila-campos--hito {
+  grid-template-columns:
+    minmax(0, var(--ancho-campo-nombre-hito))
+    minmax(0, var(--ancho-campo-fecha-hito))
+    minmax(0, var(--ancho-campo-fecha-hito));
+}
+
+.fila-campos > .campo {
+  min-width: 0;
+}
+
+.fila-campos .campo__entrada {
+  width: 100%;
+  min-width: 0;
+}
+
+.campo-con-texto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3);
+}
+
+.campo__entrada--dias {
+  width: var(--ancho-campo-dias);
+}
+
+.texto-ayuda {
+  color: var(--color-texto-secundario);
+}
+
+/* Lista de hitos (P03 izquierda 2). */
+.lista-hitos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-tarjeta);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fila-hito {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--relleno-fila-hito);
+  border: 1px solid transparent;
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fila-hito--seleccionada {
+  background: var(--color-info-fondo);
+  border-color: var(--color-primario);
+}
+
+.fila-hito--error {
+  border-color: var(--color-peligro);
+}
+
+.fila-hito__nombre {
+  font-weight: var(--peso-seminegrita);
+}
+
+.fila-hito--seleccionada .fila-hito__nombre {
+  color: var(--color-primario);
+}
+
+.fila-hito__fechas {
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+
+/* Rúbrica (P03 derecha 1): columnas de 130 y 150 px; el criterio toma el resto. */
+.tabla--rubrica {
+  table-layout: fixed;
+}
+
+.tabla__col-peso {
+  width: var(--ancho-col-peso);
+}
+
+.tabla__col-puntaje {
+  width: var(--ancho-col-puntaje);
+}
+
+.tabla__col-acciones {
+  width: var(--ancho-col-acciones);
+}
+
+.tabla__entrada {
+  width: 100%;
+  font: inherit;
+  padding: var(--relleno-campo-marco);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+}
+
+.tabla__entrada[aria-invalid='true'] {
+  border-color: var(--color-peligro);
+}
+
+.tabla td .campo__error {
+  margin-top: var(--espacio-1);
+}
+
+.pie-rubrica {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.pie-rubrica > .insignia {
+  margin-left: auto;
+}
+
+/* Acción con forma de enlace ("Designar líder", "Quitar"): 13 px medium azul (P03). */
+.boton-texto {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-primario);
+  cursor: pointer;
+}
+
+.boton-texto:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.boton-texto:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Equipos y monitores (P03 derecha 2). */
+.rejilla-equipos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-5);
+}
+
+.equipo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-equipo);
+  padding: var(--espacio-4);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-fondo);
+}
+
+.equipo__titulo {
+  margin: 0;
+  font-size: var(--tamano-titulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+}
+
+.equipo__miembros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-equipo);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.equipo__miembro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+}
+
+.monitores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.monitores__titulo {
+  font-weight: var(--peso-medio);
+}
+
+/* Lista de proyectos (sin Figma, provisional). */
+.rejilla-proyectos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--ancho-tarjeta-proyecto), 1fr));
+  gap: var(--espacio-5);
+}
+
+.tarjeta-proyecto__descripcion {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* 960px: las variables CSS no valen dentro de @media. */
+@media (max-width: 960px) {
+  .configuracion,
+  .rejilla-equipos,
+  .fila-campos,
+  .fila-campos--hito {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Aclaración 2 del 26b: quitar integrantes y monitores (sin Figma, provisional). */
+.boton-texto--peligro {
+  color: var(--color-peligro);
+}
+
+.equipo__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+}
+
+.confirmacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2) var(--espacio-4);
+  padding: var(--espacio-3);
+  border: 1px solid var(--color-peligro);
+  border-radius: var(--radio);
+  background: var(--color-peligro-fondo);
+}
+
+.confirmacion__texto {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto);
+}
+
+.insignia__quitar {
+  margin-left: var(--espacio-1);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.insignia__quitar:hover:not(:disabled) {
+  color: var(--color-peligro);
 }
