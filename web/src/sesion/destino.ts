@@ -28,3 +28,9 @@ export function vieneDeRestablecer(estado: unknown): boolean {
   return typeof estado === 'object' && estado !== null && 'contrasenaRestablecida' in estado
     && (estado as { contrasenaRestablecida: unknown }).contrasenaRestablecida === true;
 }
+
+/** true si Perfil mandó a ingresar tras suprimir la cuenta (state.cuentaEliminada, 26f-3). */
+export function vieneDeSupresion(estado: unknown): boolean {
+  return typeof estado === 'object' && estado !== null && 'cuentaEliminada' in estado
+    && (estado as { cuentaEliminada: unknown }).cuentaEliminada === true;
+}

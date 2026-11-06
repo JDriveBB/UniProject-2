@@ -14,6 +14,7 @@ import { Notificaciones } from './paginas/Notificaciones';
 import { OlvideContrasena } from './paginas/OlvideContrasena';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { ElegirPanel, PanelProyectoDeRuta } from './paginas/PanelDocente';
+import { Perfil } from './paginas/Perfil';
 import { Registro } from './paginas/Registro';
 import { RestablecerContrasena } from './paginas/RestablecerContrasena';
 import { RutaCriticaDeRuta } from './paginas/RutaCritica';
@@ -57,7 +58,7 @@ export function App() {
           <Route path="/mis-tareas" element={<MisTareas />} />
           <Route path="/hitos/:idHitoEquipo/evaluacion" element={<EvaluacionHitoDeRuta />} />
           <Route path="/notificaciones" element={<Notificaciones />} />
-          <Route path="/perfil" element={<PaginaPendiente titulo="Perfil" bloque="26f" />} />
+          <Route path="/perfil" element={<Perfil />} />
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
             <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />
             <Route path="/panel" element={<ElegirPanel />} />

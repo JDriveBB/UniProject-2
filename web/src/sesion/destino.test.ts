@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { destinoSeguro, vieneDeRegistro, vieneDeRestablecer } from './destino';
+import { destinoSeguro, vieneDeRegistro, vieneDeRestablecer, vieneDeSupresion } from './destino';
 
 describe('destino tras ingresar', () => {
   it('acepta rutas internas con parámetros', () => {
@@ -43,5 +43,13 @@ describe('destino tras ingresar', () => {
     expect(vieneDeRestablecer({ cuentaCreada: true })).toBe(false);
     expect(vieneDeRestablecer(null)).toBe(false);
     expect(vieneDeRestablecer(undefined)).toBe(false);
+  });
+
+  it('reconoce el aviso de cuenta eliminada solo con true', () => {
+    expect(vieneDeSupresion({ cuentaEliminada: true })).toBe(true);
+    expect(vieneDeSupresion({ cuentaEliminada: 'true' })).toBe(false);
+    expect(vieneDeSupresion(null)).toBe(false);
+    expect(vieneDeSupresion(undefined)).toBe(false);
+    expect(vieneDeSupresion({ cuentaCreada: true })).toBe(false);
   });
 });

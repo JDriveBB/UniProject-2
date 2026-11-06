@@ -487,3 +487,34 @@ export interface PanelProyecto {
   generadoEn: string;
   equipos: PanelEquipo[];
 }
+
+/* Tipos del Bloque 26f-3 (perfil: datos, Telegram, contraseña, supresión) */
+export interface DatosPersonales {
+  idUsuario: number;
+  nombre: string;
+  email: string;
+  rol: RolPlataforma;
+  telegramVinculado: boolean;
+  autorizaTratamientoDatos: boolean;
+  fechaAutorizacion: string | null;
+  fechaRegistro: string;
+}
+
+export interface SolicitudNombre {
+  nombre: string;
+}
+
+export interface SolicitudCambioContrasena {
+  contrasenaActual: string;
+  contrasenaNueva: string;
+}
+
+export interface SolicitudSupresion {
+  contrasena: string;
+}
+
+export interface CodigoGenerado {
+  codigo: string;
+  venceEn: string;
+  enlace: string;
+}
