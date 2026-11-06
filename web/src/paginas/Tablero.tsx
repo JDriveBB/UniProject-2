@@ -52,7 +52,7 @@ export function TableroDeRuta() {
 
 /**
  * P04 Tablero del equipo (Figma nodo 6:2) con P05 Nueva tarea como modal (nodo 6:200). Hito por ?hito= o el actual
- * (26c-2). Botones según la nota de Figma (26c-7): «Ver ruta crítica» y «Nueva tarea» solo el líder; «Enviar a
+ * (26c-2). Botones según la nota de Figma (26c-7): «Nueva tarea» solo el líder y «Ver ruta crítica» cualquier integrante (decisión 26c-1); «Enviar a
  * revisión» cualquier integrante; docente y monitor, solo lectura. El servidor responde 403 de todas formas.
  */
 function TableroEquipo({ idRuta }: { idRuta: string }) {
@@ -148,7 +148,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   const actual = contenido !== null && contenido.idHitoEquipo === hito.idHitoEquipo ? contenido : null;
   const tablero = actual === null ? null : actual.tablero;
   const editable = tablero !== null && tablero.editable;
-  const verRuta = rol === 'LIDER';
+  const verRuta = rol !== null;
   const puedeCrear = rol === 'LIDER' && editable;
   const puedeEnviar = rol !== null && editable;
   const codigos = tablero === null ? new Map<number, string>() : codigosDeTareas(tablero.tareas);

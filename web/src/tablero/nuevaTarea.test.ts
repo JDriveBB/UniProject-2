@@ -38,7 +38,7 @@ function apiFalsa(llamadas: string[],
 
 describe('nueva tarea (P05)', () => {
   it('pide título y horas; el foco va al primer campo con error', () => {
-    const errores = validarTarea(TAREA_VACIA, HITO);
+    const errores = validarTarea({ ...TAREA_VACIA, horas: '' }, HITO);
     expect(errores).toEqual({ titulo: 'Escribe el título de la tarea.', horas: 'Escribe las horas estimadas.' });
     expect(primerCampoConError(errores)).toBe('titulo');
     expect(validarTarea(BASE, HITO)).toEqual({});

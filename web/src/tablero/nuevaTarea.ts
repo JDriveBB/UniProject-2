@@ -15,12 +15,12 @@ export interface BorradorTarea {
   prerrequisitos: number[];
 }
 
-/** Decisión 26c-5: sin encargado, sin fecha (vence con el hito), sin dependencias; las horas se escriben. */
+/** Decisión 26c-5: sin encargado, sin fecha (vence con el hito), sin dependencias; las horas empiezan en 1 (decisión 26c-4: el recorrido de 4 clics sirve también con ratón). */
 export const TAREA_VACIA: BorradorTarea = {
   titulo: '',
   descripcion: '',
   idEncargado: '',
-  horas: '',
+  horas: '1',
   fechaLimite: '',
   critico: false,
   prerrequisitos: [],
