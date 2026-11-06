@@ -10,6 +10,7 @@ import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
 import { MisTareas } from './paginas/MisTareas';
 import { NoEncontrada } from './paginas/NoEncontrada';
+import { Notificaciones } from './paginas/Notificaciones';
 import { OlvideContrasena } from './paginas/OlvideContrasena';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { ElegirPanel, PanelProyectoDeRuta } from './paginas/PanelDocente';
@@ -55,7 +56,7 @@ export function App() {
           <Route path="/tareas/:idTarea" element={<DetalleTareaDeRuta />} />
           <Route path="/mis-tareas" element={<MisTareas />} />
           <Route path="/hitos/:idHitoEquipo/evaluacion" element={<EvaluacionHitoDeRuta />} />
-          <Route path="/notificaciones" element={<PaginaPendiente titulo="Notificaciones" bloque="26f" />} />
+          <Route path="/notificaciones" element={<Notificaciones />} />
           <Route path="/perfil" element={<PaginaPendiente titulo="Perfil" bloque="26f" />} />
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
             <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />

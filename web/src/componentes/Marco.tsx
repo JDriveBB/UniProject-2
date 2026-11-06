@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
-import { bandeja } from '../api/notificaciones';
+import { bandeja, EVENTO_BANDEJA_CAMBIO } from '../api/notificaciones';
 import { detalleProyecto, listarProyectos } from '../api/proyectos';
 import { enlacesDe, esLiderDeAlgunEquipo, etiquetaRol, textoContador } from '../marco/navegacion';
 import { rutas } from '../rutas';
@@ -9,7 +9,7 @@ import { equiposDelUsuario } from '../tablero/ubicacion';
 
 /**
  * Barra superior azul marino de Figma (P02/P03/P04, decisión 26b-1) y el contenido de la ruta. El contador sale de
- * GET /api/notificaciones (Bandeja.noLeidas) al abrir cada pantalla (26b-3); si la llamada falla, no se muestra.
+ * GET /api/notificaciones (Bandeja.noLeidas) al abrir cada pantalla (26b-3) y cada vez que una pantalla emite EVENTO_BANDEJA_CAMBIO (26f2-4); si la llamada falla, no se muestra.
  * El rol "Líder de equipo" sale de los equipos del estudiante, una vez por sesión (26d-12).
  */
 export function Marco() {
@@ -26,19 +26,24 @@ export function Marco() {
       return;
     }
     let vigente = true;
-    bandeja()
-      .then((b) => {
-        if (vigente) {
-          setNoLeidas(b.noLeidas);
-        }
-      })
-      .catch(() => {
-        if (vigente) {
-          setNoLeidas(0);
-        }
-      });
+    function actualizarBandeja() {
+      bandeja()
+        .then((b) => {
+          if (vigente) {
+            setNoLeidas(b.noLeidas);
+          }
+        })
+        .catch(() => {
+          if (vigente) {
+            setNoLeidas(0);
+          }
+        });
+    }
+    actualizarBandeja();
+    window.addEventListener(EVENTO_BANDEJA_CAMBIO, actualizarBandeja);
     return () => {
       vigente = false;
+      window.removeEventListener(EVENTO_BANDEJA_CAMBIO, actualizarBandeja);
     };
   }, [autenticado, pathname]);
 

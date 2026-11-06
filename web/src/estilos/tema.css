@@ -179,6 +179,10 @@
 
   /* Bloque 26f-1: panel del docente (RF10). Provisional, sin Figma. */
   --ancho-col-numero: 120px;
+
+  /* Bloque 26f-2: bandeja de notificaciones (P10). Provisional, sin Figma. */
+  --relleno-notificacion: 14px 16px;
+  --borde-no-leida: 3px;
 }
 
 *,
@@ -2271,4 +2275,67 @@ a {
 
 .dato-resumen__valor--peligro {
   color: var(--color-peligro);
+}
+
+/* ===== Bloque 26f-2: bandeja de notificaciones (P10). Provisional, sin Figma ===== */
+
+.lista-notificaciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notificacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--relleno-notificacion);
+  border: 1px solid var(--color-borde-tabla);
+  border-left: var(--borde-no-leida) solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+}
+
+.notificacion--no-leida {
+  background: var(--color-info-fondo);
+  border-left-color: var(--color-primario);
+}
+
+.notificacion__cuerpo {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.notificacion__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+}
+
+.notificacion__mensaje {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notificacion--no-leida .notificacion__mensaje {
+  font-weight: var(--peso-medio);
+}
+
+.notificacion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--separacion-botones);
 }
