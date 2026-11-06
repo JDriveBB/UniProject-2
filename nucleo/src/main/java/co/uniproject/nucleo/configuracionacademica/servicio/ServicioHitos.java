@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ServicioHitos {
 
     static final BigDecimal CIEN = new BigDecimal("100");
-    static final int DIAS_INACTIVIDAD_POR_DEFECTO = 3;
 
     private final HitoRepositorio hitos;
     private final CriterioRubricaRepositorio criterios;
@@ -65,7 +64,7 @@ public class ServicioHitos {
         return HitoVista.de(h, List.of());
     }
 
-    /** PUT: reemplaza todo; diasInactividadAlerta y notificarDocenteInactividad nulos vuelven a 3 y false. */
+    /** PUT: reemplaza todo; diasInactividadAlerta nulo = sin alerta (bloque 30); notificarDocenteInactividad nulo = false. */
     @Transactional
     public HitoVista actualizar(UsuarioAutenticado usuario, long idHito, SolicitudHito solicitud) {
         Hito h = hitoDelDocente(usuario, idHito);
@@ -83,7 +82,7 @@ public class ServicioHitos {
         AuditoriaCambios.siCambia(auditoria, id, "hito", idHito, "fecha_limite", h.getFechaLimite(),
                 solicitud.fechaLimite());
         AuditoriaCambios.siCambia(auditoria, id, "hito", idHito, "dias_inactividad_alerta",
-                h.getDiasInactividadAlerta(), diasInactividad(solicitud));
+                h.getDiasInactividadAlerta(), solicitud.diasInactividadAlerta());
         AuditoriaCambios.siCambia(auditoria, id, "hito", idHito, "notificar_docente_inactividad",
                 h.getNotificarDocenteInactividad(), Boolean.TRUE.equals(solicitud.notificarDocenteInactividad()));
         aplicar(h, solicitud);
@@ -194,17 +193,13 @@ public class ServicioHitos {
         }
     }
 
-    private static int diasInactividad(SolicitudHito s) {
-        return s.diasInactividadAlerta() == null ? DIAS_INACTIVIDAD_POR_DEFECTO : s.diasInactividadAlerta();
-    }
-
     private static void aplicar(Hito h, SolicitudHito s) {
         h.setNombreHito(s.nombreHito().strip());
         h.setDescripcion(Textos.opcional(s.descripcion()));
         h.setOrden(s.orden());
         h.setFechaInicio(s.fechaInicio());
         h.setFechaLimite(s.fechaLimite());
-        h.setDiasInactividadAlerta(diasInactividad(s));
+        h.setDiasInactividadAlerta(s.diasInactividadAlerta());
         h.setNotificarDocenteInactividad(Boolean.TRUE.equals(s.notificarDocenteInactividad()));
     }
 

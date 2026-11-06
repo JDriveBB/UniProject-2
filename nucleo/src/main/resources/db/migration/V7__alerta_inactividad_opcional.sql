@@ -1,0 +1,3 @@
+-- V7, bloque 30 (decisión del usuario 2026-11-05): la alerta de inactividad (RF6) es opcional por hito; dias_inactividad_alerta NULL = sin alerta. El CHECK 1..60 de V3 sigue valiendo para los valores no nulos. El DEFAULT 3 queda solo para INSERT directos en SQL: el API siempre escribe el valor, nulo incluido.
+ALTER TABLE hito ALTER COLUMN dias_inactividad_alerta DROP NOT NULL;
+COMMENT ON COLUMN hito.dias_inactividad_alerta IS 'Días sin actividad que disparan la alerta de inactividad del hito (RF6), de 1 a 60. NULL = sin alerta: el programador no revisa este hito y el panel no marca inactivos por él (decisiones 30-1 a 30-3).';

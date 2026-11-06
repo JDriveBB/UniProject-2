@@ -321,6 +321,25 @@ paths:
                 items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/correos/{idCorreoHabilitado}:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+      - $ref: '#/components/parameters/idCorreoHabilitado'
+    delete:
+      tags: [proyectos]
+      operationId: retirarCorreo
+      summary: 'Retira un correo habilitado pendiente (la persona aún no creó su cuenta). Solo el docente dueño'
+      responses:
+        '204':
+          description: Habilitación retirada
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'HABILITACION_USADA: la persona ya creó su cuenta; se quita desde su equipo o desde los monitores'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/proyectos/{idProyecto}/monitores:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
@@ -344,6 +363,7 @@ paths:
     delete:
       tags: [proyectos]
       operationId: quitarMonitor
+      summary: 'Retira al monitor y su habilitación de monitor en el proyecto; volver a habilitar el correo lo asigna otra vez'
       responses:
         '204':
           description: Monitor retirado
@@ -1142,6 +1162,7 @@ components:
   parameters:
     idProyecto: {name: idProyecto, in: path, required: true, schema: {type: integer, format: int64}}
     idMonitor: {name: idMonitor, in: path, required: true, schema: {type: integer, format: int64}}
+    idCorreoHabilitado: {name: idCorreoHabilitado, in: path, required: true, schema: {type: integer, format: int64}}
     idHito: {name: idHito, in: path, required: true, schema: {type: integer, format: int64}}
     idCriterio: {name: idCriterio, in: path, required: true, schema: {type: integer, format: int64}}
     idEquipo: {name: idEquipo, in: path, required: true, schema: {type: integer, format: int64}}
@@ -1299,8 +1320,14 @@ components:
         orden: {type: integer, minimum: 1}
         fechaInicio: {$ref: '#/components/schemas/Fecha'}
         fechaLimite: {$ref: '#/components/schemas/Fecha'}
-        diasInactividadAlerta: {type: [integer, 'null'], minimum: 1, maximum: 60}
-        notificarDocenteInactividad: {type: [boolean, 'null']}
+        diasInactividadAlerta:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 60
+          description: 'Días sin actividad que disparan la alerta (RF6). null o ausente = sin alerta para este hito'
+        notificarDocenteInactividad:
+          type: [boolean, 'null']
+          description: 'null = false. Sin días de alerta no tiene efecto'
     HitoVista:
       type: object
       properties:
@@ -1311,7 +1338,9 @@ components:
         orden: {type: integer}
         fechaInicio: {$ref: '#/components/schemas/Fecha'}
         fechaLimite: {$ref: '#/components/schemas/Fecha'}
-        diasInactividadAlerta: {type: integer}
+        diasInactividadAlerta:
+          type: [integer, 'null']
+          description: 'null = el hito no tiene alerta de inactividad'
         notificarDocenteInactividad: {type: boolean}
         criterios: {type: array, items: {$ref: '#/components/schemas/CriterioVista'}}
     SolicitudCriterio:
