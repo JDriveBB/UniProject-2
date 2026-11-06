@@ -71,6 +71,14 @@ describe('cliente de la API', () => {
     expect(cabecera(llamadas[1], 'X-XSRF-TOKEN')).toBe('token-1');
   });
 
+  it('202 sin cuerpo devuelve undefined', async () => {
+    const { cliente, llamadas } = preparar([respuesta(202)], 'abc');
+    await expect(cliente.post('/api/cuentas/recuperacion', { email: 'ana@uninorte.edu.co' })).resolves.toBeUndefined();
+    expect(llamadas).toHaveLength(1);
+    expect(llamadas[0]?.ruta).toBe('/api/cuentas/recuperacion');
+    expect(cabecera(llamadas[0], 'X-XSRF-TOKEN')).toBe('abc');
+  });
+
   it('403 CSRF_INVALIDO renueva el token y reintenta una vez', async () => {
     const csrf = { codigo: 'CSRF_INVALIDO', mensaje: 'La sesión cambió', detalles: [] };
     const { cliente, llamadas } = preparar([respuesta(403, csrf), respuesta(200, { porcentajeAvance: 50 })], 'viejo');

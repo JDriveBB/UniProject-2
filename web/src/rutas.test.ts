@@ -9,4 +9,9 @@ describe('rutas del SPA', () => {
     expect(rutas.evaluarHito(7)).toBe('/hitos/7/evaluar');
     expect(rutas.evaluacionHito(7)).toBe('/hitos/7/evaluacion');
   });
+
+  it('recuperar contraseña coincide con RutasWeb.restablecerContrasena sin el fragmento', () => {
+    expect(rutas.restablecerContrasena()).toBe('/restablecer-contrasena');
+    expect(rutas.olvideContrasena()).toBe('/olvide-contrasena');
+  });
 });

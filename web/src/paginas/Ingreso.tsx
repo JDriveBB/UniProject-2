@@ -8,7 +8,7 @@ import { Campo } from '../componentes/Campo';
 import { MarcoAcceso } from '../componentes/MarcoAcceso';
 import { rutas } from '../rutas';
 import { useSesion } from '../sesion/ContextoSesion';
-import { destinoSeguro, vieneDeRegistro } from '../sesion/destino';
+import { destinoSeguro, vieneDeRegistro, vieneDeRestablecer } from '../sesion/destino';
 
 /** P01a. Tras ingresar vuelve a la ruta protegida de origen (solo rutas internas) o a la vista del rol. */
 export function Ingreso() {
@@ -25,6 +25,7 @@ export function Ingreso() {
   }
 
   const cuentaCreada = vieneDeRegistro(ubicacion.state);
+  const contrasenaRestablecida = vieneDeRestablecer(ubicacion.state);
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -46,6 +47,9 @@ export function Ingreso() {
         {cuentaCreada && error === null && (
           <Alerta tipo="exito">Cuenta creada. Ya puedes ingresar con tu correo y tu contraseña.</Alerta>
         )}
+        {contrasenaRestablecida && error === null && (
+          <Alerta tipo="exito">Tu contraseña se cambió. Inicia sesión con la nueva.</Alerta>
+        )}
         {error !== null && <Alerta tipo="error">{error}</Alerta>}
         <Campo
           etiqueta="Correo"
@@ -64,6 +68,11 @@ export function Ingreso() {
           onChange={(e) => setContrasena(e.target.value)}
           required
         />
+        <p className="tarjeta-acceso__nota">
+          <Link className="enlace-fuerte" to={rutas.olvideContrasena()}>
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
         <Boton type="submit" cargando={enviando} className="boton--acceso">
           Ingresar
         </Boton>
