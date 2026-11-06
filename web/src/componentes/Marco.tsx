@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { bandeja } from '../api/notificaciones';
-import { enlacesDe, etiquetaRol, textoContador } from '../marco/navegacion';
+import { detalleProyecto, listarProyectos } from '../api/proyectos';
+import { enlacesDe, esLiderDeAlgunEquipo, etiquetaRol, textoContador } from '../marco/navegacion';
 import { rutas } from '../rutas';
 import { useSesion } from '../sesion/ContextoSesion';
+import { equiposDelUsuario } from '../tablero/ubicacion';
 
 /**
  * Barra superior azul marino de Figma (P02/P03/P04, decisión 26b-1) y el contenido de la ruta. El contador sale de
  * GET /api/notificaciones (Bandeja.noLeidas) al abrir cada pantalla (26b-3); si la llamada falla, no se muestra.
+ * El rol "Líder de equipo" sale de los equipos del estudiante, una vez por sesión (26d-12).
  */
 export function Marco() {
   const { sesion, salir } = useSesion();
   const navegar = useNavigate();
   const { pathname } = useLocation();
   const [noLeidas, setNoLeidas] = useState(0);
+  const [liderazgo, setLiderazgo] = useState<{ idUsuario: number; lider: boolean } | null>(null);
   const autenticado = sesion.estado === 'autenticado';
+  const idEstudiante = autenticado && sesion.usuario.rol === 'ESTUDIANTE' ? sesion.usuario.idUsuario : null;
 
   useEffect(() => {
     if (!autenticado) {
@@ -36,6 +41,30 @@ export function Marco() {
       vigente = false;
     };
   }, [autenticado, pathname]);
+
+  useEffect(() => {
+    if (idEstudiante === null) {
+      return;
+    }
+    let vigente = true;
+    equiposDelUsuario({ listarProyectos, detalleProyecto }, idEstudiante)
+      .then((lista) => {
+        if (vigente) {
+          setLiderazgo({
+            idUsuario: idEstudiante,
+            lider: esLiderDeAlgunEquipo(lista.map((u) => u.equipo), idEstudiante),
+          });
+        }
+      })
+      .catch(() => {
+        if (vigente) {
+          setLiderazgo({ idUsuario: idEstudiante, lider: false });
+        }
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [idEstudiante]);
 
   if (sesion.estado !== 'autenticado') {
     return null;
@@ -87,7 +116,9 @@ export function Marco() {
           </Link>
           <Link to={rutas.perfil()} className="barra__usuario">
             <span className="barra__nombre">{usuario.nombre}</span>
-            <span className="barra__rol">{etiquetaRol(usuario.rol)}</span>
+            <span className="barra__rol">
+              {etiquetaRol(usuario.rol, liderazgo !== null && liderazgo.idUsuario === usuario.idUsuario && liderazgo.lider)}
+            </span>
           </Link>
           <button type="button" className="barra__salir" onClick={() => void alSalir()}>
             Salir

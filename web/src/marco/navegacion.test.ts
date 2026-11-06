@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { enlacesDe, etiquetaRol, idProyectoEnRuta, textoContador } from './navegacion';
+import { enlacesDe, esLiderDeAlgunEquipo, etiquetaRol, idProyectoEnRuta, textoContador } from './navegacion';
 
 describe('barra de navegación', () => {
   it('docente dentro de un proyecto: Proyectos activo y Panel abre el panel de ese proyecto', () => {
@@ -42,5 +42,26 @@ describe('barra de navegación', () => {
     expect(textoContador(0)).toBeNull();
     expect(textoContador(3)).toBe('3');
     expect(textoContador(120)).toBe('99+');
+  });
+
+  it('navegación de tareas, rol de líder y pertenencia a equipos', () => {
+    expect(enlacesDe('ESTUDIANTE', '/tareas/5')[1].activo).toBe(true);
+    expect(enlacesDe('ESTUDIANTE', '/tareas/5/')[1].activo).toBe(true);
+    expect(enlacesDe('ESTUDIANTE', '/tareas/abc')[1].activo).toBe(false);
+
+    expect(etiquetaRol('ESTUDIANTE', true)).toBe('Líder de equipo');
+    expect(etiquetaRol('ESTUDIANTE')).toBe('Estudiante');
+    expect(etiquetaRol('DOCENTE', true)).toBe('Docente');
+
+    const equipo1 = {
+      miembros: [{ idUsuario: 10, nombre: 'Ana', correo: 'a@u.edu', rolEquipo: 'INTEGRANTE' as const }],
+    };
+    const equipo2 = {
+      miembros: [{ idUsuario: 10, nombre: 'Ana', correo: 'a@u.edu', rolEquipo: 'LIDER' as const }],
+    };
+
+    expect(esLiderDeAlgunEquipo([equipo1, equipo2], 10)).toBe(true);
+    expect(esLiderDeAlgunEquipo([equipo1], 10)).toBe(false);
+    expect(esLiderDeAlgunEquipo([], 10)).toBe(false);
   });
 });

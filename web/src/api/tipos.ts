@@ -270,3 +270,118 @@ export interface EnvioVista {
   enviadoPor: string;
   fechaEnvio: string;
 }
+
+/* Tipos del Bloque 26d (detalle de tarea, evidencias, correcciones, reasignación, apoyo, mis tareas) */
+
+export type TipoEvidencia = 'PDF' | 'IMAGEN' | 'ENLACE';
+export type EstadoSolicitudCorreccion = 'PENDIENTE' | 'ATENDIDA';
+export type TipoReasignacion = 'TOTAL' | 'PARCIAL';
+
+export interface AvanceVista {
+  idRegistro: number;
+  idUsuario: number;
+  usuario: string;
+  porcentajeAvance: number;
+  observacion: string | null;
+  fechaHora: string;
+}
+
+export interface TareaDetalle {
+  tarea: TareaVista;
+  editable: boolean;
+  avances: AvanceVista[];
+}
+
+export interface SolicitudAvance {
+  porcentajeAvance: number;
+  observacion: string | null;
+}
+
+export interface SolicitudEnlace {
+  url: string;
+}
+
+export interface EvidenciaVista {
+  idEvidencia: number;
+  idTarea: number;
+  idUsuario: number;
+  autor: string;
+  tipoEvidencia: TipoEvidencia;
+  enlace: string | null;
+  nombreArchivo: string | null;
+  descarga: string | null;
+  fechaSubida: string;
+}
+
+export interface SolicitudComentario {
+  contenido: string;
+}
+
+export interface ComentarioVista {
+  idComentario: number;
+  idTarea: number;
+  idAutor: number;
+  autor: string;
+  rolAutor: RolPlataforma;
+  contenido: string;
+  fechaHora: string;
+}
+
+export interface PeticionCorreccion {
+  idEvidencia: number;
+  observaciones: string;
+}
+
+export interface CorreccionVista {
+  idSolicitud: number;
+  idTarea: number;
+  idEvidencia: number;
+  idLider: number;
+  lider: string;
+  idEstudiante: number;
+  estudiante: string;
+  observaciones: string;
+  estado: EstadoSolicitudCorreccion;
+  fechaSolicitud: string;
+  fechaAtencion: string | null;
+}
+
+export interface SolicitudReasignacion {
+  idNuevoEncargado: number;
+  tipo: TipoReasignacion;
+  tituloParcial: string | null;
+  horasParcial: number | null;
+  motivo: string | null;
+}
+
+export interface ResultadoReasignacion {
+  tarea: TareaVista;
+  tareaNueva: TareaVista | null;
+}
+
+export interface SolicitudApoyo {
+  mensaje: string;
+}
+
+export interface ApoyoVista {
+  idSolicitud: number;
+  idTarea: number;
+  titulo: string;
+  idAutor: number;
+  autor: string;
+  mensaje: string | null;
+  fechaHora: string;
+}
+
+export interface MiTareaVista {
+  idTarea: number;
+  titulo: string;
+  estado: EstadoTarea;
+  porcentajeAvance: number;
+  fechaLimite: string;
+  bloqueada: boolean;
+  nivelRiesgo: NivelRiesgo;
+  idHitoEquipo: number;
+  nombreHito: string;
+  proyecto: string;
+}

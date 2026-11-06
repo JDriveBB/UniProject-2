@@ -146,6 +146,28 @@
   --tamano-muestra: 14px;
   --radio-muestra: 3px;
   --borde-muestra: 1.5px;
+
+  /* Bloque 26d: detalle de tarea (P07/P07d), modales P07b/P07c y diálogos P08a/P08b (Figma). */
+  --ancho-modal-tarea: 580px;
+  --ancho-dialogo: 520px;
+  --ancho-columna-tarea: 880px;
+  --ancho-columna-acciones: 476px;
+  --separacion-datos-tarea: 48px;
+  --tamano-valor-dato: 15px;
+  --ancho-avance-detalle: 120px;
+  --ancho-campo-porcentaje: 200px;
+  --ancho-campo-observacion: 400px;
+  --relleno-evidencia: 10px 14px;
+  --relleno-opcion: 12px 14px;
+  --separacion-comentario: 6px;
+  --tamano-fecha-comentario: 12px;
+  --alto-comentario: 64px;
+  --alto-correccion: 90px;
+  --separacion-correccion: 10px;
+  --alto-lista-dependencias: 320px;
+  --ancho-col-fecha-hora: 220px;
+  --ancho-col-autor: 240px;
+  --ancho-col-avance-historial: 150px;
 }
 
 *,
@@ -1560,6 +1582,479 @@ a {
 /* 960px: las variables CSS no valen dentro de @media. */
 @media (max-width: 960px) {
   .resumen-ruta {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Bloque 26d: detalle de tarea (P07/P07d), modales (P07b/P07c) y envío del hito (P08a/P08b) ===== */
+
+/* Botón suave */
+.boton--suave {
+  background: var(--color-info-fondo);
+  color: var(--color-primario);
+}
+
+.boton--suave:hover:not(:disabled) {
+  border-color: var(--color-primario);
+}
+
+/* Barra de avance en el detalle */
+.avance--detalle .avance__barra {
+  width: var(--ancho-avance-detalle);
+}
+
+/* Modal reutilizable y variantes */
+.modal--tarea {
+  width: min(var(--ancho-modal-tarea), calc(100% - 2 * var(--espacio-4)));
+}
+
+.modal--dialogo {
+  width: min(var(--ancho-dialogo), calc(100% - 2 * var(--espacio-4)));
+}
+
+.modal__titulo--peligro {
+  color: var(--color-peligro);
+}
+
+.modal__titulo--exito {
+  color: var(--color-exito);
+}
+
+.modal__texto,
+.modal__pie {
+  margin: 0;
+}
+
+.modal__pie {
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+}
+
+.modal__dato {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: 0;
+}
+
+.modal__dato-etiqueta {
+  font-weight: var(--peso-medio);
+}
+
+/* Avisos en modales */
+.aviso-modal {
+  margin: 0;
+  padding: var(--espacio-tarjeta);
+  border-radius: var(--radio);
+}
+
+.aviso-modal--aviso {
+  background: var(--color-aviso-fondo);
+  color: var(--color-texto);
+}
+
+.aviso-modal--peligro {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+  font-weight: var(--peso-medio);
+}
+
+/* Detalle de tarea: disposición general e insignias */
+.insignias-tarea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.detalle-tarea {
+  display: grid;
+  grid-template-columns: minmax(0, var(--ancho-columna-tarea)) minmax(0, var(--ancho-columna-acciones));
+  gap: var(--espacio-5);
+  align-items: start;
+}
+
+.detalle-tarea__columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  min-width: 0;
+}
+
+/* Datos de la tarea e información */
+.datos-tarea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-4) var(--separacion-datos-tarea);
+  margin: 0;
+}
+
+.dato-tarea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+}
+
+.dato-tarea__etiqueta,
+.dato-tarea__valor {
+  margin: 0;
+}
+
+.dato-tarea__etiqueta {
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.dato-tarea__valor {
+  font-size: var(--tamano-valor-dato);
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-texto);
+}
+
+.dato-tarea__descripcion {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.caja-dependencias {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--espacio-3);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.caja-dependencias__lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.caja-dependencias__titulo {
+  font-weight: var(--peso-medio);
+}
+
+/* Formulario de avance */
+.formulario-avance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espacio-5);
+}
+
+.campo--porcentaje {
+  flex: 0 1 var(--ancho-campo-porcentaje);
+  min-width: 0;
+}
+
+.campo--observacion {
+  flex: 0 1 var(--ancho-campo-observacion);
+  min-width: 0;
+}
+
+.formulario-avance__enviar {
+  margin-left: auto;
+}
+
+.campo-sufijo {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  padding: var(--relleno-campo-marco);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+}
+
+.campo-sufijo:focus-within {
+  box-shadow: var(--foco);
+}
+
+.campo-sufijo--error {
+  border-color: var(--color-peligro);
+}
+
+.campo-sufijo--deshabilitado {
+  background: var(--color-fondo);
+}
+
+.campo-sufijo__entrada {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--color-texto);
+}
+
+.campo-sufijo__entrada:focus-visible {
+  box-shadow: none;
+}
+
+.campo-sufijo__texto {
+  color: var(--color-texto-secundario);
+}
+
+/* Listas de evidencias, comentarios y pendientes */
+.lista-evidencias,
+.lista-comentarios,
+.lista-pendientes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-evidencias,
+.lista-pendientes {
+  gap: var(--espacio-2);
+}
+
+.lista-comentarios {
+  gap: var(--separacion-correccion);
+}
+
+.evidencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--relleno-evidencia);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.evidencia__nombre {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+  font-weight: var(--peso-medio);
+  overflow-wrap: anywhere;
+}
+
+.evidencia__enlace {
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.evidencia__enlace:hover {
+  color: var(--color-primario);
+  text-decoration: underline;
+}
+
+.evidencia__autor {
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+
+.pie-evidencias {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3);
+}
+
+/* Corrección pendiente */
+.correccion-pendiente {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--separacion-correccion);
+  padding: var(--espacio-tarjeta);
+  border-radius: var(--radio);
+  background: var(--color-aviso-fondo);
+}
+
+.correccion-pendiente__titulo {
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-aviso);
+}
+
+.correccion-pendiente__texto {
+  overflow-wrap: anywhere;
+}
+
+/* Historial de avances */
+.tabla--historial {
+  table-layout: fixed;
+}
+
+.tabla--historial td {
+  overflow-wrap: anywhere;
+}
+
+.tabla__col-fecha-hora {
+  width: var(--ancho-col-fecha-hora);
+}
+
+.tabla__col-autor {
+  width: var(--ancho-col-autor);
+}
+
+.tabla__col-avance-historial {
+  width: var(--ancho-col-avance-historial);
+}
+
+/* Tarjeta Acciones */
+.accion-tarea {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-2);
+}
+
+.accion-tarea__subtitulo {
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.accion-tarea__ayuda {
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+}
+
+/* Tarjeta Comentarios */
+.comentario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--separacion-comentario);
+  padding: var(--espacio-3);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.comentario__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.comentario__autor {
+  font-weight: var(--peso-seminegrita);
+}
+
+.comentario__fecha {
+  font-size: var(--tamano-fecha-comentario);
+  color: var(--color-texto-secundario);
+}
+
+.comentario__texto {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.formulario-comentario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--separacion-correccion);
+}
+
+.formulario-comentario__acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.campo__entrada--comentario {
+  min-height: var(--alto-comentario);
+}
+
+.campo__entrada::placeholder {
+  color: var(--color-texto-secundario);
+}
+
+.campo--correccion .campo__entrada--area {
+  min-height: var(--alto-correccion);
+}
+
+/* Modal dependencias */
+.lista-dependencias {
+  max-height: var(--alto-lista-dependencias);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+}
+
+.opcion-dependencia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  padding: var(--relleno-opcion);
+}
+
+.opcion-dependencia + .opcion-dependencia {
+  border-top: 1px solid var(--color-borde-tabla);
+}
+
+.opcion-dependencia--excluida {
+  background: var(--color-peligro-fondo);
+}
+
+.opcion-dependencia--excluida .casilla__texto {
+  color: var(--color-texto-secundario);
+}
+
+/* Modales con opciones de radio */
+.opciones-radio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-5);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.opciones-radio__titulo {
+  margin-bottom: var(--espacio-campo);
+  padding: 0;
+}
+
+.opcion-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  cursor: pointer;
+}
+
+.opcion-radio__entrada {
+  margin: 0;
+  accent-color: var(--color-primario);
+}
+
+/* Diálogo de envío de hito */
+.pendiente-envio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--relleno-opcion);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.pendiente-envio__nombre {
+  font-weight: var(--peso-medio);
+  overflow-wrap: anywhere;
+}
+
+/* 960px: las variables CSS no valen dentro de @media. */
+@media (max-width: 960px) {
+  .detalle-tarea {
     grid-template-columns: 1fr;
   }
 }

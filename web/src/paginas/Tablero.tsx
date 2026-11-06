@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router';
-import { mensajeDeError } from '../api/cliente';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { detalleProyecto, listarProyectos } from '../api/proyectos';
 import { enviarHito, tableroHito } from '../api/tareas';
 import type { TableroHito } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
-import { ConfirmarQuitar } from '../componentes/ConfirmarQuitar';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
 import type { Mensaje } from '../proyectos/errores';
 import { idDeRuta } from '../proyectos/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
+import { DialogoEnvio, type ResultadoDialogo } from '../tablero/DialogoEnvio';
 import { LeyendaMarcas } from '../tablero/LeyendaMarcas';
 import { codigosDeTareas } from '../tablero/marcas';
 import { ModalNuevaTarea } from '../tablero/ModalNuevaTarea';
@@ -29,6 +28,7 @@ import {
   ubicarEquipo,
 } from '../tablero/ubicacion';
 import type { ApiUbicacion, EquipoUbicado, HitoDelEquipo } from '../tablero/ubicacion';
+import { enviarConResultado } from '../tarea/envio';
 
 const API_UBICACION: ApiUbicacion = { listarProyectos, detalleProyecto };
 
@@ -52,11 +52,13 @@ export function TableroDeRuta() {
 
 /**
  * P04 Tablero del equipo (Figma nodo 6:2) con P05 Nueva tarea como modal (nodo 6:200). Hito por ?hito= o el actual
- * (26c-2). Botones según la nota de Figma (26c-7): «Nueva tarea» solo el líder y «Ver ruta crítica» cualquier integrante (decisión 26c-1); «Enviar a
- * revisión» cualquier integrante; docente y monitor, solo lectura. El servidor responde 403 de todas formas.
+ * (26c-2). Botones según la nota de Figma (26c-7): «Nueva tarea» solo el líder y «Ver ruta crítica» cualquier integrante (decisión 26c-1);
+ * "Enviar a revisión" envía sin confirmación: P08a si faltan prerrequisitos críticos, P08b si se envió (26d-11);
+ * docente y monitor, solo lectura. El servidor responde 403 de todas formas.
  */
 function TableroEquipo({ idRuta }: { idRuta: string }) {
   const usuario = useUsuario();
+  const navigate = useNavigate();
   const { search } = useLocation();
   const idEquipo = idDeRuta(idRuta);
   const [ubicacion, setUbicacion] = useState<Ubicacion>(() =>
@@ -66,11 +68,12 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   const [vuelta, setVuelta] = useState(0);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [confirmando, setConfirmando] = useState(false);
+  const [dialogo, setDialogo] = useState<{ resultado: ResultadoDialogo; etiqueta: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [foco, setFoco] = useState<string | null>(null);
   const idNueva = useId();
   const idEnviar = useId();
+  const idRutaCritica = useId();
   const idMensaje = useId();
 
   const ubicar = useCallback(async (id: number) => {
@@ -160,24 +163,29 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
 
   function elegirHito() {
     setMensaje(null);
-    setConfirmando(false);
   }
 
-  async function enviar(idHito: number) {
+  async function enviar(h: HitoDelEquipo, t: TableroHito) {
+    setMensaje(null);
     setEnviando(true);
-    try {
-      await enviarHito(idHito);
-      setMensaje({ tipo: 'exito', texto: 'Hito enviado a revisión.' });
-      if (idEquipo !== null) {
+    const res = await enviarConResultado(
+      { enviarHito },
+      h.idHitoEquipo,
+      t.tareas,
+      codigosDeTareas(t.tareas)
+    );
+    setEnviando(false);
+    if (res.tipo === 'error') {
+      setMensaje({ tipo: 'error', texto: res.texto });
+      setFoco(idMensaje);
+    } else {
+      setDialogo({ resultado: res, etiqueta: etiquetaHito(h.orden, h.nombreHito) });
+      if (res.tipo === 'enviado' && idEquipo !== null) {
+        navigate(rutas.tableroEnHito(idEquipo, h.idHitoEquipo), { replace: true });
         void ubicar(idEquipo);
       }
       setVuelta((v) => v + 1);
-    } catch (e) {
-      setMensaje({ tipo: 'error', texto: mensajeDeError(e) });
     }
-    setEnviando(false);
-    setConfirmando(false);
-    setFoco(idMensaje);
   }
 
   return (
@@ -186,7 +194,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
         {(verRuta || puedeCrear || puedeEnviar) && (
           <div className="pagina__acciones">
             {verRuta && (
-              <Link className="boton boton--secundario" to={rutas.rutaCritica(hito.idHitoEquipo)}>
+              <Link id={idRutaCritica} className="boton boton--secundario" to={rutas.rutaCritica(hito.idHitoEquipo)}>
                 Ver ruta crítica
               </Link>
             )}
@@ -194,7 +202,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
               <Boton
                 id={idNueva}
                 variante="secundario"
-                disabled={confirmando || enviando}
+                disabled={enviando}
                 onClick={() => setModalAbierto(true)}
               >
                 Nueva tarea
@@ -203,10 +211,12 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
             {puedeEnviar && (
               <Boton
                 id={idEnviar}
-                disabled={confirmando || enviando}
+                disabled={enviando}
+                cargando={enviando}
                 onClick={() => {
-                  setMensaje(null);
-                  setConfirmando(true);
+                  if (tablero !== null) {
+                    void enviar(hito, tablero);
+                  }
                 }}
               >
                 Enviar a revisión
@@ -219,19 +229,6 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
         <div id={idMensaje} tabIndex={-1}>
           <Alerta tipo={mensaje.tipo}>{mensaje.texto}</Alerta>
         </div>
-      )}
-      {confirmando && (
-        <ConfirmarQuitar
-          pregunta={`¿Enviar «${etiquetaHito(hito.orden, hito.nombreHito)}» a revisión? Mientras esté en revisión, sus tareas no se podrán cambiar.`}
-          textoConfirmar="Sí, enviar"
-          textoOcupado="Enviando…"
-          ocupado={enviando}
-          alConfirmar={() => void enviar(hito.idHitoEquipo)}
-          alCancelar={() => {
-            setConfirmando(false);
-            setFoco(idEnviar);
-          }}
-        />
       )}
       <PestanasHitos idEquipo={ubicado.equipo.idEquipo} hitos={hitos} activo={hito.idHitoEquipo} alElegir={elegirHito} />
       {actual === null && <Cargando />}
@@ -267,6 +264,17 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
             setMensaje(m);
             setVuelta((v) => v + 1);
             setFoco(idMensaje);
+          }}
+        />
+      )}
+      {dialogo !== null && (
+        <DialogoEnvio
+          resultado={dialogo.resultado}
+          etiqueta={dialogo.etiqueta}
+          alCerrar={() => {
+            const eraEnviado = dialogo.resultado.tipo === 'enviado';
+            setDialogo(null);
+            setFoco(eraEnviado ? idRutaCritica : idEnviar);
           }}
         />
       )}

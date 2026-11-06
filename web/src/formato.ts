@@ -19,6 +19,27 @@ export function fechaCorta(instante: string): string {
   return `${valor('day')}/${valor('month')}/${valor('year')}`;
 }
 
+const FECHA_HORA_BOGOTA = new Intl.DateTimeFormat('es-CO', {
+  timeZone: 'America/Bogota',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** Historial de avances (Figma P07): 22/09/2026 14:10 */
+export function fechaHora(instante: string): string {
+  const fecha = new Date(instante.replace(/(\.\d{3})\d+/, '$1'));
+  if (Number.isNaN(fecha.getTime())) {
+    return '—';
+  }
+  const partes = FECHA_HORA_BOGOTA.formatToParts(fecha);
+  const valor = (tipo: Intl.DateTimeFormatPartTypes) => partes.find((p) => p.type === tipo)?.value ?? '';
+  return `${valor('day')}/${valor('month')}/${valor('year')} ${valor('hour')}:${valor('minute')}`;
+}
+
 const FECHA_ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**
