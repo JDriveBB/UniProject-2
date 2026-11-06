@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 export interface ColumnaTabla<T> {
   titulo: string;
   celda: (fila: T) => ReactNode;
+  /** Clase del encabezado (p. ej. el ancho de la columna con table-layout: fixed). */
+  clase?: string;
 }
 
 interface PropsTabla<T> {
@@ -13,18 +15,20 @@ interface PropsTabla<T> {
   claveFila: (fila: T) => string | number;
   /** Texto cuando no hay filas. */
   vacio: string;
+  /** Clase extra de la tabla (p. ej. tabla--tareas). */
+  clase?: string;
 }
 
 /** Tabla del sistema de diseño (P04): encabezado gris de 12 px, filas de 14 px, borde y radio de tabla. */
-export function Tabla<T>({ titulo, columnas, filas, claveFila, vacio }: PropsTabla<T>) {
+export function Tabla<T>({ titulo, columnas, filas, claveFila, vacio, clase }: PropsTabla<T>) {
   return (
     <div className="tabla-contenedor">
-      <table className="tabla">
+      <table className={['tabla', clase].filter(Boolean).join(' ')}>
         <caption className="solo-lectores">{titulo}</caption>
         <thead>
           <tr>
             {columnas.map((c) => (
-              <th key={c.titulo} scope="col">
+              <th key={c.titulo} scope="col" className={c.clase}>
                 {c.titulo}
               </th>
             ))}

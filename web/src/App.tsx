@@ -4,9 +4,12 @@ import { AdminDocentes } from './paginas/AdminDocentes';
 import { NuevoProyecto, ProyectoDeRuta } from './paginas/ConfigurarProyecto';
 import { Ingreso } from './paginas/Ingreso';
 import { ListaProyectos } from './paginas/ListaProyectos';
+import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { Registro } from './paginas/Registro';
+import { RutaCriticaDeRuta } from './paginas/RutaCritica';
+import { TableroDeRuta } from './paginas/Tablero';
 import { rutas } from './rutas';
 import { useSesion } from './sesion/ContextoSesion';
 import { RutaProtegida } from './sesion/RutaProtegida';
@@ -37,9 +40,9 @@ export function App() {
           <Route path="/" element={<Inicio />} />
           <Route path="/proyectos" element={<ListaProyectos />} />
           <Route path="/proyectos/:idProyecto" element={<ProyectoDeRuta />} />
-          <Route path="/equipos/:idEquipo/tablero" element={<PaginaPendiente titulo="Tablero del equipo" bloque="26c" />} />
+          <Route path="/equipos/:idEquipo/tablero" element={<TableroDeRuta />} />
           <Route path="/equipos/:idEquipo/historial" element={<PaginaPendiente titulo="Historial del equipo" bloque="26f" />} />
-          <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<PaginaPendiente titulo="Ruta crítica" bloque="26c" />} />
+          <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<RutaCriticaDeRuta />} />
           <Route path="/tareas/:idTarea" element={<PaginaPendiente titulo="Tarea" bloque="26d" />} />
           <Route path="/mis-tareas" element={<PaginaPendiente titulo="Mis tareas" bloque="26d" />} />
           <Route path="/hitos/:idHitoEquipo/evaluacion" element={<PaginaPendiente titulo="Evaluación del hito" bloque="26e" />} />
@@ -53,8 +56,8 @@ export function App() {
             <Route path="/hitos/:idHitoEquipo/evaluar" element={<PaginaPendiente titulo="Evaluar hito" bloque="26e" />} />
           </Route>
           <Route element={<RutaProtegida roles={['ESTUDIANTE']} />}>
-            <Route path="/tablero" element={<PaginaPendiente titulo="Tablero" bloque="26c" />} />
-            <Route path="/ruta-critica" element={<PaginaPendiente titulo="Ruta crítica" bloque="26c" />} />
+            <Route path="/tablero" element={<MiTablero />} />
+            <Route path="/ruta-critica" element={<MiRutaCritica />} />
           </Route>
           <Route element={<RutaProtegida roles={['ADMINISTRADOR']} />}>
             <Route path="/admin/docentes" element={<AdminDocentes />} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decimalEsCo, fechaCorta, rangoFechas } from './formato';
+import { decimalEsCo, fechaCorta, fechaDia, rangoFechas } from './formato';
 
 describe('fechaCorta', () => {
   it('usa la hora de Bogotá (UTC-5) y acepta microsegundos', () => {
@@ -23,5 +23,12 @@ describe('rangoFechas y decimalEsCo', () => {
   it('decimales con coma y sin ceros de más', () => {
     expect(decimalEsCo(33.5)).toBe('33,5');
     expect(decimalEsCo(100)).toBe('100');
+  });
+});
+
+describe('fechaDia', () => {
+  it('fecha de calendario como en Figma P04 y raya si no es una fecha', () => {
+    expect(fechaDia('2026-09-26')).toBe('26/09/2026');
+    expect(fechaDia('26/09/2026')).toBe('—');
   });
 });
