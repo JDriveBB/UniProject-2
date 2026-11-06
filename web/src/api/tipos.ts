@@ -453,3 +453,37 @@ export interface SolicitudRestablecer {
   codigo: string;
   contrasenaNueva: string;
 }
+
+/* Tipos del Bloque 26f-1 (panel del docente, RF10) */
+export interface IntegranteInactivo {
+  idUsuario: number;
+  nombre: string;
+  ultimaActividad: string;
+  diasSinActividad: number;
+}
+
+export interface TareaBloqueada {
+  idTarea: number;
+  titulo: string;
+  fechaBloqueo: string;
+  horasBloqueada: number;
+}
+
+export interface PanelEquipo {
+  idEquipo: number;
+  nombreEquipo: string;
+  enRojo: boolean;
+  tareasTotales: number;
+  tareasCompletadas: number;
+  tareasRiesgoAlto: number;
+  avancePromedio: number;
+  integrantesInactivos: IntegranteInactivo[];
+  tareasBloqueadas: TareaBloqueada[];
+}
+
+export interface PanelProyecto {
+  idProyecto: number;
+  nombre: string;
+  generadoEn: string;
+  equipos: PanelEquipo[];
+}
