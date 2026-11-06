@@ -1,7 +1,7 @@
 import { ErrorApi } from '../api/cliente';
 import type { EquipoVista, ResultadoHabilitacion, SolicitudCorreos } from '../api/tipos';
 import { CAMPOS_CORREO, mensajeErrorApi } from './errores';
-import type { Mensaje } from './errores';
+import { separarCorreos } from './correos';
 
 /** Las operaciones del API que usan estas acciones (en las pruebas, una versión falsa). */
 export interface ApiEquipos {
@@ -9,55 +9,127 @@ export interface ApiEquipos {
   agregarMiembro(idEquipo: number, email: string): Promise<EquipoVista>;
 }
 
-export type ResultadoAgregar =
-  | { tipo: 'agregado'; equipo: EquipoVista }
-  | { tipo: 'pendiente'; mensaje: string }
-  | { tipo: 'error'; mensaje: string };
+export interface ErrorAlAgregar {
+  email: string;
+  motivo: string;
+}
+
+export interface ResumenEstudiantes {
+  agregados: string[];
+  habilitados: string[];
+  yaHabilitados: string[];
+  conOtroRol: string[];
+  errores: ErrorAlAgregar[];
+  equipo?: EquipoVista;
+}
+
+export interface ResumenMonitores {
+  asignados: string[];
+  habilitados: string[];
+  yaHabilitados: string[];
+  conOtroRol: string[];
+}
 
 export const PENDIENTE_ESTUDIANTE =
   'Correo habilitado. Cuando el estudiante cree su cuenta con ese correo, agrégalo de nuevo a este equipo.';
 export const OTRO_ROL_ESTUDIANTE = 'Ese correo ya tiene una cuenta que no es de estudiante.';
 
 /**
- * "+ Agregar estudiante" (decisión 26b-7, K2): habilita el correo como ESTUDIANTE en el proyecto y lo agrega al
- * equipo. Si aún no tiene cuenta (409 ESTUDIANTE_NO_REGISTRADO), queda habilitado y se avisa: no es un error.
+ * "+ Agregar estudiante" en lote (bloque 31): habilita todos los correos en UNA llamada
+ * habilitarCorreos(idProyecto, { emails, rol: 'ESTUDIANTE' }); para los que ya tienen cuenta de estudiante,
+ * los agrega al equipo con agregarMiembro uno a uno; los demás quedan solo habilitados.
+ * Devuelve un resumen por categoría. Un error en un correo no detiene los demás.
  */
-export async function agregarEstudiante(api: ApiEquipos, idProyecto: number, idEquipo: number,
-                                        email: string): Promise<ResultadoAgregar> {
-  const correo = email.trim();
-  try {
-    const habilitacion = await api.habilitarCorreos(idProyecto, { emails: [correo], rol: 'ESTUDIANTE' });
-    if (habilitacion.conOtroRol.length > 0) {
-      return { tipo: 'error', mensaje: OTRO_ROL_ESTUDIANTE };
-    }
-    return { tipo: 'agregado', equipo: await api.agregarMiembro(idEquipo, correo) };
-  } catch (e) {
-    if (e instanceof ErrorApi && e.estado === 409 && e.codigo === 'ESTUDIANTE_NO_REGISTRADO') {
-      return { tipo: 'pendiente', mensaje: PENDIENTE_ESTUDIANTE };
-    }
-    return { tipo: 'error', mensaje: mensajeErrorApi(e, CAMPOS_CORREO) };
+export async function agregarEstudiante(
+  api: ApiEquipos,
+  idProyecto: number,
+  idEquipo: number,
+  emails: string[] | string,
+): Promise<ResumenEstudiantes> {
+  const lista = typeof emails === 'string' ? separarCorreos(emails) : emails;
+  if (lista.length === 0) {
+    return {
+      agregados: [],
+      habilitados: [],
+      yaHabilitados: [],
+      conOtroRol: [],
+      errores: [],
+    };
   }
+
+  const hab = await api.habilitarCorreos(idProyecto, { emails: lista, rol: 'ESTUDIANTE' });
+  const conCuenta = hab.habilitados.filter((c) => c.registrado);
+  const sinCuenta = hab.habilitados.filter((c) => !c.registrado);
+
+  const agregados: string[] = [];
+  const errores: ErrorAlAgregar[] = [];
+  let ultimoEquipo: EquipoVista | undefined;
+
+  for (const c of conCuenta) {
+    try {
+      ultimoEquipo = await api.agregarMiembro(idEquipo, c.email);
+      agregados.push(c.email);
+    } catch (e) {
+      if (e instanceof ErrorApi && e.estado === 409 && e.codigo === 'ESTUDIANTE_NO_REGISTRADO') {
+        sinCuenta.push(c);
+      } else {
+        const motivo = mensajeErrorApi(e, CAMPOS_CORREO);
+        errores.push({ email: c.email, motivo });
+      }
+    }
+  }
+
+  const yaHabilitados: string[] = [];
+  for (const correo of hab.yaHabilitados) {
+    try {
+      ultimoEquipo = await api.agregarMiembro(idEquipo, correo);
+      agregados.push(correo);
+    } catch (e) {
+      if (e instanceof ErrorApi && e.estado === 409 && e.codigo === 'ESTUDIANTE_NO_REGISTRADO') {
+        yaHabilitados.push(correo);
+      } else {
+        const motivo = mensajeErrorApi(e, CAMPOS_CORREO);
+        errores.push({ email: correo, motivo });
+      }
+    }
+  }
+
+  return {
+    agregados,
+    habilitados: sinCuenta.map((c) => c.email),
+    yaHabilitados,
+    conOtroRol: hab.conOtroRol,
+    errores,
+    equipo: ultimoEquipo,
+  };
 }
 
-/** "+ Agregar monitor" (RF14): habilita el correo como MONITOR; si ya tiene cuenta, queda asignado al proyecto. */
-export async function agregarMonitor(api: Pick<ApiEquipos, 'habilitarCorreos'>, idProyecto: number,
-                                     email: string): Promise<Mensaje> {
-  const correo = email.trim();
-  try {
-    const r = await api.habilitarCorreos(idProyecto, { emails: [correo], rol: 'MONITOR' });
-    if (r.conOtroRol.length > 0) {
-      return { tipo: 'error', texto: 'Ese correo ya tiene una cuenta que no es de monitor.' };
-    }
-    if (r.yaHabilitados.length > 0) {
-      return { tipo: 'aviso', texto: 'Ese correo ya estaba habilitado en este proyecto.' };
-    }
-    if (r.habilitados.some((c) => c.registrado)) {
-      return { tipo: 'exito', texto: 'Monitor agregado.' };
-    }
-    return { tipo: 'aviso', texto: 'Correo habilitado como monitor. Aparecerá aquí cuando cree su cuenta.' };
-  } catch (e) {
-    return { tipo: 'error', texto: mensajeErrorApi(e, CAMPOS_CORREO) };
+/**
+ * "+ Agregar monitor" en lote (bloque 31): igual con rol: 'MONITOR';
+ * resumen: asignados/habilitados, ya habilitados, con otro rol.
+ */
+export async function agregarMonitor(
+  api: Pick<ApiEquipos, 'habilitarCorreos'>,
+  idProyecto: number,
+  emails: string[] | string,
+): Promise<ResumenMonitores> {
+  const lista = typeof emails === 'string' ? separarCorreos(emails) : emails;
+  if (lista.length === 0) {
+    return {
+      asignados: [],
+      habilitados: [],
+      yaHabilitados: [],
+      conOtroRol: [],
+    };
   }
+
+  const r = await api.habilitarCorreos(idProyecto, { emails: lista, rol: 'MONITOR' });
+  return {
+    asignados: r.habilitados.filter((c) => c.registrado).map((c) => c.email),
+    habilitados: r.habilitados.filter((c) => !c.registrado).map((c) => c.email),
+    yaHabilitados: r.yaHabilitados,
+    conOtroRol: r.conOtroRol,
+  };
 }
 
 /** El equipo que devolvió el API reemplaza al de igual id; si es nuevo, va al final. */

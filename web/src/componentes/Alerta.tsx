@@ -2,9 +2,19 @@ import type { ReactNode } from 'react';
 
 type TipoAlerta = 'error' | 'exito' | 'aviso' | 'info';
 
-export function Alerta({ tipo, children }: { tipo: TipoAlerta; children: ReactNode }) {
+export function Alerta({
+  tipo,
+  id,
+  tabIndex,
+  children,
+}: {
+  tipo: TipoAlerta;
+  id?: string;
+  tabIndex?: number;
+  children: ReactNode;
+}) {
   return (
-    <div className={`alerta alerta--${tipo}`} role={tipo === 'error' ? 'alert' : 'status'}>
+    <div id={id} tabIndex={tabIndex} className={`alerta alerta--${tipo}`} role={tipo === 'error' ? 'alert' : 'status'}>
       {children}
     </div>
   );
