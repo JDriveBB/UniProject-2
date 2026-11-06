@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fechaCorta } from './formato';
+import { decimalEsCo, fechaCorta, rangoFechas } from './formato';
 
 describe('fechaCorta', () => {
   it('usa la hora de Bogotá (UTC-5) y acepta microsegundos', () => {
@@ -10,5 +10,18 @@ describe('fechaCorta', () => {
 
   it('un texto que no es fecha se muestra como raya', () => {
     expect(fechaCorta('no-es-fecha')).toBe('—');
+  });
+});
+
+describe('rangoFechas y decimalEsCo', () => {
+  it('rango como en Figma, con el año solo al final si es el mismo', () => {
+    expect(rangoFechas('2026-08-01', '2026-08-29')).toBe('01/08 – 29/08/2026');
+    expect(rangoFechas('2026-12-15', '2027-01-20')).toBe('15/12/2026 – 20/01/2027');
+    expect(rangoFechas('', '2026-08-29')).toBe('Sin fechas');
+  });
+
+  it('decimales con coma y sin ceros de más', () => {
+    expect(decimalEsCo(33.5)).toBe('33,5');
+    expect(decimalEsCo(100)).toBe('100');
   });
 });

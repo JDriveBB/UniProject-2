@@ -113,6 +113,11 @@ export function validarCorreoDocente(email: string): string | null {
   return errorDeCorreo(email.trim());
 }
 
+/** Correo de un estudiante o monitor (bloque 26b): mensaje si no sirve; null si sirve. */
+export function validarCorreo(email: string): string | null {
+  return errorDeCorreo(email.trim());
+}
+
 /** Alta de docentes: 409 YA_HABILITADO trae su texto; 400 VALIDACION es siempre el correo (único campo). */
 export function mensajeErrorHabilitar(error: unknown): string {
   if (error instanceof ErrorApi && error.estado === 400 && error.codigo === 'VALIDACION') {

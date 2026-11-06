@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { Marco } from './componentes/Marco';
 import { AdminDocentes } from './paginas/AdminDocentes';
+import { NuevoProyecto, ProyectoDeRuta } from './paginas/ConfigurarProyecto';
 import { Ingreso } from './paginas/Ingreso';
+import { ListaProyectos } from './paginas/ListaProyectos';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { PaginaPendiente } from './paginas/PaginaPendiente';
 import { Registro } from './paginas/Registro';
@@ -33,8 +35,8 @@ export function App() {
       <Route element={<RutaProtegida />}>
         <Route element={<Marco />}>
           <Route path="/" element={<Inicio />} />
-          <Route path="/proyectos" element={<PaginaPendiente titulo="Proyectos" bloque="26b" />} />
-          <Route path="/proyectos/:idProyecto" element={<PaginaPendiente titulo="Proyecto" bloque="26b" />} />
+          <Route path="/proyectos" element={<ListaProyectos />} />
+          <Route path="/proyectos/:idProyecto" element={<ProyectoDeRuta />} />
           <Route path="/equipos/:idEquipo/tablero" element={<PaginaPendiente titulo="Tablero del equipo" bloque="26c" />} />
           <Route path="/equipos/:idEquipo/historial" element={<PaginaPendiente titulo="Historial del equipo" bloque="26f" />} />
           <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<PaginaPendiente titulo="Ruta crítica" bloque="26c" />} />
@@ -44,8 +46,15 @@ export function App() {
           <Route path="/notificaciones" element={<PaginaPendiente titulo="Notificaciones" bloque="26f" />} />
           <Route path="/perfil" element={<PaginaPendiente titulo="Perfil" bloque="26f" />} />
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
+            <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />
+            <Route path="/panel" element={<PaginaPendiente titulo="Panel del docente" bloque="26f" />} />
+            <Route path="/reportes" element={<PaginaPendiente titulo="Reportes" bloque="26f" />} />
             <Route path="/proyectos/:idProyecto/panel" element={<PaginaPendiente titulo="Panel del docente" bloque="26f" />} />
             <Route path="/hitos/:idHitoEquipo/evaluar" element={<PaginaPendiente titulo="Evaluar hito" bloque="26e" />} />
+          </Route>
+          <Route element={<RutaProtegida roles={['ESTUDIANTE']} />}>
+            <Route path="/tablero" element={<PaginaPendiente titulo="Tablero" bloque="26c" />} />
+            <Route path="/ruta-critica" element={<PaginaPendiente titulo="Ruta crítica" bloque="26c" />} />
           </Route>
           <Route element={<RutaProtegida roles={['ADMINISTRADOR']} />}>
             <Route path="/admin/docentes" element={<AdminDocentes />} />

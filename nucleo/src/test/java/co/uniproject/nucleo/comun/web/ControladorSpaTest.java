@@ -16,8 +16,8 @@ class ControladorSpaTest extends ApiIntegracionBase {
     void lasRutasDelFrontendDevuelvenElIndice() {
         Navegador n = new Navegador(puerto);
         for (String ruta : List.of("/ingresar", "/registro", "/mis-tareas", "/proyectos", "/proyectos/5/panel",
-                "/tareas/12", "/equipos/3/tablero", "/hitos/7/evaluar", "/hitos/7/evaluacion", "/notificaciones",
-                "/perfil", "/admin/docentes")) {
+                "/proyectos/nuevo", "/tareas/12", "/equipos/3/tablero", "/hitos/7/evaluar", "/hitos/7/evaluacion",
+                "/notificaciones", "/perfil", "/admin/docentes", "/panel", "/reportes", "/tablero", "/ruta-critica")) {
             HttpResponse<String> r = n.get(ruta);
             assertThat(r.statusCode()).as(ruta).isEqualTo(200);
             assertThat(r.body()).as(ruta).contains(MARCA);

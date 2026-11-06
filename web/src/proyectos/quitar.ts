@@ -1,0 +1,76 @@
+import { ErrorApi } from '../api/cliente';
+import type { EquipoVista, MiembroVista } from '../api/tipos';
+import { mensajeErrorApi } from './errores';
+import type { Mensaje } from './errores';
+
+/** Las operaciones del API que usan estas acciones (en las pruebas, una versión falsa). */
+export interface ApiQuitar {
+  quitarMiembro(idEquipo: number, idUsuario: number): Promise<EquipoVista>;
+  quitarMonitor(idProyecto: number, idMonitor: number): Promise<void>;
+}
+
+export type ResultadoQuitarIntegrante = { tipo: 'quitado'; equipo: EquipoVista } | { tipo: 'error'; mensaje: string };
+
+export const YA_NO_ES_MIEMBRO = 'Esa persona ya no estaba en el equipo. Recarga la página para ver la lista actual.';
+export const YA_NO_ES_MONITOR = 'Ese monitor ya no estaba asignado al proyecto.';
+export const ES_LIDER_AHORA = 'Esa persona es ahora el líder del equipo. Designa a otro líder antes de quitarla.';
+
+/** Decisión 26b-16: al líder no se le ofrece "Quitar"; primero se designa otro líder. */
+export function sePuedeQuitar(miembro: MiembroVista): boolean {
+  return miembro.rolEquipo !== 'LIDER';
+}
+
+/** Aclaración 3: al confirmar se revisa la lista actual; null si se puede quitar, o el motivo si no. */
+export function bloqueoParaQuitar(miembros: MiembroVista[], idUsuario: number): string | null {
+  const miembro = miembros.find((m) => m.idUsuario === idUsuario);
+  if (miembro === undefined) {
+    return YA_NO_ES_MIEMBRO;
+  }
+  return sePuedeQuitar(miembro) ? null : ES_LIDER_AHORA;
+}
+
+/** Decisión 26b-17: quitar no borra tareas ni historial. */
+export function preguntaQuitarIntegrante(nombre: string): string {
+  return `¿Quitar a ${nombre} del equipo? Sus tareas y su historial se conservan, y el líder puede reasignar sus tareas.`;
+}
+
+/** Decisión 26b-18: el correo sigue habilitado y el API no permite volver a asignarlo. */
+export function preguntaQuitarMonitor(nombre: string): string {
+  return `¿Quitar a ${nombre} de los monitores del proyecto? Su historial se conserva, pero con ese correo no se `
+    + 'podrá volver a agregar desde aquí.';
+}
+
+export function textoIntegranteQuitado(nombre: string): string {
+  return `${nombre} salió del equipo. Sus tareas y su historial se conservan.`;
+}
+
+export function textoMonitorQuitado(nombre: string): string {
+  return `${nombre} ya no es monitor de este proyecto.`;
+}
+
+/** quitarMiembro con los mensajes de 26b-19. */
+export async function quitarIntegrante(api: Pick<ApiQuitar, 'quitarMiembro'>, idEquipo: number,
+                                       idUsuario: number): Promise<ResultadoQuitarIntegrante> {
+  try {
+    return { tipo: 'quitado', equipo: await api.quitarMiembro(idEquipo, idUsuario) };
+  } catch (e) {
+    if (e instanceof ErrorApi && e.estado === 404) {
+      return { tipo: 'error', mensaje: YA_NO_ES_MIEMBRO };
+    }
+    return { tipo: 'error', mensaje: mensajeErrorApi(e, []) };
+  }
+}
+
+/** quitarMonitor: éxito, aviso si ya no estaba (404) o error. Quien llama recarga la lista en los dos primeros. */
+export async function quitarMonitorDelProyecto(api: Pick<ApiQuitar, 'quitarMonitor'>, idProyecto: number,
+                                               idMonitor: number, nombre: string): Promise<Mensaje> {
+  try {
+    await api.quitarMonitor(idProyecto, idMonitor);
+    return { tipo: 'exito', texto: textoMonitorQuitado(nombre) };
+  } catch (e) {
+    if (e instanceof ErrorApi && e.estado === 404) {
+      return { tipo: 'aviso', texto: YA_NO_ES_MONITOR };
+    }
+    return { tipo: 'error', texto: mensajeErrorApi(e, []) };
+  }
+}

@@ -18,3 +18,24 @@ export function fechaCorta(instante: string): string {
   const valor = (tipo: Intl.DateTimeFormatPartTypes) => partes.find((p) => p.type === tipo)?.value ?? '';
   return `${valor('day')}/${valor('month')}/${valor('year')}`;
 }
+
+const FECHA_ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Rango de dos fechas de la API (date, "aaaa-mm-dd") como en Figma P03: "01/08 – 29/08/2026"; con años distintos,
+ * "15/12/2026 – 20/01/2027". Son fechas de calendario: sin zona horaria. "Sin fechas" si falta alguna.
+ */
+export function rangoFechas(inicio: string, fin: string): string {
+  const a = FECHA_ISO.exec(inicio);
+  const b = FECHA_ISO.exec(fin);
+  if (a === null || b === null) {
+    return 'Sin fechas';
+  }
+  const desde = a[1] === b[1] ? `${a[3]}/${a[2]}` : `${a[3]}/${a[2]}/${a[1]}`;
+  return `${desde} – ${b[3]}/${b[2]}/${b[1]}`;
+}
+
+/** Número con coma decimal (es-CO) y sin separador de miles: 33.5 → "33,5". */
+export function decimalEsCo(valor: number): string {
+  return String(valor).replace('.', ',');
+}

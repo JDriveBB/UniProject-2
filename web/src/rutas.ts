@@ -18,4 +18,10 @@ export const rutas = {
   notificaciones: () => '/notificaciones',
   perfil: () => '/perfil',
   adminDocentes: () => '/admin/docentes',
+  /* Bloque 26b. Las rutas sin id son de la barra: 26c y 26f deciden a qué equipo o proyecto llevan (decisión 26b-2). */
+  proyectoNuevo: () => '/proyectos/nuevo',
+  panel: () => '/panel',
+  reportes: () => '/reportes',
+  tablero: () => '/tablero',
+  rutaCriticaActual: () => '/ruta-critica',
 } as const;
