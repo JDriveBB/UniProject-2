@@ -188,6 +188,9 @@
   --ancho-columna-perfil: 640px;
   --ancho-etiqueta-perfil: 190px;
   --fuente-codigo: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Bloque 26p: reportes (P11). Provisional, sin Figma. */
+  --ancho-col-accion: 220px;
 }
 
 *,
@@ -2415,6 +2418,22 @@ a {
 /* 960px: las variables CSS no valen dentro de @media. */
 @media (max-width: 960px) {
   .perfil {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Bloque 26p: reportes (P11). Provisional, sin Figma ===== */
+.fila-campos--reporte {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tabla__col-accion {
+  width: var(--ancho-col-accion);
+}
+
+/* 960px: las variables CSS no valen dentro de @media. */
+@media (max-width: 960px) {
+  .fila-campos--reporte {
     grid-template-columns: 1fr;
   }
 }

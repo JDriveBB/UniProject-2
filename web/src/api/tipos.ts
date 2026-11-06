@@ -518,3 +518,18 @@ export interface CodigoGenerado {
   venceEn: string;
   enlace: string;
 }
+
+/* Tipos del Bloque 26p (trazabilidad del equipo) */
+export interface EntradaHistorial {
+  idLog: number;
+  fechaHora: string;
+  idUsuario: number | null;
+  autor: string;
+  accion: string;
+  entidad: string;
+  idRegistro: number | null;
+  campo: string | null;
+  valorAnterior: string | null;
+  valorNuevo: string | null;
+  detalle: string;
+}
