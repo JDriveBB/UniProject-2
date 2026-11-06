@@ -31,7 +31,7 @@ class ContratoOpenApiTest extends ApiIntegracionBase {
     @Test
     void elContratoTieneExactamenteLasOperacionesDeLaApi() throws IOException {
         Set<String> codigo = operacionesDelCodigo();
-        assertThat(codigo).hasSizeGreaterThanOrEqualTo(60);
+        assertThat(codigo).hasSizeGreaterThanOrEqualTo(63);
         assertThat(operacionesDelContrato()).containsExactlyInAnyOrderElementsOf(codigo);
     }
 

@@ -10,6 +10,7 @@ import co.uniproject.agente.plantillas.RenderizadorAvisos;
 import co.uniproject.agente.telegram.EnviadorTelegram;
 import co.uniproject.agente.telegram.ResultadoEnvio;
 import co.uniproject.agente.vinculacion.ClienteNucleo;
+import co.uniproject.agente.vinculacion.CodigoRecuperacion;
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.EventoCloud;
 import co.uniproject.eventos.ejemplos.EjemplosEventos;
@@ -218,5 +219,56 @@ class ConsumidorNotificacionesTest {
         doThrow(new IOException("canal cerrado")).when(canal).basicAck(TAG, false);
 
         assertDoesNotThrow(() -> consumidor.recibir(mensajeValido, canal, TAG));
+    }
+
+    private static final String CODIGO = "Ab3_-".repeat(8) + "xyz";
+
+    private EventoCloud recuperacion() {
+        when(reglas.destinatarios(any())).thenReturn(List.of(new Destinatario(101L, 900000101L, Variante.UNICA)));
+        return EventoCloud.nuevo(EjemplosEventos.recuperacionSolicitada(), RELOJ);
+    }
+
+    private Message mensaje(EventoCloud evento) {
+        return MessageBuilder.withBody(codec.serializar(evento).getBytes(UTF_8)).build();
+    }
+
+    @Test
+    void recuperacionPideElCodigoYUsaSuPlantilla() throws IOException {
+        EventoCloud ev = recuperacion();
+        when(clienteNucleo.pedirCodigoRecuperacion(EjemplosEventos.SOLICITUD, 900000101L))
+                .thenReturn(CodigoRecuperacion.emitido(CODIGO));
+        Aviso aviso = new Aviso("<b>r</b>", "Restablecer contraseña", "/restablecer-contrasena#codigo=" + CODIGO);
+        when(renderizador.renderizarRecuperacion(any(), eq(CODIGO))).thenReturn(aviso);
+        when(enviador.enviar(900000101L, aviso)).thenReturn(ResultadoEnvio.ENVIADO);
+
+        consumidor.recibir(mensaje(ev), canal, TAG);
+
+        verify(canal).basicAck(TAG, false);
+        verify(renderizador).renderizarRecuperacion(any(), eq(CODIGO));
+        verify(registro).registrar(ev.id(), 101L);
+    }
+
+    @Test
+    void recuperacionNoVigenteConfirmaSinEnviar() throws IOException {
+        EventoCloud ev = recuperacion();
+        when(clienteNucleo.pedirCodigoRecuperacion(any(), anyLong())).thenReturn(CodigoRecuperacion.descartada());
+
+        consumidor.recibir(mensaje(ev), canal, TAG);
+
+        verify(canal).basicAck(TAG, false);
+        verify(registro).registrar(ev.id(), 101L);
+        verifyNoInteractions(enviador);
+    }
+
+    @Test
+    void recuperacionSinRespuestaDelNucleoReencola() throws IOException {
+        EventoCloud ev = recuperacion();
+        when(clienteNucleo.pedirCodigoRecuperacion(any(), anyLong())).thenReturn(CodigoRecuperacion.error());
+
+        consumidor.recibir(mensaje(ev), canal, TAG);
+
+        verify(canal).basicReject(TAG, true);
+        verify(registro, never()).registrar(any(), anyLong());
+        verifyNoInteractions(enviador);
     }
 }

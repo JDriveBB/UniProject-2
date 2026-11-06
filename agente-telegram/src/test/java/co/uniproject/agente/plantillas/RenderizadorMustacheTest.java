@@ -5,6 +5,7 @@ import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.EventoCloud;
 import co.uniproject.eventos.datos.CaracterNota;
 import co.uniproject.eventos.datos.DatosEvento;
+import co.uniproject.eventos.datos.OrigenCambioContrasena;
 import co.uniproject.eventos.ejemplos.EjemplosEventos;
 import org.junit.jupiter.api.Test;
 
@@ -119,5 +120,47 @@ class RenderizadorMustacheTest {
                 .isInstanceOf(PlantillaException.class);
         assertThatThrownBy(() -> renderizador.renderizar(ev(EjemplosEventos.hitoEnviado()), Variante.NUEVO))
                 .isInstanceOf(PlantillaException.class);
+    }
+
+    private static final String CODIGO = "Ab3_-".repeat(8) + "xyz";
+
+    @Test
+    void recuperacionLlevaElCodigoYElEnlace() {
+        Aviso aviso = renderizador.renderizarRecuperacion(ev(EjemplosEventos.recuperacionSolicitada()), CODIGO);
+        assertThat(aviso.html()).isEqualTo(
+                "<b>Restablecer tu contraseña</b>\n" +
+                "Se pidió restablecer la contraseña de tu cuenta de UniProject. Abre el enlace o copia este código en la pantalla «Restablecer contraseña»:\n" +
+                "<code>" + CODIGO + "</code>\n" +
+                "Vence a las 14:20 (hora de Colombia) y sirve una sola vez. Si no lo pediste, ignora este mensaje: tu contraseña no cambia."
+        );
+        assertThat(aviso.textoBoton()).isEqualTo("Restablecer contraseña");
+        assertThat(aviso.ruta()).isEqualTo("/restablecer-contrasena#codigo=" + CODIGO);
+        assertThat(aviso.html()).doesNotContain("Estudiante A");
+    }
+
+    @Test
+    void recuperacionExigeUnCodigoValido() {
+        assertThatThrownBy(() -> renderizador.renderizar(ev(EjemplosEventos.recuperacionSolicitada()), Variante.UNICA))
+                .isInstanceOf(PlantillaException.class);
+        assertThatThrownBy(() -> renderizador.renderizarRecuperacion(ev(EjemplosEventos.recuperacionSolicitada()), "corto"))
+                .isInstanceOf(PlantillaException.class)
+                .hasMessageNotContaining("corto");
+        assertThatThrownBy(() -> renderizador.renderizarRecuperacion(ev(EjemplosEventos.hitoEnviado()), CODIGO))
+                .isInstanceOf(PlantillaException.class);
+    }
+
+    @Test
+    void contrasenaCambiada() {
+        Aviso perfil = renderizador.renderizar(ev(EjemplosEventos.contrasenaCambiada(OrigenCambioContrasena.PERFIL)),
+                Variante.UNICA);
+        assertThat(perfil.html()).isEqualTo(
+                "<b>Tu contraseña cambió</b>\n" +
+                "La contraseña de tu cuenta de UniProject se cambió el 24/10/2026 a las 14:05 desde tu perfil. Se cerraron las demás sesiones abiertas. Si no fuiste tú, pide un enlace nuevo en «¿Olvidaste tu contraseña?» y avisa a tu docente."
+        );
+        assertThat(perfil.textoBoton()).isEqualTo("Ir a UniProject");
+        assertThat(perfil.ruta()).isEqualTo("/ingresar");
+        Aviso enlace = renderizador.renderizar(
+                ev(EjemplosEventos.contrasenaCambiada(OrigenCambioContrasena.RECUPERACION)), Variante.UNICA);
+        assertThat(enlace.html()).contains("a las 14:05 con un enlace de recuperación.");
     }
 }

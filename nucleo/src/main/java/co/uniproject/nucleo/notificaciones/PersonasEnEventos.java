@@ -21,7 +21,7 @@ public class PersonasEnEventos {
 
     /** Campos de data que guardan una Persona o la Referencia de una persona (eventos-contrato, paquete datos). */
     static final List<String> CAMPOS_PERSONA = List.of("responsable", "docente", "integrantes", "estudiante", "lider",
-            "integranteAnterior", "integranteNuevo");
+            "integranteAnterior", "integranteNuevo", "titular");
 
     /** Filtro grueso en la BD (cualquier id igual dentro de data); el filtro exacto es CAMPOS_PERSONA. */
     private static final String RUTA = "$.data.** ? (@.id == $id)";

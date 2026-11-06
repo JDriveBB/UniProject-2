@@ -4,14 +4,16 @@ import co.uniproject.eventos.datos.*;
 import java.util.Arrays;
 import java.util.Optional;
 
-/** Los seis eventos de UniProject (plan §5). La clave es también la clave de enrutamiento en uniproject.eventos. */
+/** Los seis eventos de UniProject (plan §5) y los dos de cuenta (bloque 28). La clave es también la clave de enrutamiento en uniproject.eventos. */
 public enum TipoEvento {
     TAREA_RUTA_CRITICA_RIESGO("tarea.ruta_critica.riesgo", TareaRutaCriticaRiesgo.class),
     EQUIPO_INACTIVIDAD("equipo.inactividad", EquipoInactividad.class),
     HITO_ENVIADO("hito.enviado", HitoEnviado.class),
     HITO_EVALUADO("hito.evaluado", HitoEvaluado.class),
     TAREA_REASIGNADA("tarea.reasignada", TareaReasignada.class),
-    TAREA_CORRECCION("tarea.correccion", TareaCorreccion.class);
+    TAREA_CORRECCION("tarea.correccion", TareaCorreccion.class),
+    CUENTA_RECUPERACION_SOLICITADA("cuenta.recuperacion.solicitada", RecuperacionSolicitada.class),
+    CUENTA_CONTRASENA_CAMBIADA("cuenta.contrasena.cambiada", ContrasenaCambiada.class);
 
     private final String clave;
     private final Class<? extends DatosEvento> tipoDatos;
@@ -40,6 +42,8 @@ public enum TipoEvento {
             case HitoEvaluado _ -> HITO_EVALUADO;
             case TareaReasignada _ -> TAREA_REASIGNADA;
             case TareaCorreccion _ -> TAREA_CORRECCION;
+            case RecuperacionSolicitada _ -> CUENTA_RECUPERACION_SOLICITADA;
+            case ContrasenaCambiada _ -> CUENTA_CONTRASENA_CAMBIADA;
         };
     }
 }

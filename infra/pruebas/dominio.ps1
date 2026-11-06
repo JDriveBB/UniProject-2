@@ -3,7 +3,7 @@ param([switch]$Levantar)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Pruebas de extremo a extremo del dominio (bloque 24): D1-D9 por HTTP contra el nucleo en
+# Pruebas de extremo a extremo del dominio (bloques 24 y 28): D1-D9 y D11 por HTTP contra el nucleo en
 # http://localhost:8080, con cookies y CSRF como el SPA. No lee .env (solo docker compose lo usa para
 # entrar a la BD) y no depende de Telegram: los usuarios de la prueba no tienen chat vinculado.
 # Se corre desde la raiz del repositorio: .\infra\pruebas\dominio.ps1 [-Levantar]
@@ -14,7 +14,7 @@ $CLAVE = "ClaveE2E-$SUFIJO"
 $TMP = Join-Path ([System.IO.Path]::GetTempPath()) ("uniproject-dominio-" + $SUFIJO)
 New-Item -ItemType Directory -Path $TMP | Out-Null
 $UTF8 = New-Object System.Text.UTF8Encoding($false)
-$TOTAL = 9
+$TOTAL = 10
 $ok = 0
 
 function dc {
@@ -315,6 +315,35 @@ try {
     }
 } catch {
     Write-Host "D9 FALLO: $($_.Exception.Message)"
+}
+
+# D10 reservado: supresion de la cuenta (bloque 27, se agrega con el 26f)
+# D11 Contrasena: recuperacion sin enumeracion y cambio con sesion (bloque 28). Sin Telegram: el lider no tiene chat.
+try {
+    Sql "DELETE FROM limite_recuperacion;" | Out-Null
+    $NUEVA = "Nueva-$CLAVE"
+    Csrf "anonimo" | Out-Null
+    $s1 = Api "anonimo" "POST" "/api/cuentas/recuperacion" (ComoJson @{ email = $LIDER })
+    $s2 = Api "anonimo" "POST" "/api/cuentas/recuperacion" (ComoJson @{ email = (Correo "nadie") })
+    $rb = Api "anonimo" "POST" "/api/cuentas/recuperacion/restablecer" (ComoJson @{ codigo = ("A" * 43); contrasenaNueva = $NUEVA })
+    $codigoRb = (Leer $rb).codigo
+    Ingresar "lider2" $LIDER | Out-Null
+    $cm = Api "lider" "POST" "/api/perfil/contrasena" (ComoJson @{ contrasenaActual = $CLAVE; contrasenaNueva = $NUEVA })
+    $yoLider = Api "lider" "GET" "/api/sesion/yo"
+    $yoOtra = Api "lider2" "GET" "/api/sesion/yo"
+    Csrf "nuevo" | Out-Null
+    $vieja = Api "nuevo" "POST" "/api/sesion/login" (ComoJson @{ email = $LIDER; contrasena = $CLAVE })
+    $nueva = Api "nuevo" "POST" "/api/sesion/login" (ComoJson @{ email = $LIDER; contrasena = $NUEVA })
+    $codigos = @($s1.Codigo, $s2.Codigo, $rb.Codigo, $cm.Codigo, $yoLider.Codigo, $yoOtra.Codigo, $vieja.Codigo, $nueva.Codigo) -join ","
+    $iguales = ($s1.Cuerpo -eq $s2.Cuerpo)
+    if ($codigos -eq "202,202,400,204,200,401,401,200" -and $iguales -and $codigoRb -eq "CODIGO_INVALIDO") {
+        $ok++
+        Write-Host "D11 OK"
+    } else {
+        Write-Host "D11 FALLO: esperado [202,202,400,204,200,401,401,200, iguales True, CODIGO_INVALIDO] pero salio [$codigos, iguales $iguales, $codigoRb]"
+    }
+} catch {
+    Write-Host "D11 FALLO: $($_.Exception.Message)"
 }
 
 Remove-Item -Recurse -Force $TMP -ErrorAction SilentlyContinue

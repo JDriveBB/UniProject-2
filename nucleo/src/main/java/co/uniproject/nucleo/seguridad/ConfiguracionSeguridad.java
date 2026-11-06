@@ -56,7 +56,8 @@ public class ConfiguracionSeguridad {
         http.authorizeHttpRequests(a -> a
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/sesion/csrf").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/sesion/login", "/api/sesion/logout", "/api/cuentas/registro")
+                .requestMatchers(HttpMethod.POST, "/api/sesion/login", "/api/sesion/logout", "/api/cuentas/registro",
+                        "/api/cuentas/recuperacion", "/api/cuentas/recuperacion/restablecer")
                     .permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/**").authenticated()

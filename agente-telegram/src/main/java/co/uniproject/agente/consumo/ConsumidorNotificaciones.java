@@ -7,12 +7,14 @@ import co.uniproject.agente.plantillas.Aviso;
 import co.uniproject.agente.plantillas.PlantillaException;
 import co.uniproject.agente.plantillas.RenderizadorAvisos;
 import co.uniproject.agente.telegram.EnviadorTelegram;
+import co.uniproject.agente.vinculacion.CodigoRecuperacion;
 import co.uniproject.agente.vinculacion.ClienteNucleo;
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.EventoCloud;
 import co.uniproject.eventos.EventoInvalidoException;
 import co.uniproject.eventos.TipoEvento;
 import co.uniproject.eventos.Topologia;
+import co.uniproject.eventos.datos.RecuperacionSolicitada;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.List;
@@ -70,7 +72,23 @@ public class ConsumidorNotificaciones {
                 if (registro.yaProcesado(evento.id(), d.usuarioId())) {
                     continue;
                 }
-                Aviso aviso = renderizador.renderizar(evento, d.variante());
+                Aviso aviso;
+                if (evento.data() instanceof RecuperacionSolicitada r) {
+                    CodigoRecuperacion codigo = clienteNucleo.pedirCodigoRecuperacion(r.solicitud(), d.chatId());
+                    if (codigo.estado() == CodigoRecuperacion.Estado.DESCARTADA) {
+                        registro.registrar(evento.id(), d.usuarioId());
+                        log.info("Recuperación del evento {} ya no vigente; no se envía", evento.id());
+                        continue;
+                    }
+                    if (codigo.estado() == CodigoRecuperacion.Estado.ERROR) {
+                        log.warn("El núcleo no entregó el código del evento {}; se reintenta más tarde", evento.id());
+                        rechazar(canal, tag, true);
+                        return;
+                    }
+                    aviso = renderizador.renderizarRecuperacion(evento, codigo.codigo());
+                } else {
+                    aviso = renderizador.renderizar(evento, d.variante());
+                }
                 switch (enviador.enviar(d.chatId(), aviso)) {
                     case ENVIADO -> {
                         registro.registrar(evento.id(), d.usuarioId());

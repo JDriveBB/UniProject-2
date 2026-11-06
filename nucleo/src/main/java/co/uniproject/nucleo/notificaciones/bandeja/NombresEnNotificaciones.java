@@ -30,6 +30,9 @@ public class NombresEnNotificaciones {
      * notificaciones reescribió. Debe correr dentro de la transacción del servicio que lo llama.
      */
     public int regenerar(EventoCloud anterior, EventoCloud nuevo) {
+        if (!MensajesBandeja.vaALaBandeja(nuevo.data())) {
+            return 0;
+        }
         MensajesBandeja.ReferenciaBandeja referencia = MensajesBandeja.referencia(nuevo.data());
         OffsetDateTime fecha = OffsetDateTime.ofInstant(nuevo.time(), ZoneOffset.UTC);
         int filas = 0;

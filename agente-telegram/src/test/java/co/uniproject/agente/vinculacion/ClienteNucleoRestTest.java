@@ -4,10 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -134,5 +136,56 @@ class ClienteNucleoRestTest {
 
         assertThatCode(() -> cliente.informarBloqueo(123L)).doesNotThrowAnyException();
         servidor.verify();
+    }
+
+    private static final UUID S = UUID.fromString("3f1c2a4e-8b7d-4c1e-9a2f-5d6e7f809a1b");
+    private static final String CODIGO = "Ab3_-".repeat(8) + "xyz";
+
+    private static void esperarCodigo(MockRestServiceServer s, org.springframework.test.web.client.ResponseCreator r) {
+        s.expect(requestTo("http://nucleo.test/interno/telegram/recuperaciones"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-UniProject-Token-Interno", "token-de-prueba"))
+                .andExpect(content().json("{\"solicitud\":\"" + S + "\",\"chatId\":123}"))
+                .andRespond(r);
+    }
+
+    @Test
+    void codigoRecuperacion200() {
+        esperarCodigo(servidor, withSuccess("{\"codigo\":\"" + CODIGO + "\"}", MediaType.APPLICATION_JSON));
+
+        CodigoRecuperacion r = cliente.pedirCodigoRecuperacion(S, 123L);
+
+        assertThat(r.estado()).isEqualTo(CodigoRecuperacion.Estado.EMITIDO);
+        assertThat(r.codigo()).isEqualTo(CODIGO);
+        assertThat(r.toString()).doesNotContain(CODIGO);
+        servidor.verify();
+    }
+
+    @Test
+    void codigoRecuperacion404y410SonDescartadas() {
+        esperarCodigo(servidor, withStatus(HttpStatus.NOT_FOUND));
+        assertThat(cliente.pedirCodigoRecuperacion(S, 123L).estado()).isEqualTo(CodigoRecuperacion.Estado.DESCARTADA);
+        servidor.verify();
+
+        RestClient.Builder b = RestClient.builder();
+        MockRestServiceServer s = MockRestServiceServer.bindTo(b).build();
+        ClienteNucleoRest c = new ClienteNucleoRest(b, "http://nucleo.test", "token-de-prueba");
+        esperarCodigo(s, withStatus(HttpStatus.GONE));
+        assertThat(c.pedirCodigoRecuperacion(S, 123L).estado()).isEqualTo(CodigoRecuperacion.Estado.DESCARTADA);
+        s.verify();
+    }
+
+    @Test
+    void codigoRecuperacionConErrorOFormatoInvalidoEsError() {
+        esperarCodigo(servidor, withServerError());
+        assertThat(cliente.pedirCodigoRecuperacion(S, 123L).estado()).isEqualTo(CodigoRecuperacion.Estado.ERROR);
+        servidor.verify();
+
+        RestClient.Builder b = RestClient.builder();
+        MockRestServiceServer s = MockRestServiceServer.bindTo(b).build();
+        ClienteNucleoRest c = new ClienteNucleoRest(b, "http://nucleo.test", "token-de-prueba");
+        esperarCodigo(s, withSuccess("{\"codigo\":\"corto\"}", MediaType.APPLICATION_JSON));
+        assertThat(c.pedirCodigoRecuperacion(S, 123L).estado()).isEqualTo(CodigoRecuperacion.Estado.ERROR);
+        s.verify();
     }
 }

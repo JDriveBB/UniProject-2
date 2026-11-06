@@ -5,6 +5,7 @@ import co.uniproject.eventos.datos.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 /** Ejemplos fijos de cada evento, para pruebas y demostraciones. No usar en código de producción. */
 public final class EjemplosEventos {
@@ -20,6 +21,7 @@ public final class EjemplosEventos {
     public static final Persona INTEGRANTE_B_SIN_TELEGRAM = new Persona(102, "Estudiante B", null);
     public static final Persona INTEGRANTE_E = new Persona(103, "Estudiante E", 900000103L);
     public static final Persona DOCENTE = new Persona(200, "Docente D", 900000200L);
+    public static final UUID SOLICITUD = UUID.fromString("3f1c2a4e-8b7d-4c1e-9a2f-5d6e7f809a1b");
 
     public static TareaRutaCriticaRiesgo tareaRutaCriticaRiesgo() {
         return new TareaRutaCriticaRiesgo(PROYECTO, EQUIPO, TAREA, new Referencia(101, "Estudiante A"), 40, HITO,
@@ -50,6 +52,14 @@ public final class EjemplosEventos {
                 "Falta el caso \"sin conexión\" & revisar <notas>");
     }
 
+    public static RecuperacionSolicitada recuperacionSolicitada() {
+        return new RecuperacionSolicitada(SOLICITUD, INTEGRANTE_A, Instant.parse("2026-10-24T19:20:00Z"));
+    }
+
+    public static ContrasenaCambiada contrasenaCambiada(OrigenCambioContrasena origen) {
+        return new ContrasenaCambiada(INTEGRANTE_A, FECHA, origen);
+    }
+
     /** Ejemplo por defecto de cada tipo (inactividad sin docente; hito evaluado provisional). */
     public static DatosEvento de(TipoEvento tipo) {
         return switch (tipo) {
@@ -59,6 +69,8 @@ public final class EjemplosEventos {
             case HITO_EVALUADO -> hitoEvaluado(CaracterNota.PROVISIONAL);
             case TAREA_REASIGNADA -> tareaReasignada();
             case TAREA_CORRECCION -> tareaCorreccion();
+            case CUENTA_RECUPERACION_SOLICITADA -> recuperacionSolicitada();
+            case CUENTA_CONTRASENA_CAMBIADA -> contrasenaCambiada(OrigenCambioContrasena.PERFIL);
         };
     }
 }

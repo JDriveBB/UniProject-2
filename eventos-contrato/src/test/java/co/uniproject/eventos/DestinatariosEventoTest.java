@@ -2,6 +2,7 @@ package co.uniproject.eventos;
 
 import co.uniproject.eventos.DestinatariosEvento.Destino;
 import co.uniproject.eventos.datos.CaracterNota;
+import co.uniproject.eventos.datos.OrigenCambioContrasena;
 import co.uniproject.eventos.datos.Persona;
 import co.uniproject.eventos.datos.Referencia;
 import co.uniproject.eventos.datos.TareaRutaCriticaRiesgo;
@@ -49,5 +50,13 @@ class DestinatariosEventoTest {
                 List.of(EjemplosEventos.LIDER_C, EjemplosEventos.INTEGRANTE_B_SIN_TELEGRAM),
                 new Persona(100, "Estudiante C", 900000100L));
         assertThat(resumen(DestinatariosEvento.de(datos))).containsExactly("100:UNICO", "102:UNICO");
+    }
+
+    @Test
+    void eventosDeCuentaSoloAlTitular() {
+        assertThat(resumen(DestinatariosEvento.de(EjemplosEventos.recuperacionSolicitada())))
+                .containsExactly("101:UNICO");
+        assertThat(resumen(DestinatariosEvento.de(EjemplosEventos.contrasenaCambiada(OrigenCambioContrasena.PERFIL))))
+                .containsExactly("101:UNICO");
     }
 }

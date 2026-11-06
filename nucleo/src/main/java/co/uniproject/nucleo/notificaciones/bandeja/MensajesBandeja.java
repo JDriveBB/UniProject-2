@@ -2,10 +2,12 @@ package co.uniproject.nucleo.notificaciones.bandeja;
 
 import co.uniproject.eventos.DestinatariosEvento;
 import co.uniproject.eventos.datos.CaracterNota;
+import co.uniproject.eventos.datos.ContrasenaCambiada;
 import co.uniproject.eventos.datos.DatosEvento;
 import co.uniproject.eventos.datos.EquipoInactividad;
 import co.uniproject.eventos.datos.HitoEnviado;
 import co.uniproject.eventos.datos.HitoEvaluado;
+import co.uniproject.eventos.datos.RecuperacionSolicitada;
 import co.uniproject.eventos.datos.TareaCorreccion;
 import co.uniproject.eventos.datos.TareaReasignada;
 import co.uniproject.eventos.datos.TareaRutaCriticaRiesgo;
@@ -24,6 +26,11 @@ public final class MensajesBandeja {
     private MensajesBandeja() {
     }
 
+    /** Decisión 28-13: los eventos de cuenta solo van por Telegram. */
+    public static boolean vaALaBandeja(DatosEvento datos) {
+        return !(datos instanceof RecuperacionSolicitada || datos instanceof ContrasenaCambiada);
+    }
+
     public static ReferenciaBandeja referencia(DatosEvento datos) {
         return switch (datos) {
             case TareaRutaCriticaRiesgo r -> new ReferenciaBandeja("tarea", r.tarea().id());
@@ -32,6 +39,8 @@ public final class MensajesBandeja {
             case HitoEvaluado h -> new ReferenciaBandeja("hito_equipo", h.hito().id());
             case TareaReasignada t -> new ReferenciaBandeja("tarea", t.tarea().id());
             case TareaCorreccion t -> new ReferenciaBandeja("tarea", t.tarea().id());
+            case RecuperacionSolicitada _, ContrasenaCambiada _ ->
+                    throw new IllegalArgumentException("Los eventos de cuenta no van a la bandeja");
         };
     }
 
@@ -51,6 +60,8 @@ public final class MensajesBandeja {
                     : "Se te asignó la tarea \"" + t.tarea().titulo() + "\" en " + t.equipo().nombre() + ".";
             case TareaCorreccion t -> t.lider().nombre() + " pidió corregir la tarea \"" + t.tarea().titulo()
                     + "\": " + t.resumen();
+            case RecuperacionSolicitada _, ContrasenaCambiada _ ->
+                    throw new IllegalArgumentException("Los eventos de cuenta no van a la bandeja");
         };
         return recortar(texto);
     }

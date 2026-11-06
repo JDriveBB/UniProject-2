@@ -89,6 +89,7 @@ public class ServicioSupresion {
         exigirQuePuedeSuprimirse(idUsuario, cuenta.rol(), FechasDominio.hoy(ahora));
         String anonimo = correoAnonimo(idUsuario);
         jdbc.sql("DELETE FROM codigo_vinculacion WHERE usuario_id = :id").param("id", idUsuario).update();
+        jdbc.sql("DELETE FROM recuperacion_contrasena WHERE usuario_id = :id").param("id", idUsuario).update();
         jdbc.sql("DELETE FROM notificacion WHERE id_destinatario = :id").param("id", idUsuario).update();
         eventos.reemplazar(idUsuario, NOMBRE_ANONIMO, true);
         jdbc.sql("DELETE FROM correo_habilitado WHERE email = :email AND fecha_uso IS NULL")
