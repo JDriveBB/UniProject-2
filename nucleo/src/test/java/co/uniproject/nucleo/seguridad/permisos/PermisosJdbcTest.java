@@ -81,6 +81,15 @@ class PermisosJdbcTest {
             "puedeVerEquipo, 2, 22, false",
             "puedeVerEquipo, 7, 22, true",
             "puedeVerEquipo, 1, 999, false",
+            "puedeVerHistorialEquipo, 1, 20, true",
+            "puedeVerHistorialEquipo, 2, 20, false",
+            "puedeVerHistorialEquipo, 3, 20, true",
+            "puedeVerHistorialEquipo, 4, 20, true",
+            "puedeVerHistorialEquipo, 5, 20, false",
+            "puedeVerHistorialEquipo, 6, 20, false",
+            "puedeVerHistorialEquipo, 7, 20, false",
+            "puedeVerHistorialEquipo, 7, 22, true",
+            "puedeVerHistorialEquipo, 1, 999, false",
             "puedeVerTarea, 4, 50, true",
             "puedeVerTarea, 2, 50, true",
             "puedeVerTarea, 1, 53, true",
@@ -159,6 +168,7 @@ class PermisosJdbcTest {
             case "esLiderDelEquipo" -> permisos.esLiderDelEquipo(u, id);
             case "puedeVerProyecto" -> permisos.puedeVerProyecto(u, id);
             case "puedeVerEquipo" -> permisos.puedeVerEquipo(u, id);
+            case "puedeVerHistorialEquipo" -> permisos.puedeVerHistorialEquipo(u, id);
             case "puedeVerTarea" -> permisos.puedeVerTarea(u, id);
             case "puedeGestionarTarea" -> permisos.puedeGestionarTarea(u, id);
             case "puedeActualizarAvance" -> permisos.puedeActualizarAvance(u, id);

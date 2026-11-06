@@ -21,6 +21,9 @@ public class PermisosJdbc implements Permisos {
             + "AND (p.id_docente = :usuario OR " + MONITOR_ACTIVO + " OR EXISTS (SELECT 1 FROM miembro_equipo m "
             + "WHERE m.id_equipo = e.id_equipo AND m.id_usuario = :usuario)))";
 
+    private static final String DOCENTE_DE_EQUIPO = "SELECT EXISTS (SELECT 1 FROM equipo e "
+            + "JOIN proyecto p ON p.id_proyecto = e.id_proyecto WHERE e.id_equipo = :id AND p.id_docente = :usuario)";
+
     private static final String TAREA_DE_MIEMBRO = "SELECT EXISTS (SELECT 1 FROM tarea t "
             + "JOIN hito_equipo he ON he.id_hito_equipo = t.id_hito_equipo "
             + "JOIN miembro_equipo m ON m.id_equipo = he.id_equipo AND m.id_usuario = :usuario "
@@ -64,6 +67,11 @@ public class PermisosJdbc implements Permisos {
     @Override
     public boolean puedeVerEquipo(long idUsuario, long idEquipo) {
         return existe(VER_EQUIPO, idUsuario, idEquipo);
+    }
+
+    @Override
+    public boolean puedeVerHistorialEquipo(long idUsuario, long idEquipo) {
+        return esIntegranteDelEquipo(idUsuario, idEquipo) || existe(DOCENTE_DE_EQUIPO, idUsuario, idEquipo);
     }
 
     @Override

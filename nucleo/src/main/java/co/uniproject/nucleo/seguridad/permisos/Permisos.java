@@ -25,6 +25,9 @@ public interface Permisos {
     /** Miembro del equipo, docente dueño del proyecto o monitor activo del proyecto. */
     boolean puedeVerEquipo(long idUsuario, long idEquipo);
 
+    /** Integrante del equipo o docente dueño del proyecto (el monitor no). */
+    boolean puedeVerHistorialEquipo(long idUsuario, long idEquipo);
+
     /** puedeVerEquipo del equipo dueño de la tarea. */
     boolean puedeVerTarea(long idUsuario, long idTarea);
 
