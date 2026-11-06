@@ -3,6 +3,7 @@ package co.uniproject.nucleo.seguridad.web;
 import co.uniproject.nucleo.comun.web.RespuestaError;
 import co.uniproject.nucleo.seguridad.CredencialesSesion;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
+import co.uniproject.nucleo.seguridad.cuentas.LimitadorRecuperacion;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioCuentas;
 import co.uniproject.nucleo.seguridad.cuentas.UsuarioSesion;
 import co.uniproject.nucleo.trazabilidad.auditoria.AccionAuditoria;
@@ -40,13 +41,16 @@ public class ControladorSesion {
     private final SecurityContextRepository repositorioContexto;
     private final RegistroAuditoria auditoria;
     private final CredencialesSesion credenciales;
+    private final LimitadorRecuperacion limitador;
 
     public ControladorSesion(ServicioCuentas cuentas, SecurityContextRepository repositorioContexto,
-                             RegistroAuditoria auditoria, CredencialesSesion credenciales) {
+                             RegistroAuditoria auditoria, CredencialesSesion credenciales,
+                             LimitadorRecuperacion limitador) {
         this.cuentas = cuentas;
         this.repositorioContexto = repositorioContexto;
         this.auditoria = auditoria;
         this.credenciales = credenciales;
+        this.limitador = limitador;
     }
 
     /** Deja la cookie XSRF-TOKEN. El SPA la llama al cargar y después de login y logout. */
@@ -59,12 +63,19 @@ public class ControladorSesion {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody SolicitudLogin solicitud, HttpServletRequest peticion,
                                    HttpServletResponse respuesta) {
+        String ip = peticion.getRemoteAddr();
+        String email = ServicioCuentas.normalizarEmail(solicitud.email());
+        limitador.exigir(LimitadorRecuperacion.Tipo.LOGIN_IP, ip);
+        limitador.exigir(LimitadorRecuperacion.Tipo.LOGIN_CORREO, email);
+
         int version = credenciales.versionPorCorreo(solicitud.email());
         Optional<UsuarioAutenticado> autenticado = cuentas.autenticar(solicitud.email(), solicitud.contrasena());
         if (autenticado.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RespuestaError("CREDENCIALES_INVALIDAS",
                     "Correo o contraseña incorrectos", List.of()));
         }
+        limitador.reiniciar(LimitadorRecuperacion.Tipo.LOGIN_CORREO, email);
+        limitador.devolver(LimitadorRecuperacion.Tipo.LOGIN_IP, ip);
         UsuarioAutenticado usuario = autenticado.get();
         descartarSesion(peticion);
         SecurityContext contexto = SecurityContextHolder.createEmptyContext();

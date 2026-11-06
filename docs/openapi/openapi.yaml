@@ -61,6 +61,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
         '403': {$ref: '#/components/responses/Prohibido'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes'}
   /api/sesion/logout:
     post:
       tags: [sesion]
