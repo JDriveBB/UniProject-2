@@ -1417,6 +1417,7 @@ components:
         horasBloqueada: {type: integer}
     EntradaHistorial:
       type: object
+      description: 'Bloque 29: los textos libres (motivo, título, nombre, descripción) salen de un anexo borrable; si su autor suprimió la cuenta, valorAnterior y valorNuevo llegan null'
       properties:
         idLog: {$ref: '#/components/schemas/Id'}
         fechaHora: {$ref: '#/components/schemas/Instante'}
@@ -1662,13 +1663,16 @@ components:
         mensaje: {type: string, maxLength: 500}
     ApoyoVista:
       type: object
+      description: 'Bloque 29: el mensaje vive en solicitud_apoyo, fuera del registro de auditoría'
       properties:
-        idLog: {$ref: '#/components/schemas/Id'}
+        idSolicitud: {$ref: '#/components/schemas/Id'}
         idTarea: {$ref: '#/components/schemas/Id'}
         titulo: {type: string}
-        idAutor: {$ref: '#/components/schemas/IdNulo'}
+        idAutor: {$ref: '#/components/schemas/Id'}
         autor: {type: string}
-        mensaje: {type: string}
+        mensaje:
+          type: [string, 'null']
+          description: 'null si quien la pidió suprimió su cuenta (Ley 1581)'
         fechaHora: {$ref: '#/components/schemas/Instante'}
     CargaIntegrante:
       type: object

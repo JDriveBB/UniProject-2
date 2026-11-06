@@ -5,6 +5,7 @@ import java.util.Objects;
 /**
  * Una fila de log_auditoria. entidadAfectada: nombre de tabla en minúscula ("tarea", "hito_equipo"…) o "http".
  * Los valores van como texto y nunca llevan contraseñas, tokens, códigos de vinculación ni chat_id (Ley 1581).
+ * Si el valor es texto libre escrito por una persona, se registra con RegistroAuditoria.registrarTexto (bloque 29).
  */
 public record EntradaAuditoria(Long idUsuarioAccion, String entidadAfectada, Long idRegistroAfectado,
                                AccionAuditoria accion, String campoModificado, String valorAnterior,

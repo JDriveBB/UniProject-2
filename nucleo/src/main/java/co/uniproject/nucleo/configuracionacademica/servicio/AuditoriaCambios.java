@@ -6,7 +6,11 @@ import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-/** Un renglón ACTUALIZAR por campo que cambió (valores como texto). Nunca se le pasan correos ni contraseñas. */
+/**
+ * Un renglón ACTUALIZAR por campo que cambió. Números, fechas y booleanos van como texto en log_auditoria; un String es
+ * texto libre escrito por una persona (título, nombre, descripción) y va a texto_auditoria, que la supresión de su autor
+ * borra (bloque 29, decisión 29-3). Nunca se le pasan correos ni contraseñas.
+ */
 public final class AuditoriaCambios {
 
     private AuditoriaCambios() {
@@ -16,9 +20,15 @@ public final class AuditoriaCambios {
                          Object anterior, Object nuevo) {
         String textoAnterior = texto(anterior);
         String textoNuevo = texto(nuevo);
-        if (!Objects.equals(textoAnterior, textoNuevo)) {
-            auditoria.registrar(EntradaAuditoria.cambio(idUsuario, entidad, idRegistro, AccionAuditoria.ACTUALIZAR,
-                    campo, textoAnterior, textoNuevo));
+        if (Objects.equals(textoAnterior, textoNuevo)) {
+            return;
+        }
+        EntradaAuditoria entrada = EntradaAuditoria.cambio(idUsuario, entidad, idRegistro, AccionAuditoria.ACTUALIZAR,
+                campo, textoAnterior, textoNuevo);
+        if (anterior instanceof String || nuevo instanceof String) {
+            auditoria.registrarTexto(entrada);
+        } else {
+            auditoria.registrar(entrada);
         }
     }
 

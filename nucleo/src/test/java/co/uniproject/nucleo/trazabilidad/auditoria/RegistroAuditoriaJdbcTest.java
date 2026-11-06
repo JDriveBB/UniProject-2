@@ -25,7 +25,7 @@ class RegistroAuditoriaJdbcTest {
 
     @BeforeEach
     void setUp() {
-        ds = PostgresPrueba.baseLimpia("3");
+        ds = PostgresPrueba.baseLimpia("6");
         jdbc = JdbcClient.create(ds);
         registro = new RegistroAuditoriaJdbc(jdbc, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
@@ -75,6 +75,21 @@ class RegistroAuditoriaJdbcTest {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> EntradaAuditoria.de(null, "tarea", 1L, null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void registrarTextoDejaElHechoEnElLogYElTextoEnElAnexo() {
+        registro.registrarTexto(EntradaAuditoria.cambio(null, "tarea", 50L, AccionAuditoria.REASIGNAR_TAREA, "motivo",
+                null, "y".repeat(1500)));
+        registro.registrarTexto(EntradaAuditoria.cambio(null, "tarea", 50L, AccionAuditoria.ACTUALIZAR, "descripcion",
+                null, null));
+        assertThat(jdbc.sql("SELECT accion || '|' || campo_modificado || '|' || coalesce(valor_anterior, '-') || '|' "
+                        + "|| coalesce(valor_nuevo, '-') FROM log_auditoria ORDER BY id_log").query(String.class).list())
+                .containsExactly("REASIGNAR_TAREA|motivo|-|-", "ACTUALIZAR|descripcion|-|-");
+        String texto = jdbc.sql("SELECT x.valor_nuevo FROM texto_auditoria x JOIN log_auditoria l ON l.id_log = x.id_log "
+                + "WHERE l.campo_modificado = 'motivo' AND x.valor_anterior IS NULL").query(String.class).single();
+        assertThat(texto).hasSize(1000).endsWith("...");
+        assertThat(jdbc.sql("SELECT count(*) FROM texto_auditoria").query(Integer.class).single()).isEqualTo(1);
     }
 
     @Test

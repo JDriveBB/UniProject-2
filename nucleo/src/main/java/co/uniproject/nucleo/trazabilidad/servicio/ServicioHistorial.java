@@ -14,10 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ServicioHistorial {
 
+    /** Bloque 29: los textos libres salen del anexo texto_auditoria (sin fila si su autor suprimió la cuenta). */
     private static final String DEL_EQUIPO = "SELECT l.id_log, l.fecha_hora, l.id_usuario_accion, "
             + "coalesce(u.nombre, 'Sistema') AS autor, l.accion, l.entidad_afectada, l.id_registro_afectado, "
-            + "l.campo_modificado, l.valor_anterior, l.valor_nuevo "
+            + "l.campo_modificado, coalesce(l.valor_anterior, x.valor_anterior) AS valor_anterior, "
+            + "coalesce(l.valor_nuevo, x.valor_nuevo) AS valor_nuevo "
             + "FROM log_auditoria l LEFT JOIN usuario u ON u.id_usuario = l.id_usuario_accion "
+            + "LEFT JOIN texto_auditoria x ON x.id_log = l.id_log "
             + "WHERE (l.entidad_afectada IN ('equipo', 'miembro_equipo') AND l.id_registro_afectado = :equipo) "
             + "OR (l.entidad_afectada = 'hito_equipo' AND l.id_registro_afectado IN "
             + "(SELECT id_hito_equipo FROM hito_equipo WHERE id_equipo = :equipo)) "

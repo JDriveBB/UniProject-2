@@ -94,7 +94,7 @@ public class ServicioReasignacion {
         }
         String motivo = Textos.opcional(s.motivo());
         if (motivo != null) {
-            auditoria.registrar(EntradaAuditoria.cambio(id, "tarea", idTarea, AccionAuditoria.REASIGNAR_TAREA,
+            auditoria.registrarTexto(EntradaAuditoria.cambio(id, "tarea", idTarea, AccionAuditoria.REASIGNAR_TAREA,
                     "motivo", null, motivo));
         }
         Map<Long, Persona> personas = consultas.personas(List.of(anterior, nuevo, id));
