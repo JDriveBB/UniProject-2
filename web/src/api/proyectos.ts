@@ -1,5 +1,6 @@
 import { api } from './cliente';
 import type {
+  CorreoHabilitadoVista,
   CriterioVista,
   EquipoVista,
   HitoVista,
@@ -93,7 +94,17 @@ export function quitarMiembro(idEquipo: number, idUsuario: number): Promise<Equi
   return api.borrar<EquipoVista>(`/api/equipos/${idEquipo}/miembros/${idUsuario}`);
 }
 
-/** quitarMonitor: 204. 404 si ya no estaba asignado. Su correo sigue habilitado en el proyecto. */
+/** quitarMonitor: 204. 404 si ya no estaba asignado. También retira su habilitación de monitor: se puede volver a agregar con su correo (bloque 30). */
 export function quitarMonitor(idProyecto: number, idMonitor: number): Promise<void> {
   return api.borrar<void>(`/api/proyectos/${idProyecto}/monitores/${idMonitor}`);
+}
+
+/** listarCorreos: solo el docente dueño (403). Ordenados por correo. */
+export function listarCorreos(idProyecto: number): Promise<CorreoHabilitadoVista[]> {
+  return api.get<CorreoHabilitadoVista[]>(`/api/proyectos/${idProyecto}/correos`);
+}
+
+/** retirarCorreo: 204. Solo habilitaciones pendientes; 409 HABILITACION_USADA si ya creó su cuenta; 404 si no existe en el proyecto. */
+export function retirarCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<void> {
+  return api.borrar<void>(`/api/proyectos/${idProyecto}/correos/${idCorreoHabilitado}`);
 }

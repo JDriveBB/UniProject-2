@@ -9,6 +9,7 @@ import { Casilla } from '../componentes/Casilla';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { CAMPOS_EQUIPO, mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
+import { CorreosPendientes } from './CorreosPendientes';
 import { FilaMonitores } from './FilaMonitores';
 import { TarjetaEquipo } from './TarjetaEquipo';
 import { MAXIMO_NOMBRE_EQUIPO, validarNombreEquipo } from './validacion';
@@ -29,11 +30,12 @@ interface PropsEquipos {
   alActualizarEquipo: (equipo: EquipoVista) => void;
 }
 
-function RejillaEquipos({ idProyecto, equipos, editable, alActualizarEquipo }: {
+function RejillaEquipos({ idProyecto, equipos, editable, alActualizarEquipo, alHabilitarCorreo }: {
   idProyecto: number;
   equipos: EquipoVista[];
   editable: boolean;
   alActualizarEquipo: (equipo: EquipoVista) => void;
+  alHabilitarCorreo: () => void;
 }) {
   if (equipos.length === 0) {
     return <p className="texto-secundario">Aún no hay equipos.</p>;
@@ -41,13 +43,20 @@ function RejillaEquipos({ idProyecto, equipos, editable, alActualizarEquipo }: {
   return (
     <div className="rejilla-equipos">
       {equipos.map((e) => (
-        <TarjetaEquipo key={e.idEquipo} idProyecto={idProyecto} equipo={e} editable={editable} alActualizar={alActualizarEquipo} />
+        <TarjetaEquipo
+          key={e.idEquipo}
+          idProyecto={idProyecto}
+          equipo={e}
+          editable={editable}
+          alActualizar={alActualizarEquipo}
+          alHabilitarCorreo={alHabilitarCorreo}
+        />
       ))}
     </div>
   );
 }
 
-/** P03 derecha 2: equipos en dos columnas, casilla de monitores, fila de monitores y nota. */
+/** P03 derecha 2: equipos en dos columnas, casilla de monitores, fila de monitores y nota y los correos habilitados sin cuenta (bloque 30). */
 export function TarjetaEquipos({
   idProyecto,
   equipos,
@@ -57,12 +66,17 @@ export function TarjetaEquipos({
   alCambiarUsaMonitores,
   alActualizarEquipo,
 }: PropsEquipos) {
+  const [versionCorreos, setVersionCorreos] = useState(0);
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const errorNombre = intentado ? (validarNombreEquipo(nombre) ?? undefined) : undefined;
+
+  function correoHabilitado() {
+    setVersionCorreos((v) => v + 1);
+  }
 
   function cerrar() {
     setAbierto(false);
@@ -94,7 +108,13 @@ export function TarjetaEquipos({
       {idProyecto === null ? (
         <p className="texto-secundario">Guarda el proyecto para crear equipos y agregar estudiantes.</p>
       ) : (
-        <RejillaEquipos idProyecto={idProyecto} equipos={equipos} editable={editable} alActualizarEquipo={alActualizarEquipo} />
+        <RejillaEquipos
+          idProyecto={idProyecto}
+          equipos={equipos}
+          editable={editable}
+          alActualizarEquipo={alActualizarEquipo}
+          alHabilitarCorreo={correoHabilitado}
+        />
       )}
       {editable &&
         idProyecto !== null &&
@@ -132,10 +152,13 @@ export function TarjetaEquipos({
       {editable &&
         usaMonitores &&
         (usaMonitoresGuardado && idProyecto !== null ? (
-          <FilaMonitores idProyecto={idProyecto} />
+          <FilaMonitores idProyecto={idProyecto} alHabilitarCorreo={correoHabilitado} />
         ) : (
           <p className="texto-secundario">Guarda el proyecto para habilitar monitores.</p>
         ))}
+      {editable && idProyecto !== null && (
+        <CorreosPendientes idProyecto={idProyecto} version={versionCorreos} />
+      )}
       {editable && <p className="texto-secundario">{NOTA}</p>}
     </Tarjeta>
   );

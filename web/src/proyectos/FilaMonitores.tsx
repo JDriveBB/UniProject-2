@@ -21,8 +21,8 @@ type EstadoMonitores =
   | { estado: 'error'; mensaje: string }
   | { estado: 'listo'; monitores: MonitorVista[] };
 
-/** Fila "Monitores:" de P03 (RF14), con quitar en cada insignia (Aclaración 2). Solo la ve el docente dueño. */
-export function FilaMonitores({ idProyecto }: { idProyecto: number }) {
+/** Fila "Monitores:" de P03 (RF14), con quitar en cada insignia (Aclaración 2). Un monitor quitado se puede volver a agregar con su correo (bloque 30). Solo la ve el docente dueño. */
+export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: number; alHabilitarCorreo?: () => void }) {
   const base = useId();
   const [lista, setLista] = useState<EstadoMonitores>({ estado: 'cargando' });
   const [abierto, setAbierto] = useState(false);
@@ -75,6 +75,7 @@ export function FilaMonitores({ idProyecto }: { idProyecto: number }) {
     setEnviando(false);
     setMensaje(r);
     if (r.tipo !== 'error') {
+      alHabilitarCorreo?.();
       cerrar();
       await cargar();
     }

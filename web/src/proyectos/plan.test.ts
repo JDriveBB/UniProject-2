@@ -141,4 +141,33 @@ describe('plan de guardado', () => {
       notificarDocenteInactividad: false,
     });
   });
+
+  it('días vacíos en el plan: solicitud con null y notificación false, sin cambios no genera plan, y actualiza a null', () => {
+    const h = borradorDe(servidor).hitos[0];
+    expect(solicitudHito({ ...h, diasInactividad: '', notificarDocente: true })).toEqual({
+      nombreHito: 'Hito 1',
+      descripcion: 'Entrega 1',
+      orden: 1,
+      fechaInicio: '2026-08-01',
+      fechaLimite: '2026-08-29',
+      diasInactividadAlerta: null,
+      notificarDocenteInactividad: false,
+    });
+    const servSinAlerta: ProyectoDetalle = {
+      ...servidor,
+      hitos: [
+        { ...servidor.hitos[0], diasInactividadAlerta: null, notificarDocenteInactividad: true },
+        servidor.hitos[1],
+      ],
+    };
+    expect(planDeGuardado(servSinAlerta, borradorDe(servSinAlerta))).toEqual([]);
+    const b = borradorDe(servidor);
+    b.hitos[0] = { ...b.hitos[0], diasInactividad: '' };
+    const plan = planDeGuardado(servidor, b);
+    expect(plan).toHaveLength(1);
+    expect(plan[0].tipo).toBe('actualizarHito');
+    if (plan[0].tipo === 'actualizarHito') {
+      expect(plan[0].solicitud.diasInactividadAlerta).toBeNull();
+    }
+  });
 });

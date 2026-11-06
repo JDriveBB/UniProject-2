@@ -1,6 +1,6 @@
 import type { HitoVista, ProyectoDetalle } from '../api/tipos';
 
-/** Mismo valor que ServicioHitos.DIAS_INACTIVIDAD_POR_DEFECTO del núcleo. */
+/** Valor con el que empieza un hito nuevo en P03 (Figma muestra 3). El núcleo ya no tiene valor por defecto: vacío = sin alerta (bloque 30). */
 export const DIAS_INACTIVIDAD_POR_DEFECTO = 3;
 
 /** Criterio en edición. clave: "c<id>" si viene del servidor, "n<k>" si es nuevo. Números como texto del campo. */
@@ -54,6 +54,7 @@ export function claveDeHito(idHito: number): string {
 }
 
 function borradorDeHito(h: HitoVista): BorradorHito {
+  const alerta = h.diasInactividadAlerta;
   return {
     clave: claveDeHito(h.idHito),
     idHito: h.idHito,
@@ -62,7 +63,7 @@ function borradorDeHito(h: HitoVista): BorradorHito {
     descripcion: h.descripcion,
     fechaInicio: h.fechaInicio,
     fechaLimite: h.fechaLimite,
-    diasInactividad: String(h.diasInactividadAlerta),
+    diasInactividad: alerta === null ? '' : String(alerta),
     notificarDocente: h.notificarDocenteInactividad,
     criterios: h.criterios.map((c) => ({
       clave: 'c' + c.idCriterio,
@@ -72,6 +73,11 @@ function borradorDeHito(h: HitoVista): BorradorHito {
       puntaje: String(c.puntajeMaximo),
     })),
   };
+}
+
+/** Decisión 30f-1: campo vacío = el hito no tiene alerta de inactividad. */
+export function sinAlerta(diasInactividad: string): boolean {
+  return diasInactividad.trim() === '';
 }
 
 export function borradorDe(detalle: ProyectoDetalle): BorradorProyecto {
@@ -85,7 +91,7 @@ export function borradorDe(detalle: ProyectoDetalle): BorradorProyecto {
   };
 }
 
-/** "+ Agregar hito": siguiente orden, sin fechas y con la alerta por defecto (3 días). */
+/** "+ Agregar hito": siguiente orden, sin fechas y con 3 días de alerta (el docente puede vaciarlo). */
 export function nuevoHito(b: BorradorProyecto, clave: string): BorradorHito {
   const orden = b.hitos.reduce((maximo, h) => Math.max(maximo, h.orden), 0) + 1;
   return {

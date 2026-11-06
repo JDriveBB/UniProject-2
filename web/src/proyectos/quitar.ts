@@ -1,5 +1,5 @@
 import { ErrorApi } from '../api/cliente';
-import type { EquipoVista, MiembroVista } from '../api/tipos';
+import type { CorreoHabilitadoVista, EquipoVista, MiembroVista } from '../api/tipos';
 import { mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
 
@@ -7,6 +7,7 @@ import type { Mensaje } from './errores';
 export interface ApiQuitar {
   quitarMiembro(idEquipo: number, idUsuario: number): Promise<EquipoVista>;
   quitarMonitor(idProyecto: number, idMonitor: number): Promise<void>;
+  retirarCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<void>;
 }
 
 export type ResultadoQuitarIntegrante = { tipo: 'quitado'; equipo: EquipoVista } | { tipo: 'error'; mensaje: string };
@@ -34,10 +35,48 @@ export function preguntaQuitarIntegrante(nombre: string): string {
   return `¿Quitar a ${nombre} del equipo? Sus tareas y su historial se conservan, y el líder puede reasignar sus tareas.`;
 }
 
-/** Decisión 26b-18: el correo sigue habilitado y el API no permite volver a asignarlo. */
+/** Bloque 30: quitar también retira su habilitación de monitor; se puede volver a agregar. */
 export function preguntaQuitarMonitor(nombre: string): string {
-  return `¿Quitar a ${nombre} de los monitores del proyecto? Su historial se conserva, pero con ese correo no se `
-    + 'podrá volver a agregar desde aquí.';
+  return `¿Quitar a ${nombre} de los monitores del proyecto? Su historial se conserva y puedes volver a agregarlo con su correo.`;
+}
+
+export function pendientesDe(correos: CorreoHabilitadoVista[]): CorreoHabilitadoVista[] {
+  return correos.filter((c) => c.registrado === false);
+}
+
+export function preguntaRetirarCorreo(correo: string): string {
+  return `¿Retirar la habilitación de ${correo}? Esa persona ya no podrá crear su cuenta para este proyecto. Puedes volver a habilitarla cuando quieras.`;
+}
+
+export function textoCorreoRetirado(correo: string): string {
+  return `Se retiró la habilitación de ${correo}.`;
+}
+
+export interface ResultadoRetirar {
+  mensaje: Mensaje | null;
+  recargar: boolean;
+}
+
+/** Decisión 30f-6: retira una habilitación pendiente; 409 = la persona se registró entretanto (se recarga para verla en su equipo o en monitores); 404 = ya no existía. */
+export async function retirarHabilitacion(
+  api: Pick<ApiQuitar, 'retirarCorreo'>,
+  idProyecto: number,
+  correo: Pick<CorreoHabilitadoVista, 'idCorreoHabilitado' | 'email'>,
+): Promise<ResultadoRetirar> {
+  try {
+    await api.retirarCorreo(idProyecto, correo.idCorreoHabilitado);
+    return { mensaje: { tipo: 'exito', texto: textoCorreoRetirado(correo.email) }, recargar: true };
+  } catch (e) {
+    if (e instanceof ErrorApi) {
+      if (e.estado === 404) {
+        return { mensaje: null, recargar: true };
+      }
+      if (e.estado === 409) {
+        return { mensaje: { tipo: 'error', texto: e.message }, recargar: true };
+      }
+    }
+    return { mensaje: { tipo: 'error', texto: mensajeErrorApi(e, []) }, recargar: false };
+  }
 }
 
 export function textoIntegranteQuitado(nombre: string): string {

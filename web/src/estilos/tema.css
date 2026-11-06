@@ -2058,3 +2058,41 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Bloque 30-frontend: correos habilitados sin cuenta (P03, provisional) ===== */
+.correos-pendientes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.correo-pendiente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: var(--relleno-opcion);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.correo-pendiente__datos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+}
+
+.correo-pendiente__correo {
+  font-weight: var(--peso-medio);
+  overflow-wrap: anywhere;
+}
+
+.correo-pendiente__fecha {
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+

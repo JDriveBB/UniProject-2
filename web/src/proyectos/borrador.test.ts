@@ -8,6 +8,7 @@ import {
   conCriterioNuevo,
   conHito,
   nuevoHito,
+  sinAlerta,
   sinCriterio,
 } from './borrador';
 
@@ -93,5 +94,24 @@ describe('borrador del proyecto', () => {
     expect(sinCriterio(editado, 'n1', 'n2').hitos[1].criterios).toEqual([]);
     expect(conNuevo.hitos[1].nombre).toBe('');
     expect(b.hitos).toHaveLength(1);
+  });
+
+  it('hito sin alerta de inactividad se carga con campo vacío', () => {
+    const detalleSinAlerta: ProyectoDetalle = {
+      ...detalle,
+      hitos: [
+        {
+          ...detalle.hitos[0],
+          diasInactividadAlerta: null,
+          notificarDocenteInactividad: true,
+        },
+      ],
+    };
+    const b = borradorDe(detalleSinAlerta);
+    expect(b.hitos[0].diasInactividad).toBe('');
+    expect(b.hitos[0].notificarDocente).toBe(true);
+    expect(sinAlerta('')).toBe(true);
+    expect(sinAlerta('   ')).toBe(true);
+    expect(sinAlerta('3')).toBe(false);
   });
 });

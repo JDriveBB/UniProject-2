@@ -4,9 +4,9 @@ import { Campo } from '../componentes/Campo';
 import { Casilla } from '../componentes/Casilla';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
-import type { BorradorHito, CambiosCriterio, CambiosHito } from './borrador';
+import { sinAlerta, type BorradorHito, type CambiosCriterio, type CambiosHito } from './borrador';
 import { TablaRubrica } from './TablaRubrica';
-import { estadoSuma, MAXIMO_DIAS, MAXIMO_NOMBRE_HITO, MINIMO_DIAS, sumaPesos, textoSumaPesos } from './validacion';
+import { estadoSuma, MAXIMO_NOMBRE_HITO, sumaPesos, textoSumaPesos } from './validacion';
 import type { ErroresBorrador, ErroresHito } from './validacion';
 
 interface PropsHitoSeleccionado {
@@ -19,7 +19,7 @@ interface PropsHitoSeleccionado {
   alQuitarCriterio: (claveHito: string, claveCriterio: string) => void;
 }
 
-/** P03 derecha 1: "Hito 2 · Diseño" con fechas, alerta de inactividad (26b-10), casilla y rúbrica (26b-9). */
+/** P03 derecha 1: "Hito 2 · Diseño" con fechas, alerta de inactividad (26b-10), casilla y rúbrica (26b-9). Días vacíos = sin alerta: la casilla se deshabilita (30f-1, 30f-3). */
 export function TarjetaHitoSeleccionado({
   hito,
   errores,
@@ -45,6 +45,7 @@ export function TarjetaHitoSeleccionado({
   const e: ErroresHito = errores.hitos[h.clave] ?? {};
   const errorRubrica: string | undefined = errores.rubricas[h.clave];
   const suma = sumaPesos(h.criterios);
+  const idAyudaDias = `${idDias}-ayuda`;
   const idErrorDias = idDias + '-error';
   const nombre = h.nombre.trim() === '' ? 'Sin nombre' : h.nombre.trim();
   return (
@@ -86,19 +87,15 @@ export function TarjetaHitoSeleccionado({
           <input
             id={idDias}
             className="campo__entrada campo__entrada--dias"
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={MINIMO_DIAS}
-            max={MAXIMO_DIAS}
-            step={1}
             value={h.diasInactividad}
             readOnly={!editable}
             onChange={(ev) => alCambiarHito(h.clave, { diasInactividad: ev.target.value })}
             aria-invalid={e.diasInactividad !== undefined}
-            aria-describedby={e.diasInactividad !== undefined ? idErrorDias : undefined}
-            required
+            aria-describedby={e.diasInactividad !== undefined ? `${idAyudaDias} ${idErrorDias}` : idAyudaDias}
           />
-          <span className="texto-ayuda">días sin actividad en sus tareas (de 1 a 60)</span>
+          <span id={idAyudaDias} className="texto-ayuda">días sin actividad en sus tareas (vacío = sin alerta)</span>
         </div>
         {e.diasInactividad !== undefined && (
           <p id={idErrorDias} className="campo__error">
@@ -107,8 +104,8 @@ export function TarjetaHitoSeleccionado({
         )}
       </div>
       <Casilla
-        checked={h.notificarDocente}
-        disabled={!editable}
+        checked={h.notificarDocente && !sinAlerta(h.diasInactividad)}
+        disabled={!editable || sinAlerta(h.diasInactividad)}
         onChange={(ev) => alCambiarHito(h.clave, { notificarDocente: ev.target.checked })}
       >
         Notificar también al docente. La alerta siempre le llega al líder del equipo.
