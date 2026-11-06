@@ -176,6 +176,9 @@
   --ancho-col-nota: 120px;
   --ancho-col-estado-nota: 200px;
   --ancho-col-confirmar: 150px;
+
+  /* Bloque 26f-1: panel del docente (RF10). Provisional, sin Figma. */
+  --ancho-col-numero: 120px;
 }
 
 *,
@@ -2230,4 +2233,42 @@ a {
   background: var(--color-fondo);
 }
 
+/* ===== Bloque 26f-1: panel del docente (RF10). Provisional, sin Figma ===== */
+.tabla--panel {
+  table-layout: fixed;
+}
 
+.tabla--panel td {
+  overflow-wrap: anywhere;
+}
+
+.tabla__col-numero {
+  width: var(--ancho-col-numero);
+}
+
+.fila-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2) var(--espacio-3);
+  padding: var(--relleno-evidencia);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.fila-panel__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  gap: var(--espacio-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fila-panel__titulo {
+  font-weight: var(--peso-medio);
+}
+
+.dato-resumen__valor--peligro {
+  color: var(--color-peligro);
+}
