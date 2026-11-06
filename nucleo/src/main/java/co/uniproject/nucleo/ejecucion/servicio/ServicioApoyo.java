@@ -1,5 +1,6 @@
 package co.uniproject.nucleo.ejecucion.servicio;
 
+import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.permisos.Permisos;
 import co.uniproject.nucleo.trazabilidad.auditoria.AccionAuditoria;
@@ -9,20 +10,24 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Solicitud de apoyo (decisión 18-6) y carga del equipo (decisión 18-7). */
+/**
+ * Solicitud de apoyo (decisiones 18-6 y 29-2) y carga del equipo (decisión 18-7). El mensaje vive en solicitud_apoyo;
+ * el log guarda solo que se creó la solicitud #N.
+ */
 @Service
 public class ServicioApoyo {
 
-    private static final String APOYOS = "SELECT l.id_log, t.id_tarea, t.titulo, l.id_usuario_accion, "
-            + "coalesce(u.nombre, 'Sistema') AS autor, l.valor_nuevo, l.fecha_hora FROM log_auditoria l "
-            + "JOIN tarea t ON t.id_tarea = l.id_registro_afectado "
-            + "LEFT JOIN usuario u ON u.id_usuario = l.id_usuario_accion "
-            + "WHERE l.entidad_afectada = 'tarea' AND l.accion = 'SOLICITAR_APOYO' ";
+    private static final String APOYOS = "SELECT s.id_solicitud_apoyo, t.id_tarea, t.titulo, s.id_solicitante, "
+            + "u.nombre AS autor, s.mensaje, s.fecha_hora FROM solicitud_apoyo s "
+            + "JOIN tarea t ON t.id_tarea = s.id_tarea "
+            + "JOIN usuario u ON u.id_usuario = s.id_solicitante ";
 
     private static final String CARGA = "SELECT m.id_usuario, u.nombre, m.rol_equipo, "
             + "count(t.id_tarea) FILTER (WHERE t.estado <> 'COMPLETADA') AS pendientes, "
@@ -52,12 +57,25 @@ public class ServicioApoyo {
     @Transactional
     public ApoyoVista solicitar(UsuarioAutenticado usuario, long idTarea, SolicitudApoyo solicitud) {
         permisos.exigir(permisos.puedeSolicitarApoyo(usuario.idUsuario(), idTarea));
+        String mensaje = solicitud.mensaje() != null ? solicitud.mensaje().strip() : "";
+        if (mensaje.isEmpty()) {
+            throw new SolicitudInvalidaException("MENSAJE_VACIO", "El mensaje no puede estar vacío");
+        }
         ContextoHito hito = consultas.hitoDeTarea(idTarea).orElseThrow();
-        EdicionHito.exigirAbierta(hito, Instant.now(reloj));
-        auditoria.registrar(EntradaAuditoria.cambio(usuario.idUsuario(), "tarea", idTarea,
-                AccionAuditoria.SOLICITAR_APOYO, "mensaje", null, solicitud.mensaje().strip()));
-        return jdbc.sql(APOYOS + "AND l.id_registro_afectado = :tarea ORDER BY l.id_log DESC LIMIT 1")
+        Instant ahora = Instant.now(reloj);
+        EdicionHito.exigirAbierta(hito, ahora);
+        long id = jdbc.sql("INSERT INTO solicitud_apoyo (id_tarea, id_solicitante, mensaje, fecha_hora) "
+                        + "VALUES (:tarea, :usuario, :mensaje, :ahora) RETURNING id_solicitud_apoyo")
                 .param("tarea", idTarea)
+                .param("usuario", usuario.idUsuario())
+                .param("mensaje", mensaje)
+                .param("ahora", OffsetDateTime.ofInstant(ahora, ZoneOffset.UTC))
+                .query(Long.class)
+                .single();
+        auditoria.registrar(EntradaAuditoria.cambio(usuario.idUsuario(), "tarea", idTarea,
+                AccionAuditoria.SOLICITAR_APOYO, "solicitud_apoyo", null, String.valueOf(id)));
+        return jdbc.sql(APOYOS + "WHERE s.id_solicitud_apoyo = :id")
+                .param("id", id)
                 .query(ServicioApoyo::apoyo)
                 .single();
     }
@@ -65,7 +83,7 @@ public class ServicioApoyo {
     @Transactional(readOnly = true)
     public List<ApoyoVista> apoyos(UsuarioAutenticado usuario, long idHitoEquipo) {
         permisos.exigir(permisos.puedeVerHitoEquipo(usuario.idUsuario(), idHitoEquipo));
-        return jdbc.sql(APOYOS + "AND t.id_hito_equipo = :he ORDER BY l.fecha_hora DESC, l.id_log DESC")
+        return jdbc.sql(APOYOS + "WHERE t.id_hito_equipo = :he ORDER BY s.fecha_hora DESC, s.id_solicitud_apoyo DESC")
                 .param("he", idHitoEquipo)
                 .query(ServicioApoyo::apoyo)
                 .list();
@@ -85,8 +103,8 @@ public class ServicioApoyo {
     }
 
     private static ApoyoVista apoyo(ResultSet rs, int fila) throws SQLException {
-        return new ApoyoVista(rs.getLong("id_log"), rs.getLong("id_tarea"), rs.getString("titulo"),
-                rs.getObject("id_usuario_accion", Long.class), rs.getString("autor"), rs.getString("valor_nuevo"),
+        return new ApoyoVista(rs.getLong("id_solicitud_apoyo"), rs.getLong("id_tarea"), rs.getString("titulo"),
+                rs.getLong("id_solicitante"), rs.getString("autor"), rs.getString("mensaje"),
                 LectorTareas.instante(rs, "fecha_hora"));
     }
 }

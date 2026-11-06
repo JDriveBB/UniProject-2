@@ -168,7 +168,7 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
         assertThat(texto("SELECT nombre_archivo || '|' || url FROM evidencia WHERE id_evidencia = :id", evidencia))
                 .isEqualTo("evidencia-" + evidencia + ".pdf|" + url);
         assertThat(texto("SELECT id_autor || '|' || contenido FROM comentario_tarea WHERE id_comentario = :id",
-                comentario)).isEqualTo(id + "|Avance listo para revisar");
+                comentario)).isEqualTo(id + "|" + ServicioSupresion.COMENTARIO_ELIMINADO);
         assertThat(texto("SELECT id_usuario || '|' || observacion FROM registro_avance WHERE id_registro = :id",
                 avance)).isEqualTo(id + "|Primer borrador");
         assertThat(contar("SELECT count(*) FROM miembro_equipo WHERE id_usuario = :id", id)).isEqualTo(1);
@@ -434,5 +434,38 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
         assertThat(texto("SELECT mensaje FROM notificacion WHERE id_notificacion = :id", idAvisoA))
                 .isEqualTo(ANONIMO + " lleva 3 días sin registrar actividad en Equipo S.");
         assertThat(texto("SELECT mensaje FROM notificacion WHERE id_notificacion = :id", idAvisoB)).isEqualTo(avisoB);
+    }
+
+    @Test
+    void supresionVaciaComentariosDelTitularYConservaLosAjenosYCorrecciones() {
+        Escenario e = escenario();
+        long titular = e.idEstudiante();
+        long otro = e.idLider();
+        long tarea = e.idTarea();
+
+        long cTitular = jdbc.sql("INSERT INTO comentario_tarea (id_tarea, id_autor, contenido) "
+                        + "VALUES (:t, :u, 'Comentario del titular que debe borrarse') RETURNING id_comentario")
+                .param("t", tarea).param("u", titular).query(Long.class).single();
+        long cOtro = jdbc.sql("INSERT INTO comentario_tarea (id_tarea, id_autor, contenido) "
+                        + "VALUES (:t, :u, 'Comentario de otro que debe quedar intacto') RETURNING id_comentario")
+                .param("t", tarea).param("u", otro).query(Long.class).single();
+
+        String url = "evidencias/" + UUID.randomUUID() + ".pdf";
+        long evidencia = jdbc.sql("INSERT INTO evidencia (id_tarea, id_usuario, tipo_evidencia, url, nombre_archivo) "
+                        + "VALUES (:t, :u, 'PDF', :url, 'informe.pdf') RETURNING id_evidencia")
+                .param("t", tarea).param("u", titular).param("url", url).query(Long.class).single();
+        long correccion = jdbc.sql("INSERT INTO solicitud_correccion (id_tarea, id_evidencia, id_lider, id_estudiante, observaciones) "
+                        + "VALUES (:t, :ev, :l, :i, 'Observación de corrección del titular') RETURNING id_solicitud")
+                .param("t", tarea).param("ev", evidencia).param("l", titular).param("i", otro).query(Long.class).single();
+
+        HttpResponse<String> r = suprimir(sesion(e.estudiante()), CLAVE);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(204);
+
+        assertThat(texto("SELECT id_autor || '|' || contenido FROM comentario_tarea WHERE id_comentario = :id", cTitular))
+                .isEqualTo(titular + "|" + ServicioSupresion.COMENTARIO_ELIMINADO);
+        assertThat(texto("SELECT id_autor || '|' || contenido FROM comentario_tarea WHERE id_comentario = :id", cOtro))
+                .isEqualTo(otro + "|Comentario de otro que debe quedar intacto");
+        assertThat(texto("SELECT id_lider || '|' || observaciones FROM solicitud_correccion WHERE id_solicitud = :id", correccion))
+                .isEqualTo(titular + "|Observación de corrección del titular");
     }
 }

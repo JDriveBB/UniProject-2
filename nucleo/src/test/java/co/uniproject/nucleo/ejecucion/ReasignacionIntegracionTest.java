@@ -85,6 +85,10 @@ class ReasignacionIntegracionTest extends ApiIntegracionBase {
                 .param("id", t).query(String.class).single()).isEqualTo(e.idIntegrante() + ">" + e.idOtro());
         assertThat(contar("SELECT count(*) FROM log_auditoria WHERE entidad_afectada = 'tarea' "
                 + "AND id_registro_afectado = :id AND campo_modificado = 'motivo'", t)).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT coalesce(l.valor_nuevo, '-') || '|' || x.valor_nuevo FROM log_auditoria l "
+                        + "JOIN texto_auditoria x ON x.id_log = l.id_log WHERE l.entidad_afectada = 'tarea' "
+                        + "AND l.id_registro_afectado = :id AND l.campo_modificado = 'motivo'")
+                .param("id", t).query(String.class).single()).isEqualTo("-|Cambio de carga");
         assertThat(contar("SELECT count(*) FROM evento_saliente WHERE tipo = 'tarea.reasignada' "
                 + "AND (carga->'data'->'tarea'->>'id')::bigint = :id", t)).isEqualTo(1);
         assertThat(contar("SELECT count(*) FROM notificacion WHERE tipo = 'tarea.reasignada' "
@@ -180,8 +184,12 @@ class ReasignacionIntegracionTest extends ApiIntegracionBase {
         crearUsuario("Ajeno", ajeno, "ESTUDIANTE");
         assertThat(sesion(ajeno).get("/api/hitos-equipo/" + e.idHitoEquipo() + "/apoyos").statusCode())
                 .isEqualTo(403);
-        assertThat(contar("SELECT count(*) FROM log_auditoria WHERE entidad_afectada = 'tarea' "
-                + "AND id_registro_afectado = :id AND accion = 'SOLICITAR_APOYO'", e.tarea())).isEqualTo(1);
+        long idSolicitud = numero(r.body(), "idSolicitud");
+        assertThat(jdbc.sql("SELECT campo_modificado || '|' || valor_nuevo FROM log_auditoria "
+                        + "WHERE entidad_afectada = 'tarea' AND id_registro_afectado = :id AND accion = 'SOLICITAR_APOYO'")
+                .param("id", e.tarea()).query(String.class).single()).isEqualTo("solicitud_apoyo|" + idSolicitud);
+        assertThat(contar("SELECT count(*) FROM solicitud_apoyo WHERE id_tarea = :id "
+                + "AND mensaje = 'No entiendo la normalización'", e.tarea())).isEqualTo(1);
         assertThat(contar("SELECT count(*) FROM evento_saliente WHERE (carga->'data'->'tarea'->>'id')::bigint = :id",
                 e.tarea())).isZero();
     }
@@ -203,5 +211,14 @@ class ReasignacionIntegracionTest extends ApiIntegracionBase {
                         + "\"tareasCompletadas\":1,\"horasRestantes\":0.00")
                 .contains("\"nombre\":\"Lider Reasignacion\",\"rolEquipo\":\"LIDER\",\"tareasPendientes\":0,"
                         + "\"tareasCompletadas\":0,\"horasRestantes\":0.00");
+    }
+
+    @Test
+    void rechazaMensajeDeApoyoConSoloEspaciosUnicode() {
+        Escenario e = escenario();
+        String ruta = "/api/tareas/" + e.tarea() + "/apoyo";
+        HttpResponse<String> r = sesion(e.integrante()).post(ruta, "{\"mensaje\":\"\\u2003\\u2003\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(400);
+        assertThat(contar("SELECT count(*) FROM solicitud_apoyo WHERE id_tarea = :id", e.tarea())).isZero();
     }
 }

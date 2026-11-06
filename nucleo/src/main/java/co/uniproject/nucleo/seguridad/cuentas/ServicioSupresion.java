@@ -30,6 +30,7 @@ public class ServicioSupresion {
 
     /** Mismo texto que usuario_anonimizado_ck (V4). */
     public static final String NOMBRE_ANONIMO = "Usuario anonimizado";
+    public static final String COMENTARIO_ELIMINADO = "[comentario eliminado]";
     private static final String HASH_INUTILIZABLE = "!";
 
     private final JdbcClient jdbc;
@@ -91,6 +92,18 @@ public class ServicioSupresion {
         jdbc.sql("DELETE FROM codigo_vinculacion WHERE usuario_id = :id").param("id", idUsuario).update();
         jdbc.sql("DELETE FROM recuperacion_contrasena WHERE usuario_id = :id").param("id", idUsuario).update();
         jdbc.sql("DELETE FROM notificacion WHERE id_destinatario = :id").param("id", idUsuario).update();
+        // Bloque 29 (decisión 29-4): el texto libre que escribió sale; el hecho sigue en log_auditoria.
+        jdbc.sql("UPDATE solicitud_apoyo SET mensaje = NULL WHERE id_solicitante = :id")
+                .param("id", idUsuario)
+                .update();
+        jdbc.sql("DELETE FROM texto_auditoria x USING log_auditoria l "
+                        + "WHERE l.id_log = x.id_log AND l.id_usuario_accion = :id")
+                .param("id", idUsuario)
+                .update();
+        jdbc.sql("UPDATE comentario_tarea SET contenido = :contenido WHERE id_autor = :id")
+                .param("contenido", COMENTARIO_ELIMINADO)
+                .param("id", idUsuario)
+                .update();
         eventos.reemplazar(idUsuario, NOMBRE_ANONIMO, true);
         jdbc.sql("DELETE FROM correo_habilitado WHERE email = :email AND fecha_uso IS NULL")
                 .param("email", cuenta.email())
