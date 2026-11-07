@@ -11,6 +11,7 @@ import type {
 } from '../api/tipos';
 import {
   alertasPorEquipo,
+  estadoBotonPanel,
   estadoEquipo,
   marcaCelda,
   matrizHitos,
@@ -261,5 +262,24 @@ describe('vista', () => {
     expect(matriz.filas[1].celdas.map((c) => c?.texto ?? null)).toEqual(['En Revisión', 'En Revisión']);
     expect(matriz.filas[2].celdas.map((c) => c?.texto ?? null)).toEqual([null, null]);
     expect(datosReferencia.hitos.map((h) => h.idHito)).toEqual([1, 2]);
+  });
+
+  it('estadoBotonPanel decide el texto y estado deshabilitado para actualizar y reintentar', () => {
+    expect(estadoBotonPanel('actualizar', false)).toEqual({
+      texto: 'Actualizar',
+      deshabilitado: false,
+    });
+    expect(estadoBotonPanel('actualizar', true)).toEqual({
+      texto: 'Actualizando…',
+      deshabilitado: true,
+    });
+    expect(estadoBotonPanel('reintentar', false)).toEqual({
+      texto: 'Reintentar',
+      deshabilitado: false,
+    });
+    expect(estadoBotonPanel('reintentar', true)).toEqual({
+      texto: 'Reintentando…',
+      deshabilitado: true,
+    });
   });
 });

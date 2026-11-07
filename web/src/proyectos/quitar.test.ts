@@ -158,4 +158,33 @@ describe('quitar integrantes y monitores', () => {
       '¿Retirar la habilitación de ana@uninorte.edu.co? Esa persona ya no podrá crear su cuenta para este proyecto. Puedes volver a habilitarla cuando quieras.',
     );
   });
+
+  it('retirarHabilitacion pide recargar en éxito (204), 404 y 409, pero no en 403 u otros errores', async () => {
+    const apiExito = {
+      async retirarCorreo() {
+        return undefined;
+      },
+    };
+    const api404 = {
+      async retirarCorreo(): Promise<void> {
+        throw new ErrorApi(404, 'NO_ENCONTRADO', 'No encontrado');
+      },
+    };
+    const api409 = {
+      async retirarCorreo(): Promise<void> {
+        throw new ErrorApi(409, 'HABILITACION_USADA', 'Usada');
+      },
+    };
+    const api403 = {
+      async retirarCorreo(): Promise<void> {
+        throw new ErrorApi(403, 'ACCESO_DENEGADO', 'Denegado');
+      },
+    };
+
+    const c = { idCorreoHabilitado: 10, email: 'x@u.edu.co' };
+    expect((await retirarHabilitacion(apiExito, 1, c)).recargar).toBe(true);
+    expect((await retirarHabilitacion(api404, 1, c)).recargar).toBe(true);
+    expect((await retirarHabilitacion(api409, 1, c)).recargar).toBe(true);
+    expect((await retirarHabilitacion(api403, 1, c)).recargar).toBe(false);
+  });
 });

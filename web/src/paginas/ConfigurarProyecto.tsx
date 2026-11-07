@@ -149,9 +149,10 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
     setBorrador((b) => conCriterioNuevo(b, claveHito, clave));
   }
 
-  function alActualizarEquipo(equipo: EquipoVista) {
+  // estable: TarjetaEquipos lo usa como dependencia de un efecto
+  const alActualizarEquipo = useCallback((equipo: EquipoVista) => {
     setServidor((s) => (s === null ? s : { ...s, equipos: reemplazarEquipo(s.equipos, equipo) }));
-  }
+  }, []);
 
   function alCancelar() {
     setMensaje(null);

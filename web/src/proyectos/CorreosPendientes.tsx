@@ -17,7 +17,15 @@ type EstadoCorreos =
   | { estado: 'listo'; correos: CorreoHabilitadoVista[] };
 
 /** Correos habilitados sin cuenta (bloque 30, provisional sin Figma): solo el docente dueño; "Retirar" borra una habilitación pendiente (30f-5, 30f-6). */
-export function CorreosPendientes({ idProyecto, version }: { idProyecto: number; version: number }) {
+export function CorreosPendientes({
+  idProyecto,
+  version,
+  alCambiarHabilitaciones,
+}: {
+  idProyecto: number;
+  version: number;
+  alCambiarHabilitaciones?: () => void;
+}) {
   const base = useId();
   const [lista, setLista] = useState<EstadoCorreos>({ estado: 'cargando' });
   const [enviando, setEnviando] = useState(false);
@@ -53,6 +61,7 @@ export function CorreosPendientes({ idProyecto, version }: { idProyecto: number;
     const r = await retirarHabilitacion({ retirarCorreo }, idProyecto, c);
     if (r.recargar) {
       await cargar();
+      alCambiarHabilitaciones?.();
     }
     setEnviando(false);
     setMensaje(r.mensaje);

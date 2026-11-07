@@ -72,3 +72,8 @@ export function marcarTodasEnBandeja(b: Bandeja): Bandeja {
     notificaciones: b.notificaciones.map((n) => ({ ...n, leida: true })),
   };
 }
+
+/** Decide si al abrir una notificación debe marcarse como leída en el servidor. */
+export function debeMarcarAlAbrir(notificacion: { leida: boolean }): boolean {
+  return !notificacion.leida;
+}
