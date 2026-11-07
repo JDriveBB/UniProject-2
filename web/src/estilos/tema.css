@@ -191,6 +191,11 @@
 
   /* Bloque 26p: reportes (P11). Provisional, sin Figma. */
   --ancho-col-accion: 220px;
+
+  /* Bloque 26q: historial del equipo. Provisional, sin Figma. */
+  --ancho-hora-historial: 48px;
+  --tamano-punto-historial: 10px;
+  --ancho-col-historial: 130px;
 }
 
 *,
@@ -2435,5 +2440,113 @@ a {
 @media (max-width: 960px) {
   .fila-campos--reporte {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Bloque 26q: historial del equipo. Provisional, sin Figma ===== */
+/* Filtros */
+.fila-campos--historial {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Línea de tiempo */
+.linea-tiempo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linea-tiempo__dia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.linea-tiempo__fecha {
+  margin: 0;
+  font-size: var(--tamano-subtitulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-texto);
+}
+
+.linea-tiempo__eventos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Evento del historial */
+.evento-historial {
+  display: grid;
+  grid-template-columns: var(--ancho-hora-historial) var(--tamano-punto-historial) minmax(0, 1fr);
+  column-gap: var(--espacio-3);
+  align-items: start;
+}
+
+.evento-historial + .evento-historial {
+  border-top: 1px solid var(--color-borde-tabla);
+  padding-top: var(--espacio-3);
+}
+
+.evento-historial:focus-visible {
+  outline: none;
+  box-shadow: var(--foco);
+  border-radius: var(--radio);
+}
+
+.evento-historial__hora {
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+}
+
+.evento-historial__punto {
+  width: var(--tamano-punto-historial);
+  height: var(--tamano-punto-historial);
+  border-radius: var(--radio-insignia);
+  background: var(--color-primario);
+  margin-top: var(--espacio-1);
+}
+
+.evento-historial__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.evento-historial__titulo {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.evento-historial__autor {
+  font-weight: var(--peso-seminegrita);
+}
+
+.evento-historial__referencia {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espacio-2);
+  font-size: var(--tamano-pequeno);
+  overflow-wrap: anywhere;
+}
+
+/* Tabla del panel */
+.tabla__col-historial {
+  width: var(--ancho-col-historial);
+}
+
+/* 960px: las variables CSS no valen dentro de @media. */
+@media (max-width: 960px) {
+  .fila-campos--historial {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

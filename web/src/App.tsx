@@ -12,7 +12,7 @@ import { MisTareas } from './paginas/MisTareas';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { Notificaciones } from './paginas/Notificaciones';
 import { OlvideContrasena } from './paginas/OlvideContrasena';
-import { PaginaPendiente } from './paginas/PaginaPendiente';
+import { HistorialEquipoDeRuta } from './paginas/HistorialEquipo';
 import { ElegirPanel, PanelProyectoDeRuta } from './paginas/PanelDocente';
 import { Perfil } from './paginas/Perfil';
 import { Registro } from './paginas/Registro';
@@ -53,13 +53,15 @@ export function App() {
           <Route path="/proyectos" element={<ListaProyectos />} />
           <Route path="/proyectos/:idProyecto" element={<ProyectoDeRuta />} />
           <Route path="/equipos/:idEquipo/tablero" element={<TableroDeRuta />} />
-          <Route path="/equipos/:idEquipo/historial" element={<PaginaPendiente titulo="Historial del equipo" bloque="26f" />} />
           <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<RutaCriticaDeRuta />} />
           <Route path="/tareas/:idTarea" element={<DetalleTareaDeRuta />} />
           <Route path="/mis-tareas" element={<MisTareas />} />
           <Route path="/hitos/:idHitoEquipo/evaluacion" element={<EvaluacionHitoDeRuta />} />
           <Route path="/notificaciones" element={<Notificaciones />} />
           <Route path="/perfil" element={<Perfil />} />
+          <Route element={<RutaProtegida roles={['DOCENTE', 'ESTUDIANTE']} />}>
+            <Route path="/equipos/:idEquipo/historial" element={<HistorialEquipoDeRuta />} />
+          </Route>
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
             <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />
             <Route path="/panel" element={<ElegirPanel />} />

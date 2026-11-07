@@ -25,6 +25,7 @@ describe('barra de navegación', () => {
       { texto: 'Ruta crítica', a: '/ruta-critica', activo: false },
     ]);
     expect(enlacesDe('ESTUDIANTE', '/hitos/7/ruta-critica').map((e) => e.activo)).toEqual([false, false, true]);
+    expect(enlacesDe('ESTUDIANTE', '/equipos/3/historial').map((e) => e.activo)).toEqual([true, false, false]);
   });
 
   it('monitor y administrador tienen su propia navegación', () => {
