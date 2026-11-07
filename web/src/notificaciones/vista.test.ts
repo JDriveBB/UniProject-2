@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Bandeja, NotificacionVista } from '../api/tipos';
 import {
+  debeMarcarAlAbrir,
   enlaceInterno,
   marcarEnBandeja,
   marcarTodasEnBandeja,
@@ -85,5 +86,10 @@ describe('notificaciones/vista', () => {
     };
     const resCero = marcarEnBandeja(bCero, 1);
     expect(resCero.noLeidas).toBe(0);
+  });
+
+  it('debeMarcarAlAbrir decide si abrir debe marcar como leída según el aviso', () => {
+    expect(debeMarcarAlAbrir({ leida: false })).toBe(true);
+    expect(debeMarcarAlAbrir({ leida: true })).toBe(false);
   });
 });

@@ -10,6 +10,7 @@ import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
 import { Insignia } from '../componentes/Insignia';
 import { fechaHora } from '../formato';
 import {
+  debeMarcarAlAbrir,
   enlaceInterno,
   LIMITE_BANDEJA,
   marcarEnBandeja,
@@ -67,13 +68,18 @@ export function Notificaciones() {
   }, [foco, idAviso]);
 
   async function abrir(n: NotificacionVista, destino: string) {
-    setOcupado(n.idNotificacion);
-    try {
-      await marcarLeida(n.idNotificacion);
-    } catch {
-      // si falla, se abre igual: el aviso sigue sin leer y se puede marcar después
+    if (ocupado !== null) {
+      return;
     }
-    avisarCambioBandeja();
+    if (debeMarcarAlAbrir(n)) {
+      setOcupado(n.idNotificacion);
+      try {
+        await marcarLeida(n.idNotificacion);
+      } catch {
+        // si falla, se abre igual: el aviso sigue sin leer y se puede marcar después
+      }
+      avisarCambioBandeja();
+    }
     navegar(destino);
   }
 
@@ -203,14 +209,16 @@ export function Notificaciones() {
                       <Link
                         to={destino}
                         className="boton boton--secundario"
-                        onClick={
-                          !n.leida
-                            ? (e) => {
-                                e.preventDefault();
-                                void abrir(n, destino);
-                              }
-                            : undefined
-                        }
+                        aria-disabled={ocupado !== null}
+                        tabIndex={ocupado !== null ? -1 : undefined}
+                        onClick={(e) => {
+                          if (ocupado !== null) {
+                            e.preventDefault();
+                          } else if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                            e.preventDefault();
+                            void abrir(n, destino);
+                          }
+                        }}
                       >
                         Abrir
                       </Link>

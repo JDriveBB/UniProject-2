@@ -183,3 +183,21 @@ export function alertasPorEquipo(panel: PanelProyecto): AlertasEquipo[] {
 export function textoActualizado(generadoEn: string): string {
   return `Actualizado el ${fechaHora(generadoEn)}`;
 }
+
+export interface EstadoBotonPanel {
+  texto: string;
+  deshabilitado: boolean;
+}
+
+export function estadoBotonPanel(accion: 'actualizar' | 'reintentar', enCurso: boolean): EstadoBotonPanel {
+  if (accion === 'actualizar') {
+    return {
+      texto: enCurso ? 'Actualizando…' : 'Actualizar',
+      deshabilitado: enCurso,
+    };
+  }
+  return {
+    texto: enCurso ? 'Reintentando…' : 'Reintentar',
+    deshabilitado: enCurso,
+  };
+}

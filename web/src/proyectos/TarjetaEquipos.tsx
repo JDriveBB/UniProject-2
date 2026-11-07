@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { crearEquipo } from '../api/proyectos';
+import { crearEquipo, detalleProyecto } from '../api/proyectos';
 import type { EquipoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
@@ -78,6 +78,27 @@ export function TarjetaEquipos({
     setVersionCorreos((v) => v + 1);
   }
 
+  useEffect(() => {
+    if (versionCorreos === 0 || idProyecto === null) {
+      return;
+    }
+    let vigente = true;
+    detalleProyecto(idProyecto)
+      .then((detalle) => {
+        if (vigente) {
+          for (const e of detalle.equipos) {
+            alActualizarEquipo(e);
+          }
+        }
+      })
+      .catch(() => {
+        // no bloquear si falla la recarga secundaria
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [idProyecto, versionCorreos, alActualizarEquipo]);
+
   function cerrar() {
     setAbierto(false);
     setNombre('');
@@ -152,12 +173,20 @@ export function TarjetaEquipos({
       {editable &&
         usaMonitores &&
         (usaMonitoresGuardado && idProyecto !== null ? (
-          <FilaMonitores idProyecto={idProyecto} alHabilitarCorreo={correoHabilitado} />
+          <FilaMonitores
+            idProyecto={idProyecto}
+            version={versionCorreos}
+            alHabilitarCorreo={correoHabilitado}
+          />
         ) : (
           <p className="texto-secundario">Guarda el proyecto para habilitar monitores.</p>
         ))}
       {editable && idProyecto !== null && (
-        <CorreosPendientes idProyecto={idProyecto} version={versionCorreos} />
+        <CorreosPendientes
+          idProyecto={idProyecto}
+          version={versionCorreos}
+          alCambiarHabilitaciones={correoHabilitado}
+        />
       )}
       {editable && <p className="texto-secundario">{NOTA}</p>}
     </Tarjeta>

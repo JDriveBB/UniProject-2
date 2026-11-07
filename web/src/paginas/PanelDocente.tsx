@@ -17,6 +17,7 @@ import { TarjetaHitosPanel } from '../panel/TarjetaHitosPanel';
 import { TarjetaPorEvaluar } from '../panel/TarjetaPorEvaluar';
 import {
   alertasPorEquipo,
+  estadoBotonPanel,
   matrizHitos,
   porEvaluar,
   proyectosPropios,
@@ -140,6 +141,7 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
       : { estado: 'cargando' }
   );
   const [vuelta, setVuelta] = useState(0);
+  const [recargando, setRecargando] = useState(false);
 
   useEffect(() => {
     if (id === null) {
@@ -156,17 +158,39 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
         if (vigente) {
           setCarga({ estado: 'error', mensaje: mensajeErrorAbrir(e, SIN_ACCESO_PANEL) });
         }
+      })
+      .finally(() => {
+        if (vigente) {
+          setRecargando(false);
+        }
       });
     return () => {
       vigente = false;
     };
   }, [id, vuelta]);
 
+  function actualizar() {
+    if (recargando) {
+      return;
+    }
+    setRecargando(true);
+    setVuelta((v) => v + 1);
+  }
+
+  function reintentar() {
+    if (recargando) {
+      return;
+    }
+    setRecargando(true);
+    setVuelta((v) => v + 1);
+  }
+
   if (carga.estado === 'cargando') {
     return <Cargando />;
   }
 
   if (carga.estado === 'error') {
+    const boton = estadoBotonPanel('reintentar', recargando);
     return (
       <div className="pagina">
         <EncabezadoPagina titulo="Panel del docente" />
@@ -174,8 +198,8 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
           <Alerta tipo="error">{carga.mensaje}</Alerta>
           {carga.mensaje !== SIN_ACCESO_PANEL && (
             <div>
-              <Boton variante="secundario" onClick={() => setVuelta((v) => v + 1)}>
-                Reintentar
+              <Boton variante="secundario" disabled={boton.deshabilitado} onClick={reintentar}>
+                {boton.texto}
               </Boton>
             </div>
           )}
@@ -187,6 +211,7 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
   const { panel, detalle } = carga.datos;
   const hoy = fechaIsoBogota(new Date());
   const pendientes = porEvaluar(detalle);
+  const botonActualizar = estadoBotonPanel('actualizar', recargando);
 
   return (
     <div className="pagina">
@@ -195,8 +220,12 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
         descripcion={`${panel.nombre} · ${textoActualizado(panel.generadoEn)}`}
       >
         <div className="pagina__acciones">
-          <Boton variante="secundario" onClick={() => setVuelta((v) => v + 1)}>
-            Actualizar
+          <Boton
+            variante="secundario"
+            disabled={botonActualizar.deshabilitado}
+            onClick={actualizar}
+          >
+            {botonActualizar.texto}
           </Boton>
           <Link className="boton boton--secundario" to={rutas.proyecto(panel.idProyecto)}>
             Configurar proyecto

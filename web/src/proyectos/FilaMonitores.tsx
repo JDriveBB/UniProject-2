@@ -22,7 +22,15 @@ type EstadoMonitores =
   | { estado: 'listo'; monitores: MonitorVista[] };
 
 /** Fila "Monitores:" de P03 (RF14), con quitar en cada insignia (Aclaración 2). Un monitor quitado se puede volver a agregar con su correo (bloque 30). Solo la ve el docente dueño. */
-export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: number; alHabilitarCorreo?: () => void }) {
+export function FilaMonitores({
+  idProyecto,
+  version,
+  alHabilitarCorreo,
+}: {
+  idProyecto: number;
+  version?: number;
+  alHabilitarCorreo?: () => void;
+}) {
   const base = useId();
   const [lista, setLista] = useState<EstadoMonitores>({ estado: 'cargando' });
   const [abierto, setAbierto] = useState(false);
@@ -50,7 +58,7 @@ export function FilaMonitores({ idProyecto, alHabilitarCorreo }: { idProyecto: n
 
   useEffect(() => {
     void cargar();
-  }, [cargar]);
+  }, [cargar, version]);
 
   /* Al cerrar la confirmación, el foco va a donde corresponde (26b-15); si ya no existe, al título (Aclaración 3). */
   useEffect(() => {
