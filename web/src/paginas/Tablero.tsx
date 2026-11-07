@@ -7,6 +7,7 @@ import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { puedeVerHistorial } from '../historial/vista';
 import type { Mensaje } from '../proyectos/errores';
 import { idDeRuta } from '../proyectos/vista';
 import { rutas } from '../rutas';
@@ -56,6 +57,7 @@ export function TableroDeRuta() {
  * (26c-2). Botones según la nota de Figma (26c-7): «Nueva tarea» solo el líder y «Ver ruta crítica» cualquier integrante (decisión 26c-1);
  * "Enviar a revisión" pide confirmación previa (26g): P08a si faltan prerrequisitos críticos, P08b si se envió (26d-11);
  * "Evaluar hito" (docente del proyecto, hito en revisión) y "Ver evaluación" (hito evaluado) llevan a P09 o al resultado (26e-12);
+ * "Ver historial" (docente del proyecto e integrantes) lleva al historial del equipo (26q-9);
  * docente y monitor, solo lectura. El servidor responde 403 de todas formas.
  */
 function TableroEquipo({ idRuta }: { idRuta: string }) {
@@ -141,11 +143,20 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
     );
   }
   const { equipo: ubicado, hitos } = ubicacion;
+  const verHistorial = puedeVerHistorial(ubicado, usuario.idUsuario);
   const descripcion = `${ubicado.equipo.nombreEquipo} · ${ubicado.proyecto.nombre}`;
   if (hito === null) {
     return (
       <div className="pagina">
-        <EncabezadoPagina titulo="Tablero del equipo" descripcion={descripcion} />
+        <EncabezadoPagina titulo="Tablero del equipo" descripcion={descripcion}>
+          {verHistorial && (
+            <div className="pagina__acciones">
+              <Link className="boton boton--secundario" to={rutas.historialEquipo(ubicado.equipo.idEquipo)}>
+                Ver historial
+              </Link>
+            </div>
+          )}
+        </EncabezadoPagina>
         <p className="pagina__vacio">El proyecto aún no tiene hitos.</p>
       </div>
     );
@@ -203,8 +214,13 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   return (
     <div className="pagina">
       <EncabezadoPagina titulo="Tablero del equipo" descripcion={descripcion}>
-        {(verRuta || puedeCrear || puedeEnviar || puedeEvaluar || verEvaluacion) && (
+        {(verHistorial || verRuta || puedeCrear || puedeEnviar || puedeEvaluar || verEvaluacion) && (
           <div className="pagina__acciones">
+            {verHistorial && (
+              <Link className="boton boton--secundario" to={rutas.historialEquipo(ubicado.equipo.idEquipo)}>
+                Ver historial
+              </Link>
+            )}
             {verRuta && (
               <Link id={idRutaCritica} className="boton boton--secundario" to={rutas.rutaCritica(hito.idHitoEquipo)}>
                 Ver ruta crítica

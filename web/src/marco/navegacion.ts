@@ -33,7 +33,7 @@ export function idProyectoEnRuta(ruta: string): number | null {
 
 /**
  * Navegación de la barra por rol (decisión 26b-2, Figma P02/P03/P04). "Panel" abre el panel del proyecto que se está
- * viendo; fuera de un proyecto va a /panel. Las pantallas de 26c y 26f son PaginaPendiente por ahora.
+ * viendo; fuera de un proyecto va a /panel.
  */
 export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
   if (rol === 'DOCENTE') {
@@ -47,7 +47,7 @@ export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
   }
   if (rol === 'ESTUDIANTE') {
     return [
-      { texto: 'Tablero', a: rutas.tablero(), activo: ruta === rutas.tablero() || TABLERO.test(ruta) },
+      { texto: 'Tablero', a: rutas.tablero(), activo: ruta === rutas.tablero() || TABLERO.test(ruta) || HISTORIAL.test(ruta) },
       { texto: 'Mis tareas', a: rutas.misTareas(), activo: ruta === rutas.misTareas() || TAREA.test(ruta) },
       {
         texto: 'Ruta crítica',

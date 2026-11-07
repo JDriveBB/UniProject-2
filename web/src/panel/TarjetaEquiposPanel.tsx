@@ -40,6 +40,19 @@ export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
       clase: 'tabla__col-numero',
       celda: (e) => String(e.tareasRiesgoAlto),
     },
+    {
+      titulo: 'Historial',
+      clase: 'tabla__col-historial',
+      celda: (e) => (
+        <Link
+          className="enlace-fuerte"
+          to={rutas.historialEquipo(e.idEquipo)}
+          aria-label={`Historial de ${e.nombreEquipo}`}
+        >
+          Ver historial
+        </Link>
+      ),
+    },
   ];
 
   return (
