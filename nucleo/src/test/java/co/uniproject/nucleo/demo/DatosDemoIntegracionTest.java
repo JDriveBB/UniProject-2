@@ -38,7 +38,7 @@ class DatosDemoIntegracionTest extends ApiIntegracionBase {
 
     @Test
     void cargaElEscenarioYSeIngresaConLaContrasenaDemo() {
-        assertThat(usuarios()).isEqualTo(8);
+        assertThat(usuarios()).isEqualTo(9);
         assertThat(tareasDemo()).isEqualTo(7);
         assertThat(contar("SELECT count(*) FROM hito_equipo he JOIN equipo e ON e.id_equipo = he.id_equipo "
                 + "JOIN proyecto p ON p.id_proyecto = e.id_proyecto WHERE p.nombre = :proyecto "
@@ -46,6 +46,10 @@ class DatosDemoIntegracionTest extends ApiIntegracionBase {
                 .isEqualTo(1);
         assertThat(contar("SELECT count(*) FROM monitor_proyecto mp JOIN proyecto p ON p.id_proyecto = mp.id_proyecto "
                 + "WHERE p.nombre = :proyecto")).isEqualTo(1);
+        assertThat(contar("SELECT count(*) FROM correo_habilitado ch JOIN proyecto p ON p.id_proyecto = ch.id_proyecto "
+                + "WHERE p.nombre = :proyecto AND ch.fecha_uso IS NULL")).isEqualTo(2);
+        assertThat(contar("SELECT count(*) FROM miembro_equipo me JOIN usuario u ON u.id_usuario = me.id_usuario "
+                + "WHERE u.email = 'hugo@" + CargaDemo.DOMINIO + "'")).isEqualTo(0);
         long idProyecto = jdbc.sql("SELECT id_proyecto FROM proyecto WHERE nombre = :p")
                 .param("p", CargaDemo.PROYECTO).query(Long.class).single();
 
@@ -62,8 +66,9 @@ class DatosDemoIntegracionTest extends ApiIntegracionBase {
     @Test
     void esIdempotente() {
         int antes = usuarios();
+        assertThat(antes).isEqualTo(9);
         assertThat(carga.cargar(CLAVE_DEMO)).isFalse();
-        assertThat(usuarios()).isEqualTo(antes);
+        assertThat(usuarios()).isEqualTo(9);
         assertThat(tareasDemo()).isEqualTo(7);
     }
 

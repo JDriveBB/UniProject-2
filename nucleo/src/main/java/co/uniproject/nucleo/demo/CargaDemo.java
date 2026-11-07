@@ -123,7 +123,8 @@ public class CargaDemo {
         criterio(docente, hito2, "Calidad del código", "40");
 
         correos.habilitar(docente, idProyecto, new SolicitudCorreos(List.of(correo("ana"), correo("bruno"),
-                correo("camila"), correo("diego"), correo("elena"), correo("felipe")), RolPlataforma.ESTUDIANTE));
+                correo("camila"), correo("diego"), correo("elena"), correo("felipe"), correo("hugo"),
+                correo("ines"), correo("jorge")), RolPlataforma.ESTUDIANTE));
         correos.habilitar(docente, idProyecto, new SolicitudCorreos(List.of(correo("monitor")),
                 RolPlataforma.MONITOR));
         UsuarioAutenticado ana = registrar("Ana Rojas", "ana", contrasena);
@@ -133,6 +134,9 @@ public class CargaDemo {
         UsuarioAutenticado elena = registrar("Elena Gómez", "elena", contrasena);
         UsuarioAutenticado felipe = registrar("Felipe Ruiz", "felipe", contrasena);
         UsuarioAutenticado monitor = registrar("Gabriela Soto", "monitor", contrasena);
+        // hugo = cuenta de sacrificio de la sesión de pruebas (límites, recuperación, supresión);
+        // ines/jorge = correos pendientes para probar registro y «Retirar».
+        registrar("Hugo Lara", "hugo", contrasena);
 
         EquipoVista alfa = equipo(docente, idProyecto, "Equipo Alfa", ana, List.of(ana, bruno, camila));
         EquipoVista beta = equipo(docente, idProyecto, "Equipo Beta", diego, List.of(diego, elena, felipe));

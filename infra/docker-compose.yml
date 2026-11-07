@@ -1,4 +1,6 @@
 # UniProject — Docker Compose (plan §8.9; decisiones-tecnicas-java §5).
+# Las variables UNIPROJECT_PUERTO_*, UNIPROJECT_PUBLICAR_WEB, UNIPROJECT_ETIQUETA_IMAGEN y UNIPROJECT_PROGRAMADOR_CRON*
+# son opcionales; sin ellas todo queda como antes. Las usa infra/pruebas/sesion-pruebas.ps1.
 # Desde la raíz del repositorio:
 #   docker compose --env-file .env -f infra/docker-compose.yml up -d --build
 name: uniproject
@@ -17,7 +19,7 @@ services:
       - datos-postgres:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${UNIPROJECT_PUERTO_BD:-5432}:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "uniproject"]
       interval: 5s
@@ -37,8 +39,8 @@ services:
       - datos-rabbitmq:/var/lib/rabbitmq
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-uniproject.conf:ro
     ports:
-      - "127.0.0.1:5672:5672"
-      - "127.0.0.1:15672:15672"
+      - "127.0.0.1:${UNIPROJECT_PUERTO_AMQP:-5672}:5672"
+      - "127.0.0.1:${UNIPROJECT_PUERTO_PANEL_RABBITMQ:-15672}:15672"
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_port_listener 15672"]
       interval: 10s
@@ -68,7 +70,7 @@ services:
     build:
       context: ..
       dockerfile: nucleo/Dockerfile
-    image: uniproject/nucleo:0.1.0
+    image: uniproject/nucleo:${UNIPROJECT_ETIQUETA_IMAGEN:-0.1.0}
     depends_on:
       base-de-datos:
         condition: service_healthy
@@ -89,8 +91,10 @@ services:
       UNIPROJECT_EVIDENCIAS_RAIZ: /datos
       SPRING_PROFILES_ACTIVE: ${UNIPROJECT_PERFILES:-default}
       UNIPROJECT_DEMO_CONTRASENA: ${UNIPROJECT_DEMO_CONTRASENA:-}
+      UNIPROJECT_PROGRAMADOR_CRONRIESGO: ${UNIPROJECT_PROGRAMADOR_CRONRIESGO:-0 0 * * * *}
+      UNIPROJECT_PROGRAMADOR_CRONINACTIVIDAD: ${UNIPROJECT_PROGRAMADOR_CRONINACTIVIDAD:-0 0 * * * *}
     ports:
-      - "8080:8080"
+      - "${UNIPROJECT_PUBLICAR_WEB:-8080}:8080"
     volumes:
       - datos-evidencias:/datos/evidencias
     restart: unless-stopped
@@ -99,7 +103,7 @@ services:
     build:
       context: ..
       dockerfile: agente-telegram/Dockerfile
-    image: uniproject/agente-telegram:0.1.0
+    image: uniproject/agente-telegram:${UNIPROJECT_ETIQUETA_IMAGEN:-0.1.0}
     depends_on:
       base-de-datos:
         condition: service_healthy
