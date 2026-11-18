@@ -80,6 +80,10 @@ public class ServicioEquipos {
     @Transactional
     public EquipoVista agregarMiembro(UsuarioAutenticado usuario, long idEquipo, SolicitudMiembro solicitud) {
         Equipo equipo = equipoDelDocente(usuario, idEquipo);
+        jdbc.sql("SELECT id_proyecto FROM proyecto WHERE id_proyecto = :proyecto FOR NO KEY UPDATE")
+                .param("proyecto", equipo.getIdProyecto())
+                .query(Long.class)
+                .single();
         String email = ServicioCuentas.normalizarEmail(solicitud.email());
         boolean habilitado = correos.findByIdProyectoOrderByEmail(equipo.getIdProyecto()).stream()
                 .anyMatch(c -> c.getEmail().equals(email) && c.getRolPlataforma() == RolPlataforma.ESTUDIANTE);

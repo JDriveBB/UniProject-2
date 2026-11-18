@@ -54,6 +54,7 @@ public class ServicioAvance {
     @Transactional
     public TareaVista actualizar(UsuarioAutenticado usuario, long idTarea, SolicitudAvance solicitud) {
         permisos.exigir(permisos.puedeActualizarAvance(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea t = tareas.findById(idTarea).orElseThrow();
         ContextoHito hito = consultas.hito(t.getIdHitoEquipo()).orElseThrow();
         Instant ahora = Instant.now(reloj);

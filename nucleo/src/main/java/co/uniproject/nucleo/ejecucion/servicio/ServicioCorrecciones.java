@@ -77,6 +77,7 @@ public class ServicioCorrecciones {
     @Transactional
     public CorreccionVista solicitar(UsuarioAutenticado usuario, long idTarea, PeticionCorreccion peticion) {
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea t = tareas.findById(idTarea).orElseThrow();
         ContextoHito hito = consultas.hito(t.getIdHitoEquipo()).orElseThrow();
         Instant ahora = Instant.now(reloj);
