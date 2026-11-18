@@ -57,6 +57,7 @@ public class ServicioApoyo {
     @Transactional
     public ApoyoVista solicitar(UsuarioAutenticado usuario, long idTarea, SolicitudApoyo solicitud) {
         permisos.exigir(permisos.puedeSolicitarApoyo(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         String mensaje = solicitud.mensaje() != null ? solicitud.mensaje().strip() : "";
         if (mensaje.isEmpty()) {
             throw new SolicitudInvalidaException("MENSAJE_VACIO", "El mensaje no puede estar vacío");

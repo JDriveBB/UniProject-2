@@ -48,6 +48,7 @@ public class ServicioComentarios {
     @Transactional
     public ComentarioVista comentar(UsuarioAutenticado usuario, long idTarea, SolicitudComentario solicitud) {
         permisos.exigir(permisos.puedeComentarTarea(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         ContextoHito hito = consultas.hitoDeTarea(idTarea).orElseThrow();
         Instant ahora = Instant.now(reloj);
         if (!EdicionHito.abierta(hito, ahora)) {

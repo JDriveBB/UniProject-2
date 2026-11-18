@@ -57,6 +57,7 @@ public class ServicioReasignacion {
     @Transactional
     public ResultadoReasignacion reasignar(UsuarioAutenticado usuario, long idTarea, SolicitudReasignacion s) {
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea t = tareas.findById(idTarea).orElseThrow();
         ContextoHito hito = consultas.hito(t.getIdHitoEquipo()).orElseThrow();
         Instant ahora = Instant.now(reloj);
@@ -120,6 +121,15 @@ public class ServicioReasignacion {
                     "La parte debe tener menos horas que la tarea; si pasa toda, usa la reasignación total");
         }
         long idOrigen = t.getIdTarea();
+        boolean repetida = jdbc.sql("SELECT EXISTS (SELECT 1 FROM tarea WHERE id_tarea_origen = :origen "
+                        + "AND lower(btrim(titulo)) = lower(btrim(:titulo)))")
+                .param("origen", idOrigen)
+                .param("titulo", titulo)
+                .query(Boolean.class)
+                .single();
+        if (repetida) {
+            throw new ReglaNegocioException("PARTE_REPETIDA", "Ya existe una parte con ese título creada desde esta tarea");
+        }
         BigDecimal restantes = t.getHorasEstimadas().subtract(horas);
         AuditoriaCambios.siCambia(auditoria, id, "tarea", idOrigen, "horas_estimadas", t.getHorasEstimadas(),
                 restantes);

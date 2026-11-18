@@ -46,10 +46,7 @@ public class ServicioEnvio {
 
     /** Decisión 19-2: serializa envíos y evaluaciones del mismo hito de equipo. */
     static void bloquear(JdbcClient jdbc, long idHitoEquipo) {
-        jdbc.sql("SELECT id_hito_equipo FROM hito_equipo WHERE id_hito_equipo = :he FOR UPDATE")
-                .param("he", idHitoEquipo)
-                .query(Long.class)
-                .single();
+        co.uniproject.nucleo.ejecucion.servicio.BloqueoHito.bloquear(jdbc, idHitoEquipo);
     }
 
     @Transactional

@@ -108,6 +108,7 @@ public class ServicioEvidencias {
 
     private void preparar(UsuarioAutenticado usuario, long idTarea) {
         permisos.exigir(permisos.puedeAdjuntarEvidencia(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         ContextoHito hito = consultas.hitoDeTarea(idTarea).orElseThrow();
         EdicionHito.exigirAbierta(hito, Instant.now(reloj));
     }

@@ -15,6 +15,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,16 +29,18 @@ public class ServicioTareas {
     private final RecalculoTareas recalculo;
     private final Permisos permisos;
     private final RegistroAuditoria auditoria;
+    private final JdbcClient jdbc;
     private final Clock reloj;
 
     public ServicioTareas(TareaRepositorio tareas, ConsultasEjecucion consultas, LectorTareas lector,
-                          RecalculoTareas recalculo, Permisos permisos, RegistroAuditoria auditoria, Clock reloj) {
+                          RecalculoTareas recalculo, Permisos permisos, RegistroAuditoria auditoria, JdbcClient jdbc, Clock reloj) {
         this.tareas = tareas;
         this.consultas = consultas;
         this.lector = lector;
         this.recalculo = recalculo;
         this.permisos = permisos;
         this.auditoria = auditoria;
+        this.jdbc = jdbc;
         this.reloj = reloj;
     }
 
@@ -64,6 +67,7 @@ public class ServicioTareas {
     @Transactional
     public TareaVista crear(UsuarioAutenticado usuario, long idHitoEquipo, SolicitudTarea solicitud) {
         permisos.exigir(permisos.puedeGestionarHitoEquipo(usuario.idUsuario(), idHitoEquipo));
+        BloqueoHito.bloquear(jdbc, idHitoEquipo);
         ContextoHito hito = consultas.hito(idHitoEquipo).orElseThrow();
         Instant ahora = Instant.now(reloj);
         EdicionHito.exigirAbierta(hito, ahora);
@@ -91,6 +95,7 @@ public class ServicioTareas {
     @Transactional
     public TareaVista editar(UsuarioAutenticado usuario, long idTarea, SolicitudTarea solicitud) {
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea t = tareas.findById(idTarea).orElseThrow();
         ContextoHito hito = consultas.hito(t.getIdHitoEquipo()).orElseThrow();
         EdicionHito.exigirAbierta(hito, Instant.now(reloj));

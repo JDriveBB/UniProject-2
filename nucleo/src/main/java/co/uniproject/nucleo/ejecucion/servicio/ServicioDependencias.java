@@ -56,6 +56,7 @@ public class ServicioDependencias {
     @Transactional
     public ResultadoDependenciasVista agregar(UsuarioAutenticado usuario, long idTarea, SolicitudDependencias solicitud) {
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea tarea = tareas.findById(idTarea).orElseThrow();
         ContextoHito hito = consultas.hito(tarea.getIdHitoEquipo()).orElseThrow();
         EdicionHito.exigirAbierta(hito, Instant.now(reloj));
@@ -87,6 +88,7 @@ public class ServicioDependencias {
     @Transactional
     public TareaVista quitar(UsuarioAutenticado usuario, long idTarea, long idPrerrequisito) {
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));
+        BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea tarea = tareas.findById(idTarea).orElseThrow();
         ContextoHito hito = consultas.hito(tarea.getIdHitoEquipo()).orElseThrow();
         EdicionHito.exigirAbierta(hito, Instant.now(reloj));
