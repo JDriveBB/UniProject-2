@@ -33,6 +33,9 @@ public class ServicioCuentas {
 
     static final int MINIMO_CARACTERES_CONTRASENA = 10;
     static final int MAXIMO_BYTES_CONTRASENA = 72;
+    public static final String CODIGO_REGISTRO_NO_DISPONIBLE = "REGISTRO_NO_DISPONIBLE";
+    public static final String MENSAJE_REGISTRO_NO_DISPONIBLE = "No se pudo crear la cuenta con ese correo. "
+            + "Si ya tienes cuenta, inicia sesión; si no, pide a tu docente que habilite tu correo.";
 
     private final UsuarioRepositorio usuarios;
     private final CorreoHabilitadoRepositorio correos;
@@ -93,27 +96,28 @@ public class ServicioCuentas {
     @Transactional
     public UsuarioSesion registrar(SolicitudRegistro solicitud) {
         String email = normalizarEmail(solicitud.email());
+        exigirContrasenaValida(solicitud.contrasena());
+        // Siempre un bcrypt, antes de mirar el correo: éxito y rechazos tardan parecido.
+        String hash = codificador.encode(solicitud.contrasena());
         if (usuarios.existsByEmail(email)) {
-            throw cuentaExistente();
+            throw registroNoDisponible();
         }
         List<CorreoHabilitado> habilitados = correos.findByEmailAndFechaUsoIsNull(email);
         if (habilitados.isEmpty()) {
-            throw new ReglaNegocioException("CORREO_NO_HABILITADO",
-                    "Ese correo no está habilitado. Pide a tu docente que lo agregue al proyecto");
+            throw registroNoDisponible();
         }
         Set<RolPlataforma> roles = habilitados.stream()
                 .map(CorreoHabilitado::getRolPlataforma)
                 .collect(Collectors.toSet());
         if (roles.size() > 1) {
-            throw new ReglaNegocioException("HABILITACION_AMBIGUA",
-                    "Ese correo está habilitado con roles distintos. Pide a tu docente que lo corrija");
+            throw registroNoDisponible();
         }
         Instant ahora = Instant.now(reloj);
-        Usuario usuario = nuevoUsuario(solicitud.nombre(), email, solicitud.contrasena(), roles.iterator().next(), ahora);
+        Usuario usuario = nuevoUsuario(solicitud.nombre(), email, hash, roles.iterator().next(), ahora);
         try {
             usuario = usuarios.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException e) {
-            throw cuentaExistente();
+            throw registroNoDisponible();
         }
         for (CorreoHabilitado c : habilitados) {
             c.setIdUsuarioRegistrado(usuario.getIdUsuario());
@@ -179,18 +183,18 @@ public class ServicioCuentas {
         if (usuarios.existsByRolPlataforma(RolPlataforma.ADMINISTRADOR) || usuarios.existsByEmail(email)) {
             return false;
         }
-        Usuario admin = usuarios.saveAndFlush(
-                nuevoUsuario(nombre, email, contrasena, RolPlataforma.ADMINISTRADOR, Instant.now(reloj)));
+        exigirContrasenaValida(contrasena);
+        Usuario admin = usuarios.saveAndFlush(nuevoUsuario(nombre, email, codificador.encode(contrasena),
+                RolPlataforma.ADMINISTRADOR, Instant.now(reloj)));
         auditoria.registrar(EntradaAuditoria.de(null, "usuario", admin.getIdUsuario(), AccionAuditoria.REGISTRO_CUENTA));
         return true;
     }
 
-    private Usuario nuevoUsuario(String nombre, String email, String contrasena, RolPlataforma rol, Instant ahora) {
-        exigirContrasenaValida(contrasena);
+    private Usuario nuevoUsuario(String nombre, String email, String hash, RolPlataforma rol, Instant ahora) {
         Usuario u = new Usuario();
         u.setNombre(nombre.strip());
         u.setEmail(email);
-        u.setPasswordHash(codificador.encode(contrasena));
+        u.setPasswordHash(hash);
         u.setRolPlataforma(rol);
         u.setAutorizaTratamientoDatos(true);
         u.setFechaAutorizacion(ahora);
@@ -207,8 +211,8 @@ public class ServicioCuentas {
         return texto.getBytes(StandardCharsets.UTF_8).length;
     }
 
-    private static ReglaNegocioException cuentaExistente() {
-        return new ReglaNegocioException("CUENTA_EXISTENTE", "Ya existe una cuenta con ese correo");
+    private static ReglaNegocioException registroNoDisponible() {
+        return new ReglaNegocioException(CODIGO_REGISTRO_NO_DISPONIBLE, MENSAJE_REGISTRO_NO_DISPONIBLE);
     }
 
     private static ReglaNegocioException yaHabilitado() {

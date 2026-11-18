@@ -180,7 +180,9 @@ class SeguridadIntegracionTest {
         HttpResponse<String> alta = n.post("/api/cuentas/registro", cuerpo);
         assertThat(alta.statusCode()).isEqualTo(201);
         assertThat(alta.body()).contains("\"rol\":\"DOCENTE\"").contains("\"telegramVinculado\":false");
-        assertThat(n.post("/api/cuentas/registro", cuerpo).body()).contains("\"codigo\":\"CUENTA_EXISTENTE\"");
+        HttpResponse<String> repetido = n.post("/api/cuentas/registro", cuerpo);
+        assertThat(repetido.statusCode()).isEqualTo(409);
+        assertThat(repetido.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
 
         HttpResponse<String> errada = n.post("/api/sesion/login",
                 "{\"email\":\"docente.registro@u.edu.co\",\"contrasena\":\"OtraClave2026\"}");
@@ -209,8 +211,15 @@ class SeguridadIntegracionTest {
     void registroRechazado() {
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
-        assertThat(n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", true)).body())
-                .contains("\"codigo\":\"CORREO_NO_HABILITADO\"");
+        HttpResponse<String> noHabilitado =
+                n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", true));
+        assertThat(noHabilitado.statusCode()).isEqualTo(409);
+        assertThat(noHabilitado.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
+        // Mismo cuerpo que el de una cuenta existente: no revela si el correo tiene cuenta.
+        HttpResponse<String> conCuenta = n.post("/api/cuentas/registro",
+                registro("X", "admin@uniproject.test", "ClaveNadie2026", true));
+        assertThat(conCuenta.statusCode()).isEqualTo(409);
+        assertThat(conCuenta.body()).isEqualTo(noHabilitado.body());
         HttpResponse<String> sinAutorizacion =
                 n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", false));
         assertThat(sinAutorizacion.statusCode()).isEqualTo(400);
@@ -249,7 +258,11 @@ class SeguridadIntegracionTest {
         HttpResponse<String> ambiguo =
                 n.post("/api/cuentas/registro", registro("Amb", "ambiguo@u.edu.co", "ClaveAmb20260", true));
         assertThat(ambiguo.statusCode()).isEqualTo(409);
-        assertThat(ambiguo.body()).contains("\"codigo\":\"HABILITACION_AMBIGUA\"");
+        assertThat(ambiguo.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
+        HttpResponse<String> noHabilitado =
+                n.post("/api/cuentas/registro", registro("Nadie", "nadie@u.edu.co", "ClaveNadie2026", true));
+        assertThat(noHabilitado.statusCode()).isEqualTo(409);
+        assertThat(ambiguo.body()).isEqualTo(noHabilitado.body());
     }
 
     @Test

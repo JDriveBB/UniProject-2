@@ -23,19 +23,20 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class LimitadorRecuperacion {
 
     public enum Tipo {
-        CORREO("correo", false),
-        IP("ip", false),
-        CANJE("canje", false),
-        CAMBIO("cambio", false),
-        LOGIN_CORREO("correo", true),
-        LOGIN_IP("ip", true);
+        CORREO("correo", ""),
+        IP("ip", ""),
+        CANJE("canje", ""),
+        CAMBIO("cambio", ""),
+        LOGIN_CORREO("correo", "login:"),
+        LOGIN_IP("ip", "login:"),
+        REGISTRO_IP("ip", "registro:");
 
         private final String prefijo;
-        private final boolean login;
+        private final String espacio;
 
-        Tipo(String prefijo, boolean login) {
+        Tipo(String prefijo, String espacio) {
             this.prefijo = prefijo;
-            this.login = login;
+            this.espacio = espacio;
         }
     }
 
@@ -61,7 +62,8 @@ public class LimitadorRecuperacion {
                                  @Value("${uniproject.recuperacion.maximo-canjes-por-ip}") int canjesPorIp,
                                  @Value("${uniproject.recuperacion.maximo-cambios-por-cuenta}") int cambiosPorCuenta,
                                  @Value("${uniproject.recuperacion.maximo-login-por-correo}") int loginPorCorreo,
-                                 @Value("${uniproject.recuperacion.maximo-login-por-ip}") int loginPorIp) {
+                                 @Value("${uniproject.recuperacion.maximo-login-por-ip}") int loginPorIp,
+                                 @Value("${uniproject.recuperacion.maximo-registro-por-ip}") int registroPorIp) {
         this.jdbc = jdbc;
         this.tx = new TransactionTemplate(gestor);
         this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -72,6 +74,7 @@ public class LimitadorRecuperacion {
         maximos.put(Tipo.CAMBIO, cambiosPorCuenta);
         maximos.put(Tipo.LOGIN_CORREO, loginPorCorreo);
         maximos.put(Tipo.LOGIN_IP, loginPorIp);
+        maximos.put(Tipo.REGISTRO_IP, registroPorIp);
     }
 
     /** Cuenta el intento y lanza DemasiadasSolicitudesException (429) si la clave pasó su máximo en la ventana. */
@@ -112,8 +115,7 @@ public class LimitadorRecuperacion {
     }
 
     private String clave(Tipo tipo, String valor) {
-        String texto = tipo.login ? "login:" + valor : valor;
-        return tipo.prefijo + ":" + huella(texto);
+        return tipo.prefijo + ":" + huella(tipo.espacio + valor);
     }
 
     static String huella(String valor) {

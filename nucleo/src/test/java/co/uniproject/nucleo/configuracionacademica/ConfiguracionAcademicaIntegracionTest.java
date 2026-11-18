@@ -380,7 +380,7 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
         HttpResponse<String> reg = n.post("/api/cuentas/registro", "{\"nombre\":\"Estudiante Pendiente\",\"email\":\""
                 + correoEst + "\",\"contrasena\":\"" + CLAVE + "\",\"autorizaTratamientoDatos\":true}");
         assertThat(reg.statusCode()).isEqualTo(409);
-        assertThat(reg.body()).contains("\"codigo\":\"CORREO_NO_HABILITADO\"");
+        assertThat(reg.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
 
         long idDocente = jdbc.sql("SELECT id_docente FROM proyecto WHERE id_proyecto = :p")
                 .param("p", id).query(Long.class).single();

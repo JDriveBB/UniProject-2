@@ -31,6 +31,7 @@ public class ServicioSupresion {
     /** Mismo texto que usuario_anonimizado_ck (V4). */
     public static final String NOMBRE_ANONIMO = "Usuario anonimizado";
     public static final String COMENTARIO_ELIMINADO = "[comentario eliminado]";
+    public static final String OBSERVACION_ELIMINADA = "[observación eliminada]";
     private static final String HASH_INUTILIZABLE = "!";
 
     private final JdbcClient jdbc;
@@ -104,7 +105,16 @@ public class ServicioSupresion {
                 .param("contenido", COMENTARIO_ELIMINADO)
                 .param("id", idUsuario)
                 .update();
-        eventos.reemplazar(idUsuario, NOMBRE_ANONIMO, true);
+        // Bloque 41: también el texto de sus avances y de las correcciones que pidió como líder.
+        jdbc.sql("UPDATE registro_avance SET observacion = :marcador WHERE id_usuario = :id AND observacion IS NOT NULL")
+                .param("marcador", OBSERVACION_ELIMINADA)
+                .param("id", idUsuario)
+                .update();
+        jdbc.sql("UPDATE solicitud_correccion SET observaciones = :marcador WHERE id_lider = :id")
+                .param("marcador", OBSERVACION_ELIMINADA)
+                .param("id", idUsuario)
+                .update();
+        eventos.reemplazar(idUsuario, NOMBRE_ANONIMO, true, OBSERVACION_ELIMINADA);
         jdbc.sql("DELETE FROM correo_habilitado WHERE email = :email AND fecha_uso IS NULL")
                 .param("email", cuenta.email())
                 .update();
