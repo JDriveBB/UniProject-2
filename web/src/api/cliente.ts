@@ -176,9 +176,72 @@ export function crearCliente(opciones: OpcionesCliente = {}): ClienteApi {
   };
 }
 
+/** Campo del contrato → etiqueta para el usuario (los nombres técnicos no se muestran). */
+export const ETIQUETAS_CAMPOS: Readonly<Record<string, string>> = {
+  nombre: 'Nombre',
+  email: 'Correo',
+  emails: 'Correo',
+  contrasena: 'Contraseña',
+  contrasenaActual: 'Contraseña actual',
+  contrasenaNueva: 'Contraseña nueva',
+  codigo: 'Código',
+  nombreEquipo: 'Nombre del equipo',
+  nombreHito: 'Nombre del hito',
+  descripcion: 'Descripción',
+  orden: 'Orden',
+  fechaInicio: 'Fecha de inicio',
+  fechaFin: 'Fecha de fin',
+  fechaLimite: 'Fecha límite',
+  diasInactividadAlerta: 'Alerta de inactividad',
+  usaMonitores: 'Monitores',
+  pesoPorcentaje: 'Peso (%)',
+  puntajeMaximo: 'Puntaje máximo',
+  titulo: 'Título',
+  horasEstimadas: 'Horas estimadas',
+  idEncargado: 'Encargado',
+  esPrerrequisitoCritico: 'Prerrequisito crítico',
+  porcentajeAvance: 'Avance (%)',
+  observacion: 'Observación',
+  observaciones: 'Observaciones',
+  idEvidencia: 'Evidencia',
+  url: 'Enlace',
+  contenido: 'Comentario',
+  mensaje: 'Mensaje',
+  prerrequisitos: 'Prerrequisitos',
+  idNuevoEncargado: 'Nuevo encargado',
+  tipo: 'Tipo de reasignación',
+  tituloParcial: 'Título de la parte',
+  horasParcial: 'Horas de la parte',
+  motivo: 'Motivo',
+  criterios: 'Criterios',
+  nota: 'Nota',
+  notaGrupal: 'Nota grupal',
+  retroalimentacion: 'Retroalimentación',
+  rol: 'Rol',
+  idUsuario: 'Integrante',
+  autorizaTratamientoDatos: 'Autorización de tratamiento de datos',
+};
+
+/** 'criterios[0].nota: must be…' → 'nota'; 'emails[3]: …' → 'emails'. */
+function campoDeDetalle(detalle: string): string {
+  const antes = detalle.split(':')[0] ?? '';
+  const sinIndices = antes.replace(/\[\d+\]/g, '');
+  return sinIndices.split('.').pop() ?? '';
+}
+
 /** Texto para mostrar al usuario; con 400 y 409 agrega los detalles (campos inválidos, títulos pendientes). */
 export function mensajeDeError(error: unknown): string {
   if (error instanceof ErrorApi) {
+    if (error.estado === 400 && error.codigo === 'VALIDACION') {
+      const etiquetas: string[] = [];
+      for (const detalle of error.detalles) {
+        const etiqueta = ETIQUETAS_CAMPOS[campoDeDetalle(detalle)];
+        if (etiqueta !== undefined && !etiquetas.includes(etiqueta)) {
+          etiquetas.push(etiqueta);
+        }
+      }
+      return etiquetas.length > 0 ? 'Revisa estos campos: ' + etiquetas.join(', ') : error.message;
+    }
     if ((error.estado === 400 || error.estado === 409) && error.detalles.length > 0) {
       return error.message + ': ' + error.detalles.join('; ');
     }

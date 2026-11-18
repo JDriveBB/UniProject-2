@@ -27,3 +27,14 @@ export function vieneDeCreacion(estado: unknown): boolean {
   return typeof estado === 'object' && estado !== null && 'proyectoCreado' in estado
     && (estado as { proyectoCreado: unknown }).proyectoCreado === true;
 }
+
+export const TEXTO_CREACION_PARCIAL = 'El proyecto se creó, pero no se guardó todo. ';
+
+/** Texto del fallo si el proyecto nuevo se creó pero un paso posterior falló (state.falloCreacion); si no, null. */
+export function falloDeCreacion(estado: unknown): string | null {
+  if (typeof estado === 'object' && estado !== null && 'falloCreacion' in estado) {
+    const fallo = (estado as { falloCreacion: unknown }).falloCreacion;
+    return typeof fallo === 'string' && fallo !== '' ? fallo : null;
+  }
+  return null;
+}

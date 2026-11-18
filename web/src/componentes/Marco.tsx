@@ -5,6 +5,9 @@ import { detalleProyecto, listarProyectos } from '../api/proyectos';
 import { enlacesDe, esLiderDeAlgunEquipo, etiquetaRol, textoContador } from '../marco/navegacion';
 import { rutas } from '../rutas';
 import { useSesion } from '../sesion/ContextoSesion';
+import { avisoSesionVisible, BOTON_SESION_EXPIRADA, TEXTO_SESION_EXPIRADA } from '../sesion/expiracion';
+import { Alerta } from './Alerta';
+import { Boton } from './Boton';
 import { equiposDelUsuario } from '../tablero/ubicacion';
 
 /**
@@ -13,7 +16,7 @@ import { equiposDelUsuario } from '../tablero/ubicacion';
  * El rol "Líder de equipo" sale de los equipos del estudiante, una vez por sesión (26d-12).
  */
 export function Marco() {
-  const { sesion, salir } = useSesion();
+  const { sesion, salir, expirada, confirmarExpiracion } = useSesion();
   const navegar = useNavigate();
   const { pathname } = useLocation();
   const [noLeidas, setNoLeidas] = useState(0);
@@ -131,6 +134,16 @@ export function Marco() {
         </div>
       </header>
       <main className="marco__contenido">
+        {avisoSesionVisible(sesion, expirada) && (
+          <div className="aviso-sesion">
+            <Alerta tipo="error">
+              {TEXTO_SESION_EXPIRADA}{' '}
+              <Boton variante="primario" onClick={confirmarExpiracion}>
+                {BOTON_SESION_EXPIRADA}
+              </Boton>
+            </Alerta>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

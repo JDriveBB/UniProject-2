@@ -1,8 +1,13 @@
+import { useState } from 'react';
+import { api } from '../api/cliente';
 import type { CorreccionVista, EvidenciaVista } from '../api/tipos';
+import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { fechaCorta } from '../formato';
+import { guardarEnDescargas } from '../reportes/descarga';
+import { descargarEvidencia, mensajeErrorEvidencia } from './descargaEvidencia';
 import {
   TIPO_EVIDENCIA,
   esEnlaceWeb,
@@ -30,6 +35,21 @@ export function TarjetaEvidencias({
   idVersion,
   alAdjuntar,
 }: PropsTarjetaEvidencias) {
+  const [error, setError] = useState<string | null>(null);
+  const [descargando, setDescargando] = useState<number | null>(null);
+
+  async function alDescargar(id: number, ruta: string, nombre: string) {
+    setError(null);
+    setDescargando(id);
+    try {
+      await descargarEvidencia(api, ruta, nombre, guardarEnDescargas);
+    } catch (err) {
+      setError(mensajeErrorEvidencia(err));
+    } finally {
+      setDescargando(null);
+    }
+  }
+
   const infoCorreccion =
     correccion !== null
       ? textoCorreccion(correccion, nombreDeEvidencia(evidencias, correccion.idEvidencia), esElEncargado)
@@ -37,6 +57,7 @@ export function TarjetaEvidencias({
 
   return (
     <Tarjeta titulo="Evidencias">
+      {error !== null && <Alerta tipo="error">{error}</Alerta>}
       {correccion !== null && infoCorreccion !== null && (
         <div className="correccion-pendiente">
           <p className="correccion-pendiente__titulo">{infoCorreccion.titulo}</p>
@@ -70,10 +91,16 @@ export function TarjetaEvidencias({
                 </a>
               );
             } else if (e.tipoEvidencia !== 'ENLACE' && e.descarga !== null) {
+              const ruta = e.descarga;
               contenidoNombre = (
-                <a className="evidencia__enlace" href={e.descarga} download={nombre}>
+                <button
+                  type="button"
+                  className="evidencia__enlace evidencia__descargar"
+                  onClick={() => void alDescargar(e.idEvidencia, ruta, nombre)}
+                  disabled={descargando === e.idEvidencia}
+                >
                   {nombre}
-                </a>
+                </button>
               );
             }
 

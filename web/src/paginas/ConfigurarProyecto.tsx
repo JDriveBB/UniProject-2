@@ -39,7 +39,7 @@ import { TarjetaEquipos } from '../proyectos/TarjetaEquipos';
 import { TarjetaHitos } from '../proyectos/TarjetaHitos';
 import { TarjetaHitoSeleccionado } from '../proyectos/TarjetaHitoSeleccionado';
 import { borradorValido, primerHitoConErrores, SIN_ERRORES, validarBorrador } from '../proyectos/validacion';
-import { idDeRuta, modoDeVista, vieneDeCreacion } from '../proyectos/vista';
+import { falloDeCreacion, idDeRuta, modoDeVista, TEXTO_CREACION_PARCIAL, vieneDeCreacion } from '../proyectos/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 
@@ -91,11 +91,15 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [desincronizado, setDesincronizado] = useState(false);
-  const [mensaje, setMensaje] = useState<Mensaje | null>(() =>
-    vieneDeCreacion(ubicacion.state)
+  const [mensaje, setMensaje] = useState<Mensaje | null>(() => {
+    const falla = falloDeCreacion(ubicacion.state);
+    if (falla !== null) {
+      return { tipo: 'error', texto: TEXTO_CREACION_PARCIAL + falla };
+    }
+    return vieneDeCreacion(ubicacion.state)
       ? { tipo: 'exito', texto: 'Proyecto creado. Ahora puedes crear equipos y agregar estudiantes.' }
-      : null,
-  );
+      : null;
+  });
   const contador = useRef(0);
 
   const cargar = useCallback(async (id: number) => {
@@ -193,8 +197,13 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
     }
     const conIds = asignarIds(borrador, resultado.creados);
     if (fallo !== null) {
+      const textoFallo = textoErrorGuardado(fallo.operacion, fallo.causa, borrador, fallo.indice);
+      if (esNuevo && id !== null) {
+        navegar(rutas.proyecto(id), { replace: true, state: { proyectoCreado: true, falloCreacion: textoFallo } });
+        return;
+      }
       setBorrador(conIds);
-      setMensaje({ tipo: 'error', texto: textoErrorGuardado(fallo.operacion, fallo.causa, borrador, fallo.indice) });
+      setMensaje({ tipo: 'error', texto: textoFallo });
     }
     if (id === null) {
       /* Falló crear el proyecto (primer paso): no se guardó nada y no hay nada que recargar. */

@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
  * Decisión 25-2: el SPA vive en el mismo origen. Las rutas del frontend (web/src/rutas.ts, incluidas las de
  * RutasWeb) devuelven index.html para que React las resuelva al recargar o al abrir un enlace de Telegram.
  * Lista explícita: /api/**, /interno/** y /actuator/** nunca caen aquí.
+ * Las rutas desconocidas fuera de /api, /interno y /actuator las atiende ResolutorErrorSpa (404 con index.html, solo
+ * si el navegador pide HTML; bloque 43).
  */
 @Controller
 public class ControladorSpa {

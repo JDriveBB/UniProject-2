@@ -348,6 +348,13 @@ a {
   color: var(--color-texto-sobre-primario);
 }
 
+.aviso-sesion {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin-bottom: var(--espacio-4);
+}
+
 .alerta {
   padding: var(--espacio-3) var(--espacio-4);
   border-radius: var(--radio);
@@ -1882,6 +1889,20 @@ a {
 .evidencia__enlace:hover {
   color: var(--color-primario);
   text-decoration: underline;
+}
+
+.evidencia__descargar {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.evidencia__descargar:disabled {
+  cursor: progress;
 }
 
 .evidencia__autor {

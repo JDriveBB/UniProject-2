@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { idDeRuta, modoDeVista, vieneDeCreacion } from './vista';
+import { falloDeCreacion, idDeRuta, modoDeVista, vieneDeCreacion } from './vista';
 
 describe('vista del proyecto', () => {
   it('edita solo el docente dueño; el resto ve en solo lectura', () => {
@@ -25,5 +25,15 @@ describe('vista del proyecto', () => {
     expect(vieneDeCreacion({ proyectoCreado: true })).toBe(true);
     expect(vieneDeCreacion({ proyectoCreado: 'true' })).toBe(false);
     expect(vieneDeCreacion(null)).toBe(false);
+  });
+});
+
+describe('falloDeCreacion', () => {
+  it('devuelve el texto solo si es un string no vacío', () => {
+    expect(falloDeCreacion({ proyectoCreado: true, falloCreacion: 'Error X' })).toBe('Error X');
+    expect(falloDeCreacion({ falloCreacion: '' })).toBeNull();
+    expect(falloDeCreacion({ falloCreacion: 3 })).toBeNull();
+    expect(falloDeCreacion(null)).toBeNull();
+    expect(falloDeCreacion('x')).toBeNull();
   });
 });
