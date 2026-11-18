@@ -44,10 +44,12 @@ RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10: parcial nominal (48
 |---|---|---|
 | 41 | Registro con límite por IP y respuesta uniforme (hallazgo 1); supresión de observaciones de avance y de corrección, y de su resumen en la outbox (4); rechazo de U+0000 y de números/booleanos como texto (5) | Fusionado (revisor: aprobado, ronda 1) |
 | 42 | Candado por hito en dependencias, avance, evidencias, tareas, reasignación, correcciones, comentarios y apoyo; `PARTE_REPETIDA`; un equipo por estudiante con `FOR NO KEY UPDATE` sobre `proyecto` (2, 3, 6) | Fusionado (revisor: aprobado, ronda 1) |
-| 43 | Aviso de sesión terminada, creación parcial de proyecto, descarga de evidencias, SPA para rutas desconocidas, detalles de validación, contrato, destino de `tarea.reasignada` (7, 10, 11) | En curso |
+| 43 | Aviso de sesión terminada, creación parcial de proyecto, descarga de evidencias, SPA para rutas desconocidas, detalles de validación, contrato, (7, 10, 11); queda fuera el destino de `tarea.reasignada` | Fusionado (revisor: 1 corrección de prueba, aplicada) |
 
 ### Límites conocidos tras las correcciones
 - Lo ya publicado en RabbitMQ o en la cola de fallidos conserva el texto original (decisión 27-5): la anonimización reescribe la outbox y la bandeja, no re-publica.
 - La supresión aún no anonimiza la `url` de las evidencias de tipo ENLACE ni los títulos/descripciones de tareas que el titular creó como líder.
 - Una cadena vacía `""` enviada a un campo `LocalDate`, `Long`, `BigDecimal` o `Boolean` ahora responde 400 `CUERPO_INVALIDO` (antes 400 `VALIDACION` por campo); la web valida antes de enviar.
 - El permiso se evalúa antes de esperar el candado: quien deja de ser encargado por una reasignación simultánea aún puede guardar un avance en esa ventana mínima.
+- Destino distinto de `tarea.reasignada` para el encargado anterior (bandeja `/tareas/{id}`, Telegram `/mis-tareas`): no corregido; exige guardar el papel del destinatario en la notificación o consultar el encargado actual. Gravedad baja.
+- Si hay un `<dialog>` abierto, el aviso de sesión terminada queda detrás hasta cerrarlo.
