@@ -2,8 +2,9 @@
 
     python scripts/verificar.py
 
-1. Web (web/): `npm ci`, chequeo de tipos + build de Vite y pruebas de Vitest.
-2. Java (raíz): `mvnw verify` en todos los módulos (las pruebas de integración usan Testcontainers:
+1. Formato: revisa con `scripts/formatear.py --revisar` los archivos Java y web cambiados respecto de `main`.
+2. Web (web/): `npm ci`, chequeo de tipos + build de Vite y pruebas de Vitest.
+3. Java (raíz): `mvnw verify` en todos los módulos (las pruebas de integración usan Testcontainers:
    Docker Desktop debe estar encendido).
 Se detiene en el primer paso que falle y devuelve su código de salida.
 """
@@ -29,6 +30,7 @@ def npm() -> str:
 
 
 PASOS = [
+    ("Formato de los archivos cambiados", [sys.executable, "scripts/formatear.py", "--revisar"], RAIZ),
     ("Web: dependencias", [npm(), "ci", "--no-audit", "--no-fund"], WEB),
     ("Web: tipos y build", [npm(), "run", "build"], WEB),
     ("Web: pruebas", [npm(), "test"], WEB),
