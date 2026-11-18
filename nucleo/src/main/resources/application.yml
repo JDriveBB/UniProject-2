@@ -64,6 +64,7 @@ uniproject:
     maximo-cambios-por-cuenta: 10
     maximo-login-por-correo: 10
     maximo-login-por-ip: 20
+    maximo-registro-por-ip: 20
     cron-limpieza: "0 30 * * * *"
   outbox:
     intervalo-ms: 2000

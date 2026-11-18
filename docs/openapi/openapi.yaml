@@ -101,7 +101,12 @@ paths:
               schema: {$ref: '#/components/schemas/UsuarioSesion'}
         '400': {$ref: '#/components/responses/Invalida'}
         '403': {$ref: '#/components/responses/Prohibido'}
-        '409': {$ref: '#/components/responses/Conflicto'}
+        '409':
+          description: 'REGISTRO_NO_DISPONIBLE: mismo código y mensaje si el correo no está habilitado, ya tiene cuenta o tiene habilitaciones de roles distintos (no revela cuál)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes'}
   /api/cuentas/recuperacion:
     post:
       tags: [sesion]
@@ -1187,7 +1192,7 @@ components:
     idEstudiante: {name: idEstudiante, in: path, required: true, schema: {type: integer, format: int64}}
   responses:
     Invalida:
-      description: VALIDACION (detalles campo por campo), CUERPO_INVALIDO u otro código propio
+      description: 'VALIDACION (detalles campo por campo), CUERPO_INVALIDO (JSON mal formado, tipo equivocado como un número o un booleano donde va texto, o un texto entre comillas donde va número o booleano, o texto con carácter nulo) u otro código propio'
       content:
         application/json:
           schema: {$ref: '#/components/schemas/RespuestaError'}

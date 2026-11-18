@@ -81,16 +81,10 @@ describe('validación del registro', () => {
 
 describe('errores de la API en registro y alta de docentes', () => {
   it('los 409 del registro muestran el mensaje del núcleo', () => {
-    const noHabilitado = new ErrorApi(
-      409,
-      'CORREO_NO_HABILITADO',
-      'Ese correo no está habilitado. Pide a tu docente que lo agregue al proyecto',
-    );
-    expect(mensajeErrorRegistro(noHabilitado)).toBe(
-      'Ese correo no está habilitado. Pide a tu docente que lo agregue al proyecto',
-    );
-    const existente = new ErrorApi(409, 'CUENTA_EXISTENTE', 'Ya existe una cuenta con ese correo');
-    expect(mensajeErrorRegistro(existente)).toBe('Ya existe una cuenta con ese correo');
+    const mensaje =
+      'No se pudo crear la cuenta con ese correo. Si ya tienes cuenta, inicia sesión; si no, pide a tu docente que habilite tu correo.';
+    const noDisponible = new ErrorApi(409, 'REGISTRO_NO_DISPONIBLE', mensaje);
+    expect(mensajeErrorRegistro(noDisponible)).toBe(mensaje);
   });
 
   it('VALIDACION nombra los campos en el orden del formulario, sin repetir', () => {

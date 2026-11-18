@@ -7,6 +7,7 @@ import co.uniproject.eventos.datos.HitoEvaluado;
 import co.uniproject.eventos.datos.Persona;
 import co.uniproject.eventos.datos.Referencia;
 import co.uniproject.eventos.datos.ReferenciaTarea;
+import co.uniproject.eventos.datos.TareaCorreccion;
 import co.uniproject.eventos.datos.TareaReasignada;
 import co.uniproject.nucleo.ApiIntegracionBase;
 import co.uniproject.nucleo.comun.FechasDominio;
@@ -186,7 +187,7 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
         assertThat(texto("SELECT id_autor || '|' || contenido FROM comentario_tarea WHERE id_comentario = :id",
                 comentario)).isEqualTo(id + "|" + ServicioSupresion.COMENTARIO_ELIMINADO);
         assertThat(texto("SELECT id_usuario || '|' || observacion FROM registro_avance WHERE id_registro = :id",
-                avance)).isEqualTo(id + "|Primer borrador");
+                avance)).isEqualTo(id + "|" + ServicioSupresion.OBSERVACION_ELIMINADA);
         assertThat(contar("SELECT count(*) FROM miembro_equipo WHERE id_usuario = :id", id)).isEqualTo(1);
         TareaReasignada datos = (TareaReasignada) codec.leer(carga(pendiente).getBytes(StandardCharsets.UTF_8)).data();
         assertThat(datos.integranteNuevo()).isEqualTo(new Persona(id, ANONIMO, null));
@@ -453,7 +454,7 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
     }
 
     @Test
-    void supresionVaciaComentariosDelTitularYConservaLosAjenosYCorrecciones() {
+    void supresionVaciaTextosDelTitularYConservaLosAjenos() {
         Escenario e = escenario();
         long titular = e.idEstudiante();
         long otro = e.idLider();
@@ -473,6 +474,11 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
         long correccion = jdbc.sql("INSERT INTO solicitud_correccion (id_tarea, id_evidencia, id_lider, id_estudiante, observaciones) "
                         + "VALUES (:t, :ev, :l, :i, 'Observación de corrección del titular') RETURNING id_solicitud")
                 .param("t", tarea).param("ev", evidencia).param("l", titular).param("i", otro).query(Long.class).single();
+        long correccionAlTitular = jdbc.sql("INSERT INTO solicitud_correccion (id_tarea, id_evidencia, id_lider, "
+                        + "id_estudiante, observaciones) VALUES (:t, :ev, :l, :i, 'Corrección pedida al titular') "
+                        + "RETURNING id_solicitud")
+                .param("t", tarea).param("ev", evidencia).param("l", otro).param("i", titular)
+                .query(Long.class).single();
 
         HttpResponse<String> r = suprimir(sesion(e.estudiante()), CLAVE);
         assertThat(r.statusCode()).as(r.body()).isEqualTo(204);
@@ -482,7 +488,42 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
         assertThat(texto("SELECT id_autor || '|' || contenido FROM comentario_tarea WHERE id_comentario = :id", cOtro))
                 .isEqualTo(otro + "|Comentario de otro que debe quedar intacto");
         assertThat(texto("SELECT id_lider || '|' || observaciones FROM solicitud_correccion WHERE id_solicitud = :id", correccion))
-                .isEqualTo(titular + "|Observación de corrección del titular");
+                .isEqualTo(titular + "|" + ServicioSupresion.OBSERVACION_ELIMINADA);
+        assertThat(texto("SELECT id_lider || '|' || observaciones FROM solicitud_correccion WHERE id_solicitud = :id",
+                correccionAlTitular)).isEqualTo(otro + "|Corrección pedida al titular");
+    }
+
+    @Test
+    void supresionQuitaElResumenDeSusCorreccionesEnOutboxYBandeja() {
+        Escenario e = escenario();
+        long titular = e.idEstudiante();
+        Referencia proyecto = new Referencia(e.idProyecto(), "Proyecto Supresion");
+        Referencia equipo = new Referencia(e.idEquipo(), "Equipo S");
+        ReferenciaTarea tarea = new ReferenciaTarea(e.idTarea(), "Informe");
+        UUID a = tx.execute(s -> eventos.registrar(new TareaCorreccion(proyecto, equipo, tarea,
+                new Persona(e.idLider(), "Lider Supresion", null), new Referencia(titular, e.nombre()),
+                "Resumen escrito por el titular")));
+        UUID b = tx.execute(s -> eventos.registrar(new TareaCorreccion(proyecto, equipo, tarea,
+                new Persona(titular, e.nombre(), null), new Referencia(e.idLider(), "Lider Supresion"),
+                "Resumen escrito por otro")));
+        jdbc.sql("UPDATE evento_saliente SET publicado_en = now() WHERE id = :id").param("id", a).update();
+
+        HttpResponse<String> r = suprimir(sesion(e.estudiante()), CLAVE);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(204);
+
+        TareaCorreccion cargaA = (TareaCorreccion) codec.leer(carga(a).getBytes(StandardCharsets.UTF_8)).data();
+        assertThat(cargaA.resumen()).isEqualTo(ServicioSupresion.OBSERVACION_ELIMINADA);
+        assertThat(cargaA.lider().nombre()).isEqualTo(ANONIMO);
+        assertThat(jdbc.sql("SELECT count(*) FROM evento_saliente WHERE id = :id AND publicado_en IS NOT NULL")
+                .param("id", a).query(Integer.class).single()).isEqualTo(1);
+        TareaCorreccion cargaB = (TareaCorreccion) codec.leer(carga(b).getBytes(StandardCharsets.UTF_8)).data();
+        assertThat(cargaB.resumen()).isEqualTo("Resumen escrito por otro");
+        assertThat(texto("SELECT mensaje FROM notificacion WHERE id_destinatario = :id AND tipo = 'tarea.correccion'",
+                e.idLider())).isEqualTo(ANONIMO + " pidió corregir la tarea \"Informe\": "
+                + ServicioSupresion.OBSERVACION_ELIMINADA);
+        assertThat(jdbc.sql("SELECT (SELECT count(*) FROM evento_saliente WHERE strpos(carga::text, "
+                        + ":t) > 0) + (SELECT count(*) FROM notificacion WHERE strpos(mensaje, :t) > 0)")
+                .param("t", "Resumen escrito por el titular").query(Long.class).single()).isZero();
     }
 
     @Test

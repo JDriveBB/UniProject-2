@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.notificaciones;
 
 import co.uniproject.eventos.CodecEventos;
+import co.uniproject.eventos.datos.TareaCorreccion;
 import co.uniproject.nucleo.notificaciones.bandeja.NombresEnNotificaciones;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -14,7 +15,8 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * Cambia el nombre (y, si se pide, borra el chat) de una persona en las cargas de evento_saliente, publicadas o no, y
  * rehace desde el evento ya corregido el texto de sus avisos en la bandeja (decisiones 27-5, 27-6 y 27-15;
- * Aclaración 1). Todo por id: un homónimo no se toca y no importa si la persona sigue en el equipo.
+ * Aclaración 1) y, en la supresión, el resumen de las correcciones que pidió el titular (bloque 41). Todo por id: un
+ * homónimo no se toca y no importa si la persona sigue en el equipo.
  */
 @Component
 public class PersonasEnEventos {
@@ -42,6 +44,14 @@ public class PersonasEnEventos {
 
     /** Devuelve cuántos eventos cambió. Debe correr dentro de la transacción del servicio que lo llama. */
     public int reemplazar(long idUsuario, String nombre, boolean quitarChat) {
+        return reemplazar(idUsuario, nombre, quitarChat, null);
+    }
+
+    /**
+     * Como el de 3 parámetros y, si resumenCorreccion no es null, también cambia el resumen de las correcciones que
+     * pidió el titular (data.lider.id) por ese texto.
+     */
+    public int reemplazar(long idUsuario, String nombre, boolean quitarChat, String resumenCorreccion) {
         List<Fila> filas = jdbc.sql("SELECT id, carga::text AS carga FROM evento_saliente "
                         + "WHERE jsonb_path_exists(carga, CAST(:ruta AS jsonpath), "
                         + "jsonb_build_object('id', CAST(:id AS bigint))) ORDER BY creado_en FOR UPDATE")
@@ -69,6 +79,10 @@ public class PersonasEnEventos {
                     cambio |= cambiarPersona(valor, idUsuario, nombre, quitarChat);
                 }
             }
+            if (resumenCorreccion != null && esCorreccionDelLider(f.carga(), idUsuario)) {
+                data.put("resumen", resumenCorreccion);
+                cambio = true;
+            }
             if (cambio) {
                 String json = mapeador.writeValueAsString(raiz);
                 jdbc.sql("UPDATE evento_saliente SET carga = CAST(:carga AS jsonb) WHERE id = :id")
@@ -81,6 +95,12 @@ public class PersonasEnEventos {
             }
         }
         return cambiados;
+    }
+
+    /** Decide con el evento tipado (no con la cadena type) y sobre la carga original, aún sin cambios. */
+    private boolean esCorreccionDelLider(String carga, long idUsuario) {
+        return codec.leer(carga.getBytes(StandardCharsets.UTF_8)).data() instanceof TareaCorreccion c
+                && c.lider() != null && c.lider().id() == idUsuario;
     }
 
     private static boolean cambiarPersona(JsonNode nodo, long idUsuario, String nombre, boolean quitarChat) {

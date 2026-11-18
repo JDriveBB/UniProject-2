@@ -8,7 +8,7 @@ import type {
   UsuarioSesion,
 } from './tipos';
 
-/** registrarCuenta: 201 sin iniciar sesión; 409 CORREO_NO_HABILITADO, HABILITACION_AMBIGUA o CUENTA_EXISTENTE. */
+/** registrarCuenta: 201 sin iniciar sesión; 409 REGISTRO_NO_DISPONIBLE (no dice por qué); 429 DEMASIADAS_SOLICITUDES. */
 export function registrarCuenta(solicitud: SolicitudRegistro): Promise<UsuarioSesion> {
   return api.post<UsuarioSesion>('/api/cuentas/registro', solicitud);
 }
