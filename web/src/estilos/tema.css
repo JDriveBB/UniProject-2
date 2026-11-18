@@ -115,6 +115,7 @@
   --ancho-col-peso: 130px;
   --ancho-col-puntaje: 150px;
   --ancho-col-acciones: 90px;
+  --ancho-min-col-criterio: 220px;
   --espacio-equipo: 10px;
   --ancho-tarjeta-proyecto: 320px;
 
@@ -1005,9 +1006,13 @@ a {
   white-space: nowrap;
 }
 
-/* Rúbrica (P03 derecha 1): columnas de 130 y 150 px; el criterio toma el resto. */
+/* Rúbrica (P03 derecha 1): columnas de 130 y 150 px; el criterio toma el resto, con un mínimo:
+   si la tarjeta es angosta, la tabla hace scroll horizontal en vez de aplastar el criterio. */
 .tabla--rubrica {
   table-layout: fixed;
+  min-width: calc(
+    var(--ancho-min-col-criterio) + var(--ancho-col-peso) + var(--ancho-col-puntaje) + var(--ancho-col-acciones)
+  );
 }
 
 .tabla__col-peso {
