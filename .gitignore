@@ -28,3 +28,7 @@ nucleo/src/main/resources/static/
 
 # Credenciales demo de la sesión de pruebas (privadas)
 credenciales/
+
+# Python
+__pycache__/
+
