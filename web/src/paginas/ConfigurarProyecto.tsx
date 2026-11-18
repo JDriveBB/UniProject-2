@@ -117,6 +117,11 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
     }
   }, [cargar, idInicial]);
 
+  // hook antes de los return anticipados (reglas de hooks); estable: TarjetaEquipos lo usa como dependencia de un efecto
+  const alActualizarEquipo = useCallback((equipo: EquipoVista) => {
+    setServidor((s) => (s === null ? s : { ...s, equipos: reemplazarEquipo(s.equipos, equipo) }));
+  }, []);
+
   if (carga.estado === 'cargando') {
     return <Cargando />;
   }
@@ -148,11 +153,6 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
     const clave = siguienteClave();
     setBorrador((b) => conCriterioNuevo(b, claveHito, clave));
   }
-
-  // estable: TarjetaEquipos lo usa como dependencia de un efecto
-  const alActualizarEquipo = useCallback((equipo: EquipoVista) => {
-    setServidor((s) => (s === null ? s : { ...s, equipos: reemplazarEquipo(s.equipos, equipo) }));
-  }, []);
 
   function alCancelar() {
     setMensaje(null);
