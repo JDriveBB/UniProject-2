@@ -13,6 +13,8 @@ interface ValorSesion {
   ingresar(email: string, contrasena: string): Promise<UsuarioSesion>;
   salir(): Promise<void>;
   refrescar(): Promise<UsuarioSesion>;
+  expirada: boolean;
+  confirmarExpiracion(): void;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
@@ -20,6 +22,7 @@ const ContextoSesion = createContext<ValorSesion | null>(null);
 /** El usuario vive solo en memoria (decisión 25-9); al recargar se vuelve a pedir /api/sesion/yo. */
 export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<EstadoSesion>({ estado: 'cargando' });
+  const [expirada, setExpirada] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -35,7 +38,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
           setSesion({ estado: 'anonimo' });
         }
       });
-    const alExpirar = () => setSesion({ estado: 'anonimo' });
+    const alExpirar = () => setExpirada(true);
     window.addEventListener(EVENTO_SESION_EXPIRADA, alExpirar);
     return () => {
       vigente = false;
@@ -46,6 +49,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const ingresar = useCallback(async (email: string, contrasena: string) => {
     const usuario = await api.post<UsuarioSesion>('/api/sesion/login', { email, contrasena });
     await api.prepararCsrf();
+    setExpirada(false);
     setSesion({ estado: 'autenticado', usuario });
     return usuario;
   }, []);
@@ -55,8 +59,14 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       await api.post<void>('/api/sesion/logout');
     } finally {
       await api.prepararCsrf().catch(() => undefined);
+      setExpirada(false);
       setSesion({ estado: 'anonimo' });
     }
+  }, []);
+
+  const confirmarExpiracion = useCallback(() => {
+    setExpirada(false);
+    setSesion({ estado: 'anonimo' });
   }, []);
 
   const refrescar = useCallback(async () => {
@@ -65,7 +75,10 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     return usuario;
   }, []);
 
-  const valor = useMemo(() => ({ sesion, ingresar, salir, refrescar }), [sesion, ingresar, salir, refrescar]);
+  const valor = useMemo(
+    () => ({ sesion, ingresar, salir, refrescar, expirada, confirmarExpiracion }),
+    [sesion, ingresar, salir, refrescar, expirada, confirmarExpiracion],
+  );
   return <ContextoSesion value={valor}>{children}</ContextoSesion>;
 }
 

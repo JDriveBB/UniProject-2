@@ -127,6 +127,18 @@ describe('cliente de la API', () => {
     expect(mensajeDeError(error)).toBe('Completa las tareas marcadas como prerrequisito crítico: Requisitos');
   });
 
+  it('400 VALIDACION muestra etiquetas, no nombres técnicos', () => {
+    const detalles = [
+      'emails[0]: must be a well-formed email address',
+      'criterios[1].nota: must be less than or equal to 5',
+      'emails[2]: must not be blank',
+    ];
+    expect(mensajeDeError(new ErrorApi(400, 'VALIDACION', 'Datos inválidos', detalles))).toBe(
+      'Revisa estos campos: Correo, Nota',
+    );
+    expect(mensajeDeError(new ErrorApi(400, 'VALIDACION', 'Datos inválidos', ['raro: x']))).toBe('Datos inválidos');
+  });
+
   it('sin red lanza SIN_CONEXION', async () => {
     const sinRed = vi.fn(async () => {
       throw new TypeError('fallo de red');

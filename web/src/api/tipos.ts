@@ -381,7 +381,7 @@ export interface MiTareaVista {
   porcentajeAvance: number;
   fechaLimite: string;
   bloqueada: boolean;
-  nivelRiesgo: NivelRiesgo;
+  nivelRiesgo: NivelRiesgo | null;
   idHitoEquipo: number;
   nombreHito: string;
   proyecto: string;
