@@ -25,7 +25,7 @@ export function ResumenPanel({ resumen }: { resumen: ResumenDelPanel }) {
         <p className={clasePorEvaluar}>{String(porEvaluar)}</p>
       </a>
       <div className="resumen-panel__dato">
-        <p className="resumen-panel__etiqueta">Avance promedio</p>
+        <p className="resumen-panel__etiqueta">Avance del hito en curso</p>
         <p className="resumen-panel__valor">{textoAvance}</p>
       </div>
       <div className="resumen-panel__dato">

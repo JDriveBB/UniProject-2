@@ -38,11 +38,33 @@ describe('marcas del tablero', () => {
     expect(marcaPrincipal({ estado: 'PENDIENTE', bloqueada: false, nivelRiesgo: null })).toBeNull();
   });
 
-  it('avance del hito: promedio simple redondeado (Figma: 100, 60, 80, 0, 0 → 48 %)', () => {
-    const avance = (lista: number[]) => avanceDelHito(lista.map((porcentajeAvance) => ({ porcentajeAvance })));
-    expect(avance([100, 60, 80, 0, 0])).toBe(48);
-    expect(avance([33, 34])).toBe(34);
+  it('avance del hito: ponderado por horas estimadas y redondeado, como el panel (D-12)', () => {
+    const avance = (lista: [number, number][]) =>
+      avanceDelHito(lista.map(([porcentajeAvance, horasEstimadas]) => ({ porcentajeAvance, horasEstimadas })));
+    expect(
+      avance([
+        [50, 10],
+        [100, 2],
+      ]),
+    ).toBe(58);
+    expect(
+      avance([
+        [100, 1],
+        [0, 3],
+      ]),
+    ).toBe(25);
+    expect(
+      avance([
+        [33, 2],
+        [34, 2],
+      ]),
+    ).toBe(34);
+    expect(avance([[100, 4]])).toBe(100);
     expect(avance([])).toBe(0);
+  });
+
+  it('avance del hito: sin horas en los datos cada tarea pesa igual (Figma: 100, 60, 80, 0, 0 → 48 %)', () => {
+    expect(avanceDelHito([100, 60, 80, 0, 0].map((porcentajeAvance) => ({ porcentajeAvance })))).toBe(48);
   });
 
   it('estados de tarea y de hito, y leyenda plegable con franja y marcas', () => {

@@ -1,5 +1,6 @@
 import type {
   EstadoHitoEquipo,
+  HitoEquipoVista,
   IntegranteInactivo,
   PanelEquipo,
   PanelProyecto,
@@ -21,6 +22,8 @@ export const EXPLICACION_ALERTAS =
 export const EXPLICACION_ESTADO =
   '«Requiere atención»: hay integrantes inactivos o tareas bloqueadas por más de 48 horas. «Tareas en riesgo»: tareas sin completar con riesgo alto de retraso.';
 export const EXPLICACION_VENCIDO = '«Vencido sin enviar»: la fecha límite pasó y el equipo no ha enviado el hito.';
+export const EXPLICACION_AVANCE_HITO =
+  '«Avance del hito»: avance de las tareas del hito en curso de cada equipo, ponderado por sus horas estimadas («Todo enviado» si ya envió todos sus hitos).';
 
 export const REQUIERE_ATENCION: Marca = { texto: 'Requiere atención', tono: 'peligro' };
 export const TAREAS_EN_RIESGO: Marca = { texto: 'Tareas en riesgo', tono: 'aviso' };
@@ -59,6 +62,47 @@ export function textoPlazo(dias: number): string {
     return 'venció ayer';
   }
   return `venció hace ${Math.abs(dias)} días`;
+}
+
+/** «20/11» en hora de Colombia; null si no es una fecha. */
+function diaMesEnvio(fechaEnvio: string): { iso: string; texto: string } | null {
+  const corta = fechaCorta(fechaEnvio);
+  const partes = corta.split('/');
+  if (partes.length !== 3) {
+    return null;
+  }
+  const [dia, mes, anio] = partes;
+  return { iso: `${anio}-${mes}-${dia}`, texto: `${dia}/${mes}` };
+}
+
+/** D-12: «Enviado el 20/11 · 2 días antes» / «· el mismo día» / «· 1 día tarde», contra la fecha límite. */
+export function textoEnvio(fechaEnvio: string, fechaLimite: string): string | null {
+  const envio = diaMesEnvio(fechaEnvio);
+  if (envio === null) {
+    return null;
+  }
+  const dias = diasHasta(fechaLimite, envio.iso);
+  let relativo: string;
+  if (dias === 0) {
+    relativo = 'el mismo día';
+  } else if (dias > 0) {
+    relativo = `${cantidadTexto(dias, 'día', 'días')} antes`;
+  } else {
+    relativo = `${cantidadTexto(-dias, 'día', 'días')} tarde`;
+  }
+  return `Enviado el ${envio.texto} · ${relativo}`;
+}
+
+function fechasDeEnvio(detalle: ProyectoDetalle): Map<number, string> {
+  const fechas = new Map<number, string>();
+  for (const equipo of detalle.equipos) {
+    for (const he of equipo.hitos) {
+      if (he.fechaEnvio != null) {
+        fechas.set(he.idHitoEquipo, he.fechaEnvio);
+      }
+    }
+  }
+  return fechas;
 }
 
 export function proyectosPropios(lista: ProyectoVista[], idUsuario: number): ProyectoVista[] {
@@ -194,14 +238,17 @@ export function atencionDelDia(panel: PanelProyecto, detalle: ProyectoDetalle, h
     }
   }
 
+  const envios = fechasDeEnvio(detalle);
   for (const p of porEvaluar(detalle)) {
+    const fechaEnvio = envios.get(p.idHitoEquipo);
+    const envio = fechaEnvio === undefined ? null : diaMesEnvio(fechaEnvio);
     items.push(
       crearItemAtencion({
         clave: `calificar-${p.idHitoEquipo}`,
         tipo: 'calificar',
         tono: 'info',
         etiqueta: 'Por calificar',
-        texto: `${p.nombreEquipo} envió ${etiquetaHito(p.orden, p.nombreHito)}`,
+        texto: `${p.nombreEquipo} envió ${etiquetaHito(p.orden, p.nombreHito)}${envio === null ? '' : ` el ${envio.texto}`}`,
         accion: 'Calificar',
         ruta: rutas.evaluarHito(p.idHitoEquipo),
       }),
@@ -266,6 +313,8 @@ export interface EntregaEquipo {
   nombreEquipo: string;
   idHitoEquipo: number;
   marca: Marca;
+  /** D-12: «Enviado el 20/11 · 2 días antes»; null si el hito no se ha enviado. */
+  envio: string | null;
 }
 
 export type UrgenciaEntrega = 'pasada' | 'vencida' | 'pronto' | 'normal';
@@ -289,6 +338,10 @@ function urgenciaEntrega(dias: number, algunoEnCurso: boolean): UrgenciaEntrega 
     return 'pronto';
   }
   return 'normal';
+}
+
+function envioDe(he: HitoEquipoVista, fechaLimite: string): string | null {
+  return he.fechaEnvio == null ? null : textoEnvio(he.fechaEnvio, fechaLimite);
 }
 
 export function entregasDelProyecto(detalle: ProyectoDetalle, hoy: string): Entrega[] {
@@ -318,6 +371,7 @@ export function entregasDelProyecto(detalle: ProyectoDetalle, hoy: string): Entr
           nombreEquipo: equipo.nombreEquipo,
           idHitoEquipo: he.idHitoEquipo,
           marca: marcaCelda(he.estado, h.fechaLimite, hoy),
+          envio: envioDe(he, h.fechaLimite),
         });
       }
     }
@@ -343,14 +397,22 @@ export interface ResumenDelPanel {
   proxima: { etiqueta: string; plazo: string } | null;
 }
 
+/**
+ * D-12: avance del hito en curso (ponderado por horas). Si el dato no trae avanceHitoActual (solo datos armados a mano
+ * antes de D-12), usa avancePromedio de los equipos con tareas, como antes.
+ */
+function avanceDelEquipo(e: PanelEquipo): number | null {
+  if (e.avanceHitoActual !== undefined) {
+    return e.avanceHitoActual;
+  }
+  return e.tareasTotales > 0 ? e.avancePromedio : null;
+}
+
 export function resumenPanel(panel: PanelProyecto, porEvaluar: number, entregas: Entrega[]): ResumenDelPanel {
   const enRojo = panel.equipos.filter((e) => e.enRojo).length;
   const equipos = panel.equipos.length;
-  const conTareas = panel.equipos.filter((e) => e.tareasTotales > 0);
-  const avance =
-    conTareas.length === 0
-      ? null
-      : Math.round(conTareas.reduce((suma, e) => suma + e.avancePromedio, 0) / conTareas.length);
+  const avances = panel.equipos.map(avanceDelEquipo).filter((a): a is number => a !== null);
+  const avance = avances.length === 0 ? null : Math.round(avances.reduce((suma, a) => suma + a, 0) / avances.length);
   const entregaProxima = entregas.find((e) => e.proxima);
   const proxima =
     entregaProxima === undefined ? null : { etiqueta: entregaProxima.etiqueta, plazo: entregaProxima.plazo };

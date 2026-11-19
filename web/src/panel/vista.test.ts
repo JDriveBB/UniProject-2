@@ -24,6 +24,7 @@ import {
   textoBloqueo,
   textoDias,
   textoInactivo,
+  textoEnvio,
   textoPlazo,
   REQUIERE_ATENCION,
 } from './vista';
@@ -56,6 +57,9 @@ function equipoPanel(parcial: Partial<PanelEquipo> = {}): PanelEquipo {
     avancePromedio: 0,
     integrantesInactivos: [],
     tareasBloqueadas: [],
+    hitoActual: null,
+    avanceHitoActual: null,
+    todoEnviado: false,
     ...parcial,
   };
 }
@@ -179,20 +183,35 @@ describe('vista', () => {
       tono: 'exito',
     });
 
-    const eqA = equipoPanel({ idEquipo: 10, nombreEquipo: 'A', enRojo: true, tareasTotales: 10, avancePromedio: 40 });
-    const eqB = equipoPanel({ idEquipo: 20, nombreEquipo: 'B', enRojo: false, tareasTotales: 4, avancePromedio: 70 });
-    const eqC = equipoPanel({ idEquipo: 30, nombreEquipo: 'C', enRojo: false, tareasTotales: 0, avancePromedio: 0 });
+    const eqA = equipoPanel({
+      idEquipo: 10,
+      nombreEquipo: 'A',
+      enRojo: true,
+      tareasTotales: 10,
+      avancePromedio: 90,
+      avanceHitoActual: 40,
+    });
+    const eqB = equipoPanel({
+      idEquipo: 20,
+      nombreEquipo: 'B',
+      enRojo: false,
+      tareasTotales: 4,
+      avancePromedio: 10,
+      avanceHitoActual: 70,
+    });
+    const eqC = equipoPanel({ idEquipo: 30, nombreEquipo: 'C', enRojo: false, tareasTotales: 3, avancePromedio: 50 });
+    const eqTodoEnviado = equipoPanel({ idEquipo: 40, nombreEquipo: 'D', tareasTotales: 5, todoEnviado: true });
 
     const panelABC: PanelProyecto = {
       idProyecto: 3,
       nombre: 'P',
       generadoEn: '2026-09-23T19:05:00Z',
-      equipos: [eqA, eqB, eqC],
+      equipos: [eqA, eqB, eqC, eqTodoEnviado],
     };
     const entregasResumen = entregasDelProyecto(datosReferencia, '2026-09-18');
     expect(resumenPanel(panelABC, 2, entregasResumen)).toEqual({
       enRojo: 1,
-      equipos: 3,
+      equipos: 4,
       porEvaluar: 2,
       avance: 55,
       proxima: { etiqueta: 'Hito 1 · Requisitos', plazo: 'vence en 2 días' },
@@ -207,6 +226,10 @@ describe('vista', () => {
     const resumenSinEntregas = resumenPanel(panelC, 2, entregasDelProyecto(datosReferencia, '2026-10-20'));
     expect(resumenSinEntregas.avance).toBeNull();
     expect(resumenSinEntregas.proxima).toBeNull();
+
+    const antesDeD12 = equipoPanel({ tareasTotales: 2, avancePromedio: 30 });
+    delete antesDeD12.avanceHitoActual;
+    expect(resumenPanel({ ...panelC, equipos: [antesDeD12] }, 0, []).avance).toBe(30);
 
     expect(textoDias(1)).toBe('1 día');
     expect(textoDias(3)).toBe('3 días');
@@ -312,8 +335,8 @@ describe('vista', () => {
         nombreEquipo: 'Equipo Alfa',
         miembros: [],
         hitos: [
-          { idHitoEquipo: 101, idHito: 10, estado: 'ENVIADO' },
-          { idHitoEquipo: 102, idHito: 20, estado: 'EVALUADO' },
+          { idHitoEquipo: 101, idHito: 10, estado: 'ENVIADO', fechaEnvio: '2026-11-20T15:00:00.123456Z' },
+          { idHitoEquipo: 102, idHito: 20, estado: 'EVALUADO', fechaEnvio: '2026-11-18T15:00:00Z' },
         ],
       },
     ];
@@ -366,10 +389,10 @@ describe('vista', () => {
       tipo: 'calificar',
       tono: 'info',
       etiqueta: 'Por calificar',
-      texto: 'Equipo Alfa envió Hito 1 · Requisitos',
+      texto: 'Equipo Alfa envió Hito 1 · Requisitos el 20/11',
       accion: 'Calificar',
       ruta: '/hitos/101/evaluar',
-      nombreAccesible: 'Calificar: Equipo Alfa envió Hito 1 · Requisitos',
+      nombreAccesible: 'Calificar: Equipo Alfa envió Hito 1 · Requisitos el 20/11',
     });
     expect(items[3]).toEqual({
       clave: 'proximo-2-202',
@@ -439,9 +462,9 @@ describe('vista', () => {
         nombreEquipo: 'Equipo Alfa',
         miembros: [],
         hitos: [
-          { idHitoEquipo: 11, idHito: 1, estado: 'EVALUADO' },
-          { idHitoEquipo: 12, idHito: 2, estado: 'EVALUADO' },
-          { idHitoEquipo: 13, idHito: 3, estado: 'ENVIADO' },
+          { idHitoEquipo: 11, idHito: 1, estado: 'EVALUADO', fechaEnvio: '2026-11-08T15:00:00Z' },
+          { idHitoEquipo: 12, idHito: 2, estado: 'EVALUADO', fechaEnvio: '2026-11-19T03:00:00Z' },
+          { idHitoEquipo: 13, idHito: 3, estado: 'ENVIADO', fechaEnvio: '2026-11-21T20:00:00Z' },
           { idHitoEquipo: 14, idHito: 4, estado: 'EN_CURSO' },
         ],
       },
@@ -459,6 +482,21 @@ describe('vista', () => {
       ['Equipo Beta', 'Vencido sin enviar'],
     ]);
     expect(entregas[3].equipos.map((eq) => eq.nombreEquipo)).toEqual(['Equipo Alfa']);
+    expect(entregas.map((e) => e.equipos.map((eq) => eq.envio))).toEqual([
+      ['Enviado el 08/11 · 2 días antes', null],
+      ['Enviado el 18/11 · el mismo día', null],
+      ['Enviado el 21/11 · el mismo día', null],
+      [null],
+    ]);
+  });
+
+  it('textoEnvio compara el día de envío en Bogotá con la fecha límite', () => {
+    expect(textoEnvio('2026-11-18T15:00:00Z', '2026-11-20')).toBe('Enviado el 18/11 · 2 días antes');
+    expect(textoEnvio('2026-11-19T15:00:00Z', '2026-11-20')).toBe('Enviado el 19/11 · 1 día antes');
+    expect(textoEnvio('2026-11-21T04:59:00Z', '2026-11-20')).toBe('Enviado el 20/11 · el mismo día');
+    expect(textoEnvio('2026-11-21T05:00:00Z', '2026-11-20')).toBe('Enviado el 21/11 · 1 día tarde');
+    expect(textoEnvio('2026-11-23T15:00:00Z', '2026-11-20')).toBe('Enviado el 23/11 · 3 días tarde');
+    expect(textoEnvio('no es fecha', '2026-11-20')).toBeNull();
   });
 
   it('estadoBotonPanel decide el texto y estado deshabilitado para actualizar y reintentar', () => {

@@ -92,10 +92,23 @@ export function nombreConCodigo(codigos: Map<number, string>, t: Pick<TareaVista
   return `${codigos.get(t.idTarea) ?? '?'} · ${t.titulo}`;
 }
 
-/** Decisión 26c-8: promedio simple del avance, redondeado (Figma: 100, 60, 80, 0, 0 → 48 %). 0 sin tareas. */
-export function avanceDelHito(tareas: Pick<TareaVista, 'porcentajeAvance'>[]): number {
-  if (tareas.length === 0) {
+/**
+ * D-12 (antes 26c-8, promedio simple): avance ponderado por horas estimadas, redondeado, igual que el panel
+ * (avanceHitoActual). 0 sin tareas o sin horas. Una tarea sin horasEstimadas pesa 1 h: solo pasa con datos que no
+ * traen las horas (p. ej. el tipo de reportes/vista.ts#resumenHito), donde queda el promedio simple.
+ */
+export function avanceDelHito(
+  tareas: (Pick<TareaVista, 'porcentajeAvance'> & Partial<Pick<TareaVista, 'horasEstimadas'>>)[],
+): number {
+  let totalHoras = 0;
+  let sumaPonderada = 0;
+  for (const t of tareas) {
+    const horas = t.horasEstimadas ?? 1;
+    totalHoras += horas;
+    sumaPonderada += t.porcentajeAvance * horas;
+  }
+  if (totalHoras <= 0) {
     return 0;
   }
-  return Math.round(tareas.reduce((suma, t) => suma + t.porcentajeAvance, 0) / tareas.length);
+  return Math.round(sumaPonderada / totalHoras);
 }

@@ -1404,6 +1404,9 @@ components:
         idHitoEquipo: {$ref: '#/components/schemas/Id'}
         idHito: {$ref: '#/components/schemas/Id'}
         estado: {$ref: '#/components/schemas/EstadoHitoEquipo'}
+        fechaEnvio:
+          $ref: '#/components/schemas/InstanteNulo'
+          description: Último envío de este hito del equipo; null si no se ha enviado
     SolicitudCorreos:
       type: object
       required: [emails, rol]
@@ -1438,9 +1441,26 @@ components:
         tareasTotales: {type: integer}
         tareasCompletadas: {type: integer}
         tareasRiesgoAlto: {type: integer}
-        avancePromedio: {type: integer, minimum: 0, maximum: 100}
+        avancePromedio: {type: integer, minimum: 0, maximum: 100, description: 'Promedio simple de todas las tareas; se conserva por compatibilidad (la web usa avanceHitoActual)'}
         integrantesInactivos: {type: array, items: {$ref: '#/components/schemas/IntegranteInactivo'}}
         tareasBloqueadas: {type: array, items: {$ref: '#/components/schemas/TareaBloqueada'}}
+        hitoActual:
+          description: Primer hito del equipo, por orden, en EN_CURSO; null si no hay
+          oneOf:
+            - {$ref: '#/components/schemas/HitoActualPanel'}
+            - {type: 'null'}
+        avanceHitoActual:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+          description: Avance de las tareas del hito en curso ponderado por horas estimadas; null sin hito en curso o sin tareas
+        todoEnviado: {type: boolean, description: El equipo tiene hitos y ninguno está EN_CURSO}
+    HitoActualPanel:
+      type: object
+      properties:
+        idHitoEquipo: {$ref: '#/components/schemas/Id'}
+        orden: {type: integer, minimum: 1}
+        nombreHito: {type: string}
     IntegranteInactivo:
       type: object
       properties:

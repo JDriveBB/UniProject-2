@@ -48,7 +48,10 @@ export function TarjetaEntregas({ entregas }: { entregas: Entrega[] }) {
               <ul className="entrega-hito__equipos">
                 {entrega.equipos.map((eq) => (
                   <li key={eq.idEquipo} className="entrega-hito__equipo">
-                    <span className="entrega-hito__nombre-equipo">{eq.nombreEquipo}</span>
+                    <div className="entrega-hito__nombre-equipo">
+                      {eq.nombreEquipo}
+                      {eq.envio !== null && <div className="texto-secundario">{eq.envio}</div>}
+                    </div>
                     <Link
                       className="enlace-insignia"
                       to={rutas.tableroEnHito(eq.idEquipo, eq.idHitoEquipo)}

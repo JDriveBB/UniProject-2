@@ -6,7 +6,10 @@ import co.uniproject.nucleo.configuracionacademica.repositorio.MiembroEquipoRepo
 import co.uniproject.nucleo.ejecucion.repositorio.HitoEquipoRepositorio;
 import co.uniproject.nucleo.seguridad.dominio.Usuario;
 import co.uniproject.nucleo.seguridad.repositorio.UsuarioRepositorio;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,8 +25,11 @@ public class ApoyoConfiguracion {
     private final UsuarioRepositorio usuarios;
     private final JdbcClient jdbc;
 
-    public ApoyoConfiguracion(MiembroEquipoRepositorio miembros, HitoEquipoRepositorio hitosEquipo,
-                              UsuarioRepositorio usuarios, JdbcClient jdbc) {
+    public ApoyoConfiguracion(
+            MiembroEquipoRepositorio miembros,
+            HitoEquipoRepositorio hitosEquipo,
+            UsuarioRepositorio usuarios,
+            JdbcClient jdbc) {
         this.miembros = miembros;
         this.hitosEquipo = hitosEquipo;
         this.usuarios = usuarios;
@@ -39,23 +45,36 @@ public class ApoyoConfiguracion {
                 .update();
     }
 
-    /** Equipo con sus miembros (primero el líder, luego por nombre) y sus hitos (por id de hito). */
+    /** Equipo con sus miembros (primero el líder, luego por nombre) y sus hitos (por id de hito, con su último envío). */
     public EquipoVista vistaEquipo(Equipo equipo) {
         List<MiembroEquipo> lista = miembros.findByIdEquipo(equipo.getIdEquipo());
-        Map<Long, String> nombres = usuarios.findAllById(lista.stream().map(MiembroEquipo::getIdUsuario).toList())
-                .stream()
-                .collect(Collectors.toMap(Usuario::getIdUsuario, Usuario::getNombre));
+        Map<Long, String> nombres =
+                usuarios
+                        .findAllById(
+                                lista.stream().map(MiembroEquipo::getIdUsuario).toList())
+                        .stream()
+                        .collect(Collectors.toMap(Usuario::getIdUsuario, Usuario::getNombre));
         List<MiembroVista> vistasMiembros = lista.stream()
                 .map(m -> new MiembroVista(m.getIdUsuario(), nombres.get(m.getIdUsuario()), m.getRolEquipo()))
                 .sorted(Comparator.comparing(MiembroVista::rolEquipo)
                         .thenComparing(MiembroVista::nombre)
                         .thenComparingLong(MiembroVista::idUsuario))
                 .toList();
+        Map<Long, Instant> envios = new HashMap<>();
+        jdbc.sql("SELECT he.id_hito_equipo, max(en.fecha_envio) AS fecha FROM envio_hito en "
+                        + "JOIN hito_equipo he ON he.id_hito_equipo = en.id_hito_equipo WHERE he.id_equipo = :equipo "
+                        + "GROUP BY he.id_hito_equipo")
+                .param("equipo", equipo.getIdEquipo())
+                .query((rs, fila) -> Map.entry(
+                        rs.getLong("id_hito_equipo"),
+                        rs.getObject("fecha", OffsetDateTime.class).toInstant()))
+                .list()
+                .forEach(par -> envios.put(par.getKey(), par.getValue()));
         List<HitoEquipoVista> vistasHitos = hitosEquipo.findByIdEquipo(equipo.getIdEquipo()).stream()
-                .map(HitoEquipoVista::de)
+                .map(he -> HitoEquipoVista.de(he, envios.get(he.getIdHitoEquipo())))
                 .sorted(Comparator.comparingLong(HitoEquipoVista::idHito))
                 .toList();
-        return new EquipoVista(equipo.getIdEquipo(), equipo.getIdProyecto(), equipo.getNombreEquipo(), vistasMiembros,
-                vistasHitos);
+        return new EquipoVista(
+                equipo.getIdEquipo(), equipo.getIdProyecto(), equipo.getNombreEquipo(), vistasMiembros, vistasHitos);
     }
 }

@@ -7,7 +7,34 @@ import { Insignia } from '../componentes/Insignia';
 import { Tabla, type ColumnaTabla } from '../componentes/Tabla';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { rutas } from '../rutas';
-import { estadoEquipo } from './vista';
+import { etiquetaHito } from '../tablero/ubicacion';
+import { EXPLICACION_AVANCE_HITO, estadoEquipo } from './vista';
+
+/** D-12: avance del hito en curso (ponderado por horas) con la etiqueta del hito debajo. */
+function AvanceDelHito({ equipo }: { equipo: PanelEquipo }) {
+  if (equipo.todoEnviado === true) {
+    return <span className="texto-secundario">Todo enviado</span>;
+  }
+  const hito = equipo.hitoActual ?? null;
+  const etiqueta =
+    hito === null ? null : <div className="texto-secundario">{etiquetaHito(hito.orden, hito.nombreHito)}</div>;
+  if (equipo.avanceHitoActual == null) {
+    return (
+      <>
+        <div className="texto-secundario">Sin tareas</div>
+        {etiqueta}
+      </>
+    );
+  }
+  return (
+    <>
+      <div>
+        <BarraAvance porcentaje={equipo.avanceHitoActual} />
+      </div>
+      {etiqueta}
+    </>
+  );
+}
 
 export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
   const columnas: ColumnaTabla<PanelEquipo>[] = [
@@ -28,9 +55,9 @@ export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
       },
     },
     {
-      titulo: 'Avance',
+      titulo: 'Avance del hito',
       clase: 'tabla__col-avance',
-      celda: (e) => <BarraAvance porcentaje={e.avancePromedio} />,
+      celda: (e) => <AvanceDelHito equipo={e} />,
     },
     {
       titulo: 'Completadas',
@@ -58,7 +85,10 @@ export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
   ];
 
   return (
-    <Tarjeta titulo="Equipos" acciones={<Ayuda termino="Equipos">{EXPLICACION_ESTADO}</Ayuda>}>
+    <Tarjeta
+      titulo="Equipos"
+      acciones={<Ayuda termino="Equipos">{`${EXPLICACION_ESTADO} ${EXPLICACION_AVANCE_HITO}`}</Ayuda>}
+    >
       <Tabla
         titulo="Avance y riesgo por equipo"
         clase="tabla--panel tabla--panel-equipos"
