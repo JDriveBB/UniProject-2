@@ -9,6 +9,7 @@ import co.uniproject.nucleo.trazabilidad.auditoria.EntradaAuditoria;
 import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
 import co.uniproject.nucleo.trazabilidad.reporte.GeneradorReportePdf;
 import co.uniproject.nucleo.trazabilidad.reporte.ReporteTrazabilidad;
+import co.uniproject.nucleo.trazabilidad.reporte.TextosHistorial;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,7 +23,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** RF15: reporte de trazabilidad del equipo en PDF (decisiones 21-4 y 21-5). Seis consultas fijas. */
+/** RF15: reporte de trazabilidad del equipo en PDF (decisiones 21-4 y 21-5). Ocho consultas fijas. */
 @Service
 public class ServicioReporte {
 
@@ -35,6 +36,12 @@ public class ServicioReporte {
     private static final String INTEGRANTES = "SELECT u.nombre, m.rol_equipo FROM miembro_equipo m "
             + "JOIN usuario u ON u.id_usuario = m.id_usuario WHERE m.id_equipo = :equipo "
             + "ORDER BY (m.rol_equipo <> 'LIDER'), u.nombre, u.id_usuario";
+
+    private static final String NOMBRES = "SELECT m.id_usuario, u.nombre FROM miembro_equipo m "
+            + "JOIN usuario u ON u.id_usuario = m.id_usuario WHERE m.id_equipo = :equipo";
+
+    private static final String TAREAS = "SELECT t.id_tarea, t.titulo FROM tarea t "
+            + "JOIN hito_equipo he ON he.id_hito_equipo = t.id_hito_equipo WHERE he.id_equipo = :equipo";
 
     private static final String ENTREGAS = "SELECT h.nombre_hito, en.fecha_envio, u.nombre FROM envio_hito en "
             + "JOIN hito_equipo he ON he.id_hito_equipo = en.id_hito_equipo JOIN hito h ON h.id_hito = he.id_hito "
@@ -61,8 +68,8 @@ public class ServicioReporte {
     private final JdbcClient jdbc;
     private final Clock reloj;
 
-    public ServicioReporte(ServicioHistorial historial, Permisos permisos, RegistroAuditoria auditoria,
-                           JdbcClient jdbc, Clock reloj) {
+    public ServicioReporte(
+            ServicioHistorial historial, Permisos permisos, RegistroAuditoria auditoria, JdbcClient jdbc, Clock reloj) {
         this.historial = historial;
         this.permisos = permisos;
         this.auditoria = auditoria;
@@ -78,45 +85,81 @@ public class ServicioReporte {
                 .optional();
         permisos.exigir(idProyecto.isPresent() && permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto.get()));
         Instant ahora = Instant.now(reloj);
-        Cabecera cabecera = jdbc.sql(CABECERA).param("equipo", idEquipo)
-                .query((rs, fila) -> new Cabecera(rs.getString("proyecto"), rs.getString("nombre_equipo"),
-                        rs.getString("docente")))
+        Cabecera cabecera = jdbc.sql(CABECERA)
+                .param("equipo", idEquipo)
+                .query((rs, fila) ->
+                        new Cabecera(rs.getString("proyecto"), rs.getString("nombre_equipo"), rs.getString("docente")))
                 .single();
-        List<ReporteTrazabilidad.Integrante> integrantes = jdbc.sql(INTEGRANTES).param("equipo", idEquipo)
-                .query((rs, fila) -> new ReporteTrazabilidad.Integrante(texto(rs.getString("nombre")),
+        List<ReporteTrazabilidad.Integrante> integrantes = jdbc.sql(INTEGRANTES)
+                .param("equipo", idEquipo)
+                .query((rs, fila) -> new ReporteTrazabilidad.Integrante(
+                        texto(rs.getString("nombre")),
                         "LIDER".equals(rs.getString("rol_equipo")) ? "Líder" : "Integrante"))
                 .list();
+        Map<Long, String> nombres = mapaIdTexto(NOMBRES, idEquipo);
+        Map<Long, String> tareas = mapaIdTexto(TAREAS, idEquipo);
         List<ReporteTrazabilidad.Cambio> cambios = historial.entradas(idEquipo, true, MAXIMO_CAMBIOS).stream()
-                .map(h -> new ReporteTrazabilidad.Cambio(h.fechaHora(), texto(h.autor()), texto(h.accion()),
-                        h.detalle()))
+                .map(h -> new ReporteTrazabilidad.Cambio(
+                        h.fechaHora(),
+                        texto(h.autor()),
+                        TextosHistorial.accion(h.accion(), h.entidad()),
+                        TextosHistorial.detalle(
+                                h.campo(), h.valorAnterior(), h.valorNuevo(), h.detalle(), nombres, tareas)))
                 .toList();
-        List<ReporteTrazabilidad.Entrega> entregas = jdbc.sql(ENTREGAS).param("equipo", idEquipo)
-                .query((rs, fila) -> new ReporteTrazabilidad.Entrega(texto(rs.getString("nombre_hito")),
-                        rs.getObject("fecha_envio", OffsetDateTime.class).toInstant(), texto(rs.getString("nombre"))))
+        List<ReporteTrazabilidad.Entrega> entregas = jdbc.sql(ENTREGAS)
+                .param("equipo", idEquipo)
+                .query((rs, fila) -> new ReporteTrazabilidad.Entrega(
+                        texto(rs.getString("nombre_hito")),
+                        rs.getObject("fecha_envio", OffsetDateTime.class).toInstant(),
+                        texto(rs.getString("nombre"))))
                 .list();
         Map<Long, List<ReporteTrazabilidad.NotaIndividual>> notas = new LinkedHashMap<>();
-        jdbc.sql(NOTAS).param("equipo", idEquipo)
-                .query((rs, fila) -> Map.entry(rs.getLong("id_evaluacion"), new ReporteTrazabilidad.NotaIndividual(
-                        texto(rs.getString("nombre")), rs.getBigDecimal("nota_sugerida"),
-                        rs.getBigDecimal("nota_final"))))
+        jdbc.sql(NOTAS)
+                .param("equipo", idEquipo)
+                .query((rs, fila) -> Map.entry(
+                        rs.getLong("id_evaluacion"),
+                        new ReporteTrazabilidad.NotaIndividual(
+                                texto(rs.getString("nombre")),
+                                rs.getBigDecimal("nota_sugerida"),
+                                rs.getBigDecimal("nota_final"))))
                 .list()
-                .forEach(par -> notas.computeIfAbsent(par.getKey(), k -> new ArrayList<>()).add(par.getValue()));
-        List<ReporteTrazabilidad.Calificacion> calificaciones = jdbc.sql(CALIFICACIONES).param("equipo", idEquipo)
+                .forEach(par -> notas.computeIfAbsent(par.getKey(), k -> new ArrayList<>())
+                        .add(par.getValue()));
+        List<ReporteTrazabilidad.Calificacion> calificaciones = jdbc.sql(CALIFICACIONES)
+                .param("equipo", idEquipo)
                 .query((rs, fila) -> {
-                    CaracterNota caracter = CaracterEvaluacion.de(rs.getBoolean("es_definitiva"),
-                            rs.getObject("fecha_limite", LocalDate.class), ahora);
-                    return new ReporteTrazabilidad.Calificacion(texto(rs.getString("nombre_hito")),
+                    CaracterNota caracter = CaracterEvaluacion.de(
+                            rs.getBoolean("es_definitiva"), rs.getObject("fecha_limite", LocalDate.class), ahora);
+                    return new ReporteTrazabilidad.Calificacion(
+                            texto(rs.getString("nombre_hito")),
                             rs.getBigDecimal("nota_grupal"),
                             caracter == CaracterNota.DEFINITIVA ? "definitiva" : "provisional",
                             notas.getOrDefault(rs.getLong("id_evaluacion"), List.of()));
                 })
                 .list();
-        ReporteTrazabilidad reporte = new ReporteTrazabilidad(texto(cabecera.proyecto()), texto(cabecera.equipo()),
-                texto(cabecera.docente()), ahora, integrantes, cambios, entregas, calificaciones);
+        ReporteTrazabilidad reporte = new ReporteTrazabilidad(
+                texto(cabecera.proyecto()),
+                texto(cabecera.equipo()),
+                texto(cabecera.docente()),
+                ahora,
+                integrantes,
+                cambios,
+                entregas,
+                calificaciones);
         byte[] pdf = new GeneradorReportePdf().generar(reporte);
-        auditoria.registrar(EntradaAuditoria.de(usuario.idUsuario(), "equipo", idEquipo,
-                AccionAuditoria.EXPORTAR_REPORTE));
+        auditoria.registrar(
+                EntradaAuditoria.de(usuario.idUsuario(), "equipo", idEquipo, AccionAuditoria.EXPORTAR_REPORTE));
         return pdf;
+    }
+
+    private Map<Long, String> mapaIdTexto(String sql, long idEquipo) {
+        Map<Long, String> mapa = new LinkedHashMap<>();
+        jdbc.sql(sql)
+                .param("equipo", idEquipo)
+                .query((rs, fila) -> Map.entry(rs.getLong(1), texto(rs.getString(2))))
+                .list()
+                .forEach(par -> mapa.putIfAbsent(par.getKey(), par.getValue()));
+        return mapa;
     }
 
     private static String texto(String valor) {

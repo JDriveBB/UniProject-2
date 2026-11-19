@@ -40,7 +40,8 @@ public final class GeneradorReportePdf {
     private final PDType1Font negrita = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
     public byte[] generar(ReporteTrazabilidad r) {
-        try (PDDocument doc = new PDDocument(); ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
+        try (PDDocument doc = new PDDocument();
+                ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
             Lienzo l = new Lienzo(doc);
             l.linea("Reporte de trazabilidad - UniProject", negrita, TAM_TITULO);
             l.linea("Proyecto: " + r.proyecto(), normal, TAM_TEXTO);
@@ -54,22 +55,31 @@ public final class GeneradorReportePdf {
             }
             seccion(l, "Historial de cambios", r.cambios().isEmpty());
             for (Cambio c : r.cambios()) {
-                l.linea(FECHA.format(c.fechaHora()) + " | " + c.autor() + " | " + c.accion() + " | " + c.detalle(),
-                        normal, TAM_TEXTO);
+                String linea = FECHA.format(c.fechaHora()) + " | " + c.autor() + " | " + c.accion();
+                if (c.detalle() != null && !c.detalle().isEmpty()) {
+                    linea += " | " + c.detalle();
+                }
+                l.linea(linea, normal, TAM_TEXTO);
             }
             seccion(l, "Entregas", r.entregas().isEmpty());
             for (Entrega e : r.entregas()) {
-                l.linea(e.hito() + ": enviado el " + FECHA.format(e.fechaEnvio()) + " por " + e.enviadoPor(),
-                        normal, TAM_TEXTO);
+                l.linea(
+                        e.hito() + ": enviado el " + FECHA.format(e.fechaEnvio()) + " por " + e.enviadoPor(),
+                        normal,
+                        TAM_TEXTO);
             }
             seccion(l, "Calificaciones", r.calificaciones().isEmpty());
             for (Calificacion c : r.calificaciones()) {
-                l.linea(c.hito() + ": nota grupal " + nota(c.notaGrupal()) + " (" + c.caracter() + ")",
-                        negrita, TAM_TEXTO);
+                l.linea(
+                        c.hito() + ": nota grupal " + nota(c.notaGrupal()) + " (" + c.caracter() + ")",
+                        negrita,
+                        TAM_TEXTO);
                 for (NotaIndividual n : c.notas()) {
                     String fin = n.notaFinal() == null ? "pendiente" : nota(n.notaFinal());
-                    l.linea("- " + n.estudiante() + ": sugerida " + nota(n.notaSugerida()) + ", final " + fin,
-                            normal, TAM_TEXTO);
+                    l.linea(
+                            "- " + n.estudiante() + ": sugerida " + nota(n.notaSugerida()) + ", final " + fin,
+                            normal,
+                            TAM_TEXTO);
                 }
             }
             l.cerrar();
@@ -95,8 +105,8 @@ public final class GeneradorReportePdf {
         int numero = 0;
         for (PDPage pagina : doc.getPages()) {
             numero++;
-            try (PDPageContentStream pie = new PDPageContentStream(doc, pagina,
-                    PDPageContentStream.AppendMode.APPEND, true, true)) {
+            try (PDPageContentStream pie =
+                    new PDPageContentStream(doc, pagina, PDPageContentStream.AppendMode.APPEND, true, true)) {
                 pie.beginText();
                 pie.setFont(normal, TAM_PIE);
                 pie.newLineAtOffset(MARGEN, MARGEN / 2);

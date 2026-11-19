@@ -8,9 +8,15 @@ import java.util.List;
  * Vista del reporte de trazabilidad (RF15). No es una tabla: la arma el servicio de trazabilidad con log_auditoria,
  * envio_hito, evaluacion_hito y nota_individual. Solo nombres: nunca correos, chat_id ni contraseñas (Ley 1581).
  */
-public record ReporteTrazabilidad(String proyecto, String equipo, String docente, Instant generadoEn,
-                                  List<Integrante> integrantes, List<Cambio> cambios, List<Entrega> entregas,
-                                  List<Calificacion> calificaciones) {
+public record ReporteTrazabilidad(
+        String proyecto,
+        String equipo,
+        String docente,
+        Instant generadoEn,
+        List<Integrante> integrantes,
+        List<Cambio> cambios,
+        List<Entrega> entregas,
+        List<Calificacion> calificaciones) {
 
     public ReporteTrazabilidad {
         integrantes = List.copyOf(integrantes);
@@ -21,7 +27,7 @@ public record ReporteTrazabilidad(String proyecto, String equipo, String docente
 
     public record Integrante(String nombre, String rol) {}
 
-    /** detalle: texto ya redactado por el servicio, p. ej. "estado: EN_PROGRESO -> COMPLETADA". */
+    /** detalle: texto ya redactado por el servicio, p. ej. "Estado: En progreso -> Completada". */
     public record Cambio(Instant fechaHora, String autor, String accion, String detalle) {}
 
     public record Entrega(String hito, Instant fechaEnvio, String enviadoPor) {}
