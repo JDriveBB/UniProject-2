@@ -30,7 +30,15 @@ export function TarjetaHitosPanel({ matriz }: { matriz: MatrizHitos }) {
         if (celda === null) {
           return <span className="texto-secundario">—</span>;
         }
-        return <Insignia tono={celda.tono}>{celda.texto}</Insignia>;
+        return (
+          <Link
+            className="enlace-insignia"
+            to={rutas.tableroEnHito(f.idEquipo, celda.idHitoEquipo)}
+            aria-label={`${col.etiqueta} de ${f.nombreEquipo}: ${celda.texto}`}
+          >
+            <Insignia tono={celda.tono}>{celda.texto}</Insignia>
+          </Link>
+        );
       },
     })),
   ];

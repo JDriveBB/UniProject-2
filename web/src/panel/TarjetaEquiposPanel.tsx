@@ -57,15 +57,15 @@ export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
 
   return (
     <Tarjeta titulo="Equipos">
-      <p className="texto-secundario">{EXPLICACION_ESTADO}</p>
       <Tabla
         titulo="Avance y riesgo por equipo"
-        clase="tabla--panel"
+        clase="tabla--panel tabla--panel-equipos"
         claveFila={(e) => e.idEquipo}
         vacio="El proyecto aún no tiene equipos."
         columnas={columnas}
         filas={equipos}
       />
+      <p className="texto-ayuda">{EXPLICACION_ESTADO}</p>
     </Tarjeta>
   );
 }

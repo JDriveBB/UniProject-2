@@ -111,9 +111,7 @@ describe('vista', () => {
       idProyecto: 3,
       nombreEquipo: 'Gamma',
       miembros: [],
-      hitos: [
-        { idHitoEquipo: 91, idHito: 99, estado: 'ENVIADO' },
-      ],
+      hitos: [{ idHitoEquipo: 91, idHito: 99, estado: 'ENVIADO' }],
     },
   ];
 
@@ -259,7 +257,9 @@ describe('vista', () => {
     ]);
     expect(matriz.filas.map((f) => f.nombreEquipo)).toEqual(['Alfa', 'Beta', 'Gamma']);
     expect(matriz.filas[0].celdas.map((c) => c?.texto ?? null)).toEqual(['En Revisión', 'En progreso']);
+    expect(matriz.filas[0].celdas.map((c) => c?.idHitoEquipo ?? null)).toEqual([71, 72]);
     expect(matriz.filas[1].celdas.map((c) => c?.texto ?? null)).toEqual(['En Revisión', 'En Revisión']);
+    expect(matriz.filas[1].celdas.map((c) => c?.idHitoEquipo ?? null)).toEqual([81, 82]);
     expect(matriz.filas[2].celdas.map((c) => c?.texto ?? null)).toEqual([null, null]);
     expect(datosReferencia.hitos.map((h) => h.idHito)).toEqual([1, 2]);
   });

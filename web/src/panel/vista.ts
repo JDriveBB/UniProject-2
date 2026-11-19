@@ -18,8 +18,7 @@ export const EXPLICACION_ALERTAS =
   'Integrantes sin actividad según la alerta de inactividad de cada hito y tareas bloqueadas por dependencia hace más de 48 horas. Los hitos sin alerta de inactividad no se revisan.';
 export const EXPLICACION_ESTADO =
   '«Requiere atención»: hay integrantes inactivos o tareas bloqueadas por más de 48 horas. «Tareas en riesgo»: tareas sin completar con riesgo alto de retraso.';
-export const EXPLICACION_VENCIDO =
-  '«Vencido sin enviar»: la fecha límite pasó y el equipo no ha enviado el hito.';
+export const EXPLICACION_VENCIDO = '«Vencido sin enviar»: la fecha límite pasó y el equipo no ha enviado el hito.';
 
 export const REQUIERE_ATENCION: Marca = { texto: 'Requiere atención', tono: 'peligro' };
 export const TAREAS_EN_RIESGO: Marca = { texto: 'Tareas en riesgo', tono: 'aviso' };
@@ -64,9 +63,7 @@ export function porEvaluar(detalle: ProyectoDetalle): PorEvaluar[] {
   }
   return lista.sort(
     (a, b) =>
-      a.orden - b.orden ||
-      a.nombreEquipo.localeCompare(b.nombreEquipo, 'es') ||
-      a.idHitoEquipo - b.idHitoEquipo
+      a.orden - b.orden || a.nombreEquipo.localeCompare(b.nombreEquipo, 'es') || a.idHitoEquipo - b.idHitoEquipo,
   );
 }
 
@@ -110,10 +107,14 @@ export interface ColumnaHito {
   etiqueta: string;
 }
 
+export interface CeldaHito extends Marca {
+  idHitoEquipo: number;
+}
+
 export interface FilaHitos {
   idEquipo: number;
   nombreEquipo: string;
-  celdas: (Marca | null)[];
+  celdas: (CeldaHito | null)[];
 }
 
 export interface MatrizHitos {
@@ -128,12 +129,12 @@ export function matrizHitos(detalle: ProyectoDetalle, hoy: string): MatrizHitos 
     etiqueta: etiquetaHito(h.orden, h.nombreHito),
   }));
   const equiposOrdenados = [...detalle.equipos].sort(
-    (a, b) => a.nombreEquipo.localeCompare(b.nombreEquipo, 'es') || a.idEquipo - b.idEquipo
+    (a, b) => a.nombreEquipo.localeCompare(b.nombreEquipo, 'es') || a.idEquipo - b.idEquipo,
   );
   const filas: FilaHitos[] = equiposOrdenados.map((equipo) => {
-    const celdas = hitosOrdenados.map((h) => {
+    const celdas = hitosOrdenados.map((h): CeldaHito | null => {
       const he = equipo.hitos.find((item) => item.idHito === h.idHito);
-      return he !== undefined ? marcaCelda(he.estado, h.fechaLimite, hoy) : null;
+      return he !== undefined ? { ...marcaCelda(he.estado, h.fechaLimite, hoy), idHitoEquipo: he.idHitoEquipo } : null;
     });
     return {
       idEquipo: equipo.idEquipo,
@@ -153,9 +154,7 @@ export function textoInactivo(i: IntegranteInactivo): string {
 }
 
 export function textoBloqueo(horas: number): string {
-  return horas >= 48
-    ? `bloqueada hace ${textoDias(Math.floor(horas / 24))}`
-    : `bloqueada hace ${horas} h`;
+  return horas >= 48 ? `bloqueada hace ${textoDias(Math.floor(horas / 24))}` : `bloqueada hace ${horas} h`;
 }
 
 export interface AlertasEquipo {

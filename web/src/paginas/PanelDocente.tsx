@@ -31,9 +31,7 @@ import { useUsuario } from '../sesion/ContextoSesion';
 import { mensajeErrorAbrir } from '../tablero/ubicacion';
 
 type EstadoElegir =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; proyectos: ProyectoVista[] };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; proyectos: ProyectoVista[] };
 
 export function ElegirPanel() {
   const usuario = useUsuario();
@@ -104,10 +102,7 @@ export function ElegirPanel() {
 
   return (
     <div className="pagina">
-      <EncabezadoPagina
-        titulo="Panel del docente"
-        descripcion="Tienes varios proyectos. Elige uno."
-      />
+      <EncabezadoPagina titulo="Panel del docente" descripcion="Tienes varios proyectos. Elige uno." />
       <ul className="lista-simple">
         {proyectos.map((p) => (
           <li key={p.idProyecto}>
@@ -128,17 +123,13 @@ export function PanelProyectoDeRuta() {
 }
 
 type EstadoCarga =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; datos: DatosPanel };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; datos: DatosPanel };
 
 export function PanelProyecto({ idRuta }: { idRuta: string }) {
   const id = idDeRuta(idRuta);
 
   const [carga, setCarga] = useState<EstadoCarga>(() =>
-    id === null
-      ? { estado: 'error', mensaje: SIN_ACCESO_PANEL }
-      : { estado: 'cargando' }
+    id === null ? { estado: 'error', mensaje: SIN_ACCESO_PANEL } : { estado: 'cargando' },
   );
   const [vuelta, setVuelta] = useState(0);
   const [recargando, setRecargando] = useState(false);
@@ -220,11 +211,7 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
         descripcion={`${panel.nombre} · ${textoActualizado(panel.generadoEn)}`}
       >
         <div className="pagina__acciones">
-          <Boton
-            variante="secundario"
-            disabled={botonActualizar.deshabilitado}
-            onClick={actualizar}
-          >
+          <Boton variante="secundario" disabled={botonActualizar.deshabilitado} onClick={actualizar}>
             {botonActualizar.texto}
           </Boton>
           <Link className="boton boton--secundario" to={rutas.proyecto(panel.idProyecto)}>
@@ -235,11 +222,15 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
       <ResumenPanel resumen={resumenPanel(panel, pendientes.length)} />
       <div className="detalle-tarea">
         <div className="detalle-tarea__columna">
-          <TarjetaEquiposPanel equipos={panel.equipos} />
+          <div id="equipos">
+            <TarjetaEquiposPanel equipos={panel.equipos} />
+          </div>
           <TarjetaHitosPanel matriz={matrizHitos(detalle, hoy)} />
         </div>
         <div className="detalle-tarea__columna">
-          <TarjetaPorEvaluar pendientes={pendientes} />
+          <div id="por-evaluar">
+            <TarjetaPorEvaluar pendientes={pendientes} />
+          </div>
           <TarjetaAlertas alertas={alertasPorEquipo(panel)} />
         </div>
       </div>

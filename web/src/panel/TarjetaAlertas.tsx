@@ -15,7 +15,6 @@ import {
 export function TarjetaAlertas({ alertas }: { alertas: AlertasEquipo[] }) {
   return (
     <Tarjeta titulo="Alertas">
-      <p className="texto-secundario">{EXPLICACION_ALERTAS}</p>
       {alertas.length === 0 ? (
         <p className="pagina__vacio">{SIN_ALERTAS}</p>
       ) : (
@@ -25,22 +24,28 @@ export function TarjetaAlertas({ alertas }: { alertas: AlertasEquipo[] }) {
             return (
               <section key={a.idEquipo} className="pagina__seccion" aria-labelledby={idTitulo}>
                 <h3 id={idTitulo} className="tarjeta__subtitulo">
-                  {a.nombreEquipo}
+                  <Link className="enlace-fuerte" to={rutas.tableroEquipo(a.idEquipo)}>
+                    {a.nombreEquipo}
+                  </Link>
                 </h3>
                 <ul className="lista-simple">
                   {a.inactivos.map((i, indice) => (
-                    <li key={`i-${i.idUsuario}-${indice}`} className="fila-panel">
+                    <li key={`i-${i.idUsuario}-${indice}`} className="fila-panel fila-panel--alerta">
                       <Insignia tono={INACTIVO.tono}>{INACTIVO.texto}</Insignia>
-                      <span>{textoInactivo(i)}</span>
+                      <div className="fila-panel__texto">
+                        <span>{textoInactivo(i)}</span>
+                      </div>
                     </li>
                   ))}
                   {a.bloqueadas.map((b) => (
-                    <li key={`t-${b.idTarea}`} className="fila-panel">
+                    <li key={`t-${b.idTarea}`} className="fila-panel fila-panel--alerta">
                       <Insignia tono={BLOQUEADA.tono}>{BLOQUEADA.texto}</Insignia>
-                      <Link className="enlace-tarea" to={rutas.tarea(b.idTarea)}>
-                        {b.titulo}
-                      </Link>
-                      <span className="texto-secundario">{textoBloqueo(b.horasBloqueada)}</span>
+                      <div className="fila-panel__texto">
+                        <Link className="enlace-tarea" to={rutas.tarea(b.idTarea)}>
+                          {b.titulo}
+                        </Link>
+                        <span className="texto-secundario">{textoBloqueo(b.horasBloqueada)}</span>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -49,6 +54,7 @@ export function TarjetaAlertas({ alertas }: { alertas: AlertasEquipo[] }) {
           })}
         </div>
       )}
+      <p className="texto-ayuda">{EXPLICACION_ALERTAS}</p>
     </Tarjeta>
   );
 }
