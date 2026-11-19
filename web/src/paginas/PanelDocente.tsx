@@ -12,13 +12,14 @@ import { fechaIsoBogota, rangoFechas } from '../formato';
 import { cargarPanel, type DatosPanel } from '../panel/carga';
 import { ResumenPanel } from '../panel/ResumenPanel';
 import { TarjetaAlertas } from '../panel/TarjetaAlertas';
+import { TarjetaAtencion } from '../panel/TarjetaAtencion';
+import { TarjetaEntregas } from '../panel/TarjetaEntregas';
 import { TarjetaEquiposPanel } from '../panel/TarjetaEquiposPanel';
-import { TarjetaHitosPanel } from '../panel/TarjetaHitosPanel';
-import { TarjetaPorEvaluar } from '../panel/TarjetaPorEvaluar';
 import {
   alertasPorEquipo,
+  atencionDelDia,
+  entregasDelProyecto,
   estadoBotonPanel,
-  matrizHitos,
   porEvaluar,
   proyectosPropios,
   resumenPanel,
@@ -202,6 +203,8 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
   const { panel, detalle } = carga.datos;
   const hoy = fechaIsoBogota(new Date());
   const pendientes = porEvaluar(detalle);
+  const atenciones = atencionDelDia(panel, detalle, hoy);
+  const entregas = entregasDelProyecto(detalle, hoy);
   const botonActualizar = estadoBotonPanel('actualizar', recargando);
 
   return (
@@ -219,18 +222,18 @@ export function PanelProyecto({ idRuta }: { idRuta: string }) {
           </Link>
         </div>
       </EncabezadoPagina>
-      <ResumenPanel resumen={resumenPanel(panel, pendientes.length)} />
+      <ResumenPanel resumen={resumenPanel(panel, pendientes.length, entregas)} />
       <div className="detalle-tarea">
         <div className="detalle-tarea__columna">
+          <div id="atencion">
+            <TarjetaAtencion elementos={atenciones} />
+          </div>
           <div id="equipos">
             <TarjetaEquiposPanel equipos={panel.equipos} />
           </div>
-          <TarjetaHitosPanel matriz={matrizHitos(detalle, hoy)} />
         </div>
         <div className="detalle-tarea__columna">
-          <div id="por-evaluar">
-            <TarjetaPorEvaluar pendientes={pendientes} />
-          </div>
+          <TarjetaEntregas entregas={entregas} />
           <TarjetaAlertas alertas={alertasPorEquipo(panel)} />
         </div>
       </div>

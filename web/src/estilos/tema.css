@@ -2741,6 +2741,221 @@ a {
   color: var(--color-peligro);
 }
 
+/* Franja de resumen del panel (4 columnas compactas). */
+.resumen-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--espacio-4);
+}
+
+.resumen-panel__dato {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  min-width: 0;
+  padding: var(--espacio-4);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio-tarjeta);
+}
+
+.resumen-panel__dato--enlace {
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--duracion-rapida) ease-out,
+    box-shadow var(--duracion-rapida) ease-out;
+}
+
+.resumen-panel__dato--enlace:hover {
+  border-color: var(--color-primario);
+  box-shadow: var(--sombra-enlace-hover);
+}
+
+.resumen-panel__etiqueta {
+  margin: 0;
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.resumen-panel__valor {
+  margin: 0;
+  font-size: var(--tamano-valor-resumen);
+  font-weight: var(--peso-negrita);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumen-panel__valor--peligro {
+  color: var(--color-peligro);
+}
+
+.resumen-panel__valor--primario {
+  color: var(--color-primario);
+}
+
+.resumen-panel__valor--apagado {
+  color: var(--color-texto-secundario);
+}
+
+.resumen-panel__entrega {
+  margin: 0;
+  font-size: var(--tamano-titulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.resumen-panel__detalle {
+  margin: 0;
+  font-size: var(--tamano-pequeno);
+  color: var(--color-texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tarjeta «Necesitan tu atención». */
+.atencion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atencion__fila {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--relleno-evidencia);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.atencion__texto {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.atencion__accion {
+  white-space: nowrap;
+  justify-self: end;
+}
+
+/* Tarjeta «Entregas» (lista por hito con fechas, urgencia y estado por equipo). */
+.entregas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entrega-hito {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.entrega-hito + .entrega-hito {
+  padding-top: var(--espacio-4);
+  border-top: 1px solid var(--color-borde-tabla);
+}
+
+.entrega-hito__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-1) var(--espacio-3);
+}
+
+.entrega-hito__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+}
+
+.entrega-hito__nombre {
+  margin: 0;
+  font-size: var(--tamano-subtitulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+  overflow-wrap: break-word;
+}
+
+.entrega-hito--pasada .entrega-hito__nombre {
+  color: var(--color-texto-secundario);
+}
+
+.entrega-hito__plazo {
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.entrega-hito__plazo--vencida {
+  color: var(--color-peligro);
+}
+
+.entrega-hito__plazo--pronto {
+  color: var(--color-aviso);
+}
+
+.entrega-hito__plazo--pasada {
+  color: var(--color-texto-secundario);
+}
+
+.entrega-hito__equipos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entrega-hito__equipo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  min-width: 0;
+}
+
+.entrega-hito__nombre-equipo {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* 960px y 600px: las variables CSS no valen dentro de @media y van después de las reglas base. */
+@media (max-width: 960px) {
+  .resumen-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .resumen-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .atencion__fila {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: var(--espacio-2);
+  }
+
+  .atencion__accion {
+    justify-self: start;
+  }
+}
+
 /* ===== Bloque 26f-2: bandeja de notificaciones (P10). Provisional, sin Figma ===== */
 
 .lista-notificaciones {

@@ -435,6 +435,9 @@ Firmes y compactos, con texto en seminegrita.
 - **Border:** 1 px `borde-tabla`.
 - **Internal Padding:** 20 px; los hijos se separan con `gap` de 14 px y los párrafos no suman margen.
 - Las tarjetas de resumen (ruta crítica, panel) siguen la misma forma; cuando son enlace, al pasar el mouse el borde pasa a `primario` con transición de `duracion-rapida`.
+- **Franja compacta del panel (`.resumen-panel`):** 4 datos en una fila (2 bajo 960 px, 1 bajo 600 px) con relleno `espacio-4`, enlace a `#atencion` en equipos en atención y por calificar, y la próxima entrega.
+- **«Necesitan tu atención» (`.atencion`):** filas sobre `fondo` con insignia de estado, texto descriptivo y botón de acción a la derecha (debajo del texto bajo 600 px).
+- **«Entregas» (`.entregas`):** lista ordenada por hito separada por `borde-tabla`, con fecha y plazo coloreados por urgencia, insignia «Próxima» en el siguiente por vencer y estado enlazado por equipo.
 
 ### Inputs / Fields
 - **Style:** fondo blanco, borde de 1 px, esquinas de 10 px. En ingreso y registro: borde `borde`, relleno 12 × 14 px, etiqueta de 14 px. Dentro del marco: borde `borde-tabla`, relleno 10 × 12 px, etiqueta de 13 px. Etiqueta y campo separados 6 px.

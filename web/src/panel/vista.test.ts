@@ -11,10 +11,12 @@ import type {
 } from '../api/tipos';
 import {
   alertasPorEquipo,
+  atencionDelDia,
+  diasHasta,
+  entregasDelProyecto,
   estadoBotonPanel,
   estadoEquipo,
   marcaCelda,
-  matrizHitos,
   porEvaluar,
   proyectosPropios,
   resumenPanel,
@@ -22,6 +24,7 @@ import {
   textoBloqueo,
   textoDias,
   textoInactivo,
+  textoPlazo,
   REQUIERE_ATENCION,
 } from './vista';
 
@@ -186,7 +189,14 @@ describe('vista', () => {
       generadoEn: '2026-09-23T19:05:00Z',
       equipos: [eqA, eqB, eqC],
     };
-    expect(resumenPanel(panelABC, 2)).toEqual({ enRojo: 1, equipos: 3, porEvaluar: 2, avance: 55 });
+    const entregasResumen = entregasDelProyecto(datosReferencia, '2026-09-18');
+    expect(resumenPanel(panelABC, 2, entregasResumen)).toEqual({
+      enRojo: 1,
+      equipos: 3,
+      porEvaluar: 2,
+      avance: 55,
+      proxima: { etiqueta: 'Hito 1 · Requisitos', plazo: 'vence en 2 días' },
+    });
 
     const panelC: PanelProyecto = {
       idProyecto: 3,
@@ -194,7 +204,9 @@ describe('vista', () => {
       generadoEn: '2026-09-23T19:05:00Z',
       equipos: [eqC],
     };
-    expect(resumenPanel(panelC, 2).avance).toBeNull();
+    const resumenSinEntregas = resumenPanel(panelC, 2, entregasDelProyecto(datosReferencia, '2026-10-20'));
+    expect(resumenSinEntregas.avance).toBeNull();
+    expect(resumenSinEntregas.proxima).toBeNull();
 
     expect(textoDias(1)).toBe('1 día');
     expect(textoDias(3)).toBe('3 días');
@@ -232,7 +244,7 @@ describe('vista', () => {
     expect(textoActualizado('2026-09-23T19:05:00Z')).toBe('Actualizado el 23/09/2026 14:05');
   });
 
-  it('determina marcas de celdas y genera la matriz de hitos por equipo', () => {
+  it('determina marcas de celdas según el estado y la fecha límite', () => {
     expect(marcaCelda('EN_CURSO', '2026-09-22', '2026-09-22')).toEqual({
       texto: 'En progreso',
       tono: 'info',
@@ -249,19 +261,204 @@ describe('vista', () => {
       texto: 'Evaluado',
       tono: 'exito',
     });
+  });
 
-    const matriz = matrizHitos(datosReferencia, '2026-09-25');
-    expect(matriz.columnas).toEqual([
-      { idHito: 2, etiqueta: 'Hito 1 · Requisitos' },
-      { idHito: 1, etiqueta: 'Hito 2 · Diseño' },
+  it('calcula días hasta una fecha cruzando fin de mes y genera los 5 textos de plazo', () => {
+    expect(diasHasta('2026-12-02', '2026-11-29')).toBe(3);
+    expect(diasHasta('2026-02-27', '2026-03-02')).toBe(-3);
+    expect(diasHasta('2026-11-19', '2026-11-19')).toBe(0);
+    expect(diasHasta('2027-01-02', '2026-12-30')).toBe(3);
+
+    expect(textoPlazo(0)).toBe('vence hoy');
+    expect(textoPlazo(1)).toBe('vence mañana');
+    expect(textoPlazo(4)).toBe('vence en 4 días');
+    expect(textoPlazo(-1)).toBe('venció ayer');
+    expect(textoPlazo(-5)).toBe('venció hace 5 días');
+  });
+
+  it('ordena atencionDelDia por grupo, respeta plurales, evita duplicar equipo en rojo y devuelve [] si no hay pendientes', () => {
+    const inactivo: IntegranteInactivo = {
+      idUsuario: 1,
+      nombre: 'Ana',
+      ultimaActividad: '2026-11-10T15:00:00Z',
+      diasSinActividad: 5,
+    };
+    const bloqueada = (idTarea: number): TareaBloqueada => ({
+      idTarea,
+      titulo: `T${idTarea}`,
+      fechaBloqueo: '2026-11-15T10:00:00Z',
+      horasBloqueada: 60,
+    });
+
+    const hitos: HitoVista[] = [
+      { ...hitosReferencia[0], idHito: 10, orden: 1, nombreHito: 'Requisitos', fechaLimite: '2026-11-17' },
+      { ...hitosReferencia[0], idHito: 20, orden: 2, nombreHito: 'Diseño', fechaLimite: '2026-11-21' },
+      { ...hitosReferencia[0], idHito: 30, orden: 3, nombreHito: 'Entrega final', fechaLimite: '2026-11-30' },
+    ];
+    const equipos: EquipoVista[] = [
+      {
+        idEquipo: 2,
+        idProyecto: 3,
+        nombreEquipo: 'Equipo Beta',
+        miembros: [],
+        hitos: [
+          { idHitoEquipo: 201, idHito: 10, estado: 'EN_CURSO' },
+          { idHitoEquipo: 202, idHito: 20, estado: 'EN_CURSO' },
+        ],
+      },
+      {
+        idEquipo: 1,
+        idProyecto: 3,
+        nombreEquipo: 'Equipo Alfa',
+        miembros: [],
+        hitos: [
+          { idHitoEquipo: 101, idHito: 10, estado: 'ENVIADO' },
+          { idHitoEquipo: 102, idHito: 20, estado: 'EVALUADO' },
+        ],
+      },
+    ];
+    const panel: PanelProyecto = {
+      idProyecto: 3,
+      nombre: 'P',
+      generadoEn: '2026-11-19T12:00:00Z',
+      equipos: [
+        equipoPanel({
+          idEquipo: 2,
+          nombreEquipo: 'Equipo Beta',
+          enRojo: true,
+          tareasRiesgoAlto: 2,
+          integrantesInactivos: [inactivo],
+          tareasBloqueadas: [bloqueada(1), bloqueada(2)],
+        }),
+        equipoPanel({
+          idEquipo: 1,
+          nombreEquipo: 'Equipo Alfa',
+          enRojo: false,
+          tareasRiesgoAlto: 1,
+        }),
+      ],
+    };
+
+    const items = atencionDelDia(panel, detalle({ hitos, equipos }), '2026-11-19');
+    expect(items.map((i) => i.tipo)).toEqual(['vencido', 'equipo', 'calificar', 'proximo', 'riesgo']);
+    expect(items[0]).toEqual({
+      clave: 'vencido-2-201',
+      tipo: 'vencido',
+      tono: 'peligro',
+      etiqueta: 'Vencido',
+      texto: 'Equipo Beta no envió Hito 1 · Requisitos: venció hace 2 días',
+      accion: 'Ver tablero',
+      ruta: '/equipos/2/tablero?hito=201',
+      nombreAccesible: 'Ver tablero: Equipo Beta no envió Hito 1 · Requisitos: venció hace 2 días',
+    });
+    expect(items[1]).toEqual({
+      clave: 'equipo-2',
+      tipo: 'equipo',
+      tono: 'peligro',
+      etiqueta: 'Requiere atención',
+      texto: 'Equipo Beta: 1 integrante inactivo · 2 tareas bloqueadas',
+      accion: 'Ver tablero',
+      ruta: '/equipos/2/tablero',
+      nombreAccesible: 'Ver tablero: Equipo Beta: 1 integrante inactivo · 2 tareas bloqueadas',
+    });
+    expect(items[2]).toEqual({
+      clave: 'calificar-101',
+      tipo: 'calificar',
+      tono: 'info',
+      etiqueta: 'Por calificar',
+      texto: 'Equipo Alfa envió Hito 1 · Requisitos',
+      accion: 'Calificar',
+      ruta: '/hitos/101/evaluar',
+      nombreAccesible: 'Calificar: Equipo Alfa envió Hito 1 · Requisitos',
+    });
+    expect(items[3]).toEqual({
+      clave: 'proximo-2-202',
+      tipo: 'proximo',
+      tono: 'aviso',
+      etiqueta: 'Entrega próxima',
+      texto: 'Equipo Beta aún no envía Hito 2 · Diseño: vence en 2 días',
+      accion: 'Ver tablero',
+      ruta: '/equipos/2/tablero?hito=202',
+      nombreAccesible: 'Ver tablero: Equipo Beta aún no envía Hito 2 · Diseño: vence en 2 días',
+    });
+    expect(items[4]).toEqual({
+      clave: 'riesgo-1',
+      tipo: 'riesgo',
+      tono: 'aviso',
+      etiqueta: 'Riesgo alto',
+      texto: 'Equipo Alfa: 1 tarea con riesgo alto de retraso',
+      accion: 'Ver tablero',
+      ruta: '/equipos/1/tablero',
+      nombreAccesible: 'Ver tablero: Equipo Alfa: 1 tarea con riesgo alto de retraso',
+    });
+    expect(items.some((i) => i.clave === 'riesgo-2')).toBe(false);
+
+    const panelSinPendientes: PanelProyecto = {
+      idProyecto: 3,
+      nombre: 'P',
+      generadoEn: '2026-11-19T12:00:00Z',
+      equipos: [equipoPanel({ idEquipo: 1, nombreEquipo: 'Equipo Alfa', enRojo: false, tareasRiesgoAlto: 0 })],
+    };
+    const detalleSinPendientes = detalle({
+      hitos: [hitos[2]],
+      equipos: [
+        {
+          idEquipo: 1,
+          idProyecto: 3,
+          nombreEquipo: 'Equipo Alfa',
+          miembros: [],
+          hitos: [{ idHitoEquipo: 103, idHito: 30, estado: 'EN_CURSO' }],
+        },
+      ],
+    });
+    expect(atencionDelDia(panelSinPendientes, detalleSinPendientes, '2026-11-19')).toEqual([]);
+  });
+
+  it('calcula entregasDelProyecto con urgencia pasada, vencida, pronto, normal y marca solo el primer hito próximo', () => {
+    const hitos: HitoVista[] = [
+      { ...hitosReferencia[0], idHito: 4, orden: 4, nombreHito: 'Cierre', fechaLimite: '2026-12-05' },
+      { ...hitosReferencia[0], idHito: 1, orden: 1, nombreHito: 'Inicio', fechaLimite: '2026-11-10' },
+      { ...hitosReferencia[0], idHito: 3, orden: 3, nombreHito: 'Prototipo', fechaLimite: '2026-11-21' },
+      { ...hitosReferencia[0], idHito: 2, orden: 2, nombreHito: 'Diseño', fechaLimite: '2026-11-18' },
+    ];
+    const equipos: EquipoVista[] = [
+      {
+        idEquipo: 2,
+        idProyecto: 3,
+        nombreEquipo: 'Equipo Beta',
+        miembros: [],
+        hitos: [
+          { idHitoEquipo: 21, idHito: 1, estado: 'EVALUADO' },
+          { idHitoEquipo: 22, idHito: 2, estado: 'EN_CURSO' },
+          { idHitoEquipo: 23, idHito: 3, estado: 'EN_CURSO' },
+        ],
+      },
+      {
+        idEquipo: 1,
+        idProyecto: 3,
+        nombreEquipo: 'Equipo Alfa',
+        miembros: [],
+        hitos: [
+          { idHitoEquipo: 11, idHito: 1, estado: 'EVALUADO' },
+          { idHitoEquipo: 12, idHito: 2, estado: 'EVALUADO' },
+          { idHitoEquipo: 13, idHito: 3, estado: 'ENVIADO' },
+          { idHitoEquipo: 14, idHito: 4, estado: 'EN_CURSO' },
+        ],
+      },
+    ];
+
+    const entregas = entregasDelProyecto(detalle({ hitos, equipos }), '2026-11-19');
+    expect(entregas.map((e) => [e.idHito, e.urgencia, e.proxima, e.plazo])).toEqual([
+      [1, 'pasada', false, 'venció hace 9 días'],
+      [2, 'vencida', false, 'venció ayer'],
+      [3, 'pronto', true, 'vence en 2 días'],
+      [4, 'normal', false, 'vence en 16 días'],
     ]);
-    expect(matriz.filas.map((f) => f.nombreEquipo)).toEqual(['Alfa', 'Beta', 'Gamma']);
-    expect(matriz.filas[0].celdas.map((c) => c?.texto ?? null)).toEqual(['En Revisión', 'En progreso']);
-    expect(matriz.filas[0].celdas.map((c) => c?.idHitoEquipo ?? null)).toEqual([71, 72]);
-    expect(matriz.filas[1].celdas.map((c) => c?.texto ?? null)).toEqual(['En Revisión', 'En Revisión']);
-    expect(matriz.filas[1].celdas.map((c) => c?.idHitoEquipo ?? null)).toEqual([81, 82]);
-    expect(matriz.filas[2].celdas.map((c) => c?.texto ?? null)).toEqual([null, null]);
-    expect(datosReferencia.hitos.map((h) => h.idHito)).toEqual([1, 2]);
+    expect(entregas[1].equipos.map((eq) => [eq.nombreEquipo, eq.marca.texto])).toEqual([
+      ['Equipo Alfa', 'Evaluado'],
+      ['Equipo Beta', 'Vencido sin enviar'],
+    ]);
+    expect(entregas[3].equipos.map((eq) => eq.nombreEquipo)).toEqual(['Equipo Alfa']);
   });
 
   it('estadoBotonPanel decide el texto y estado deshabilitado para actualizar y reintentar', () => {
