@@ -168,7 +168,9 @@ export function TarjetaProyecto({
         <header className="tarjeta-proyecto__cabecera">
           <div className="tarjeta-proyecto__encabezado">
             <h2 className="tarjeta__titulo tarjeta-proyecto__titulo">{proyecto.nombre}</h2>
-            <p className="texto-secundario">{rangoFechas(proyecto.fechaInicio, proyecto.fechaFin)}</p>
+            <p className="texto-secundario tarjeta-proyecto__fechas">
+              {rangoFechas(proyecto.fechaInicio, proyecto.fechaFin)}
+            </p>
           </div>
           {insignia !== null && <Insignia tono={insignia.tono}>{insignia.texto}</Insignia>}
         </header>

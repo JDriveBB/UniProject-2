@@ -33,6 +33,7 @@ export function TablaTareas({
     {
       titulo: 'Tarea',
       clase: 'tabla__col-tarea',
+      principal: true,
       celda: (t) => (
         <>
           <Link className="enlace-tarea" to={rutas.tarea(t.idTarea)}>

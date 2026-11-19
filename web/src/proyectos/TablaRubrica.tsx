@@ -5,7 +5,13 @@ import type { ErroresCriterio } from './validacion';
 
 const NINGUNO: ErroresCriterio = {};
 
-function FilaEditable({ criterio, numero, errores, alCambiar, alQuitar }: {
+function FilaEditable({
+  criterio,
+  numero,
+  errores,
+  alCambiar,
+  alQuitar,
+}: {
   criterio: BorradorCriterio;
   numero: number;
   errores: ErroresCriterio;
@@ -15,7 +21,7 @@ function FilaEditable({ criterio, numero, errores, alCambiar, alQuitar }: {
   const base = 'criterio-' + criterio.clave;
   return (
     <tr>
-      <td>
+      <th scope="row">
         <input
           className="tabla__entrada"
           aria-label={`Criterio ${numero}`}
@@ -30,8 +36,8 @@ function FilaEditable({ criterio, numero, errores, alCambiar, alQuitar }: {
             {errores.descripcion}
           </p>
         )}
-      </td>
-      <td>
+      </th>
+      <td data-etiqueta="Peso (%)">
         <input
           className="tabla__entrada"
           type="number"
@@ -51,7 +57,7 @@ function FilaEditable({ criterio, numero, errores, alCambiar, alQuitar }: {
           </p>
         )}
       </td>
-      <td>
+      <td data-etiqueta="Puntaje máximo">
         <input
           className="tabla__entrada"
           type="number"
@@ -81,7 +87,13 @@ function FilaEditable({ criterio, numero, errores, alCambiar, alQuitar }: {
 }
 
 /** Rúbrica de P03: Criterio · Peso (%) · Puntaje máximo; en edición, campos y "Quitar" (sin Figma). */
-export function TablaRubrica({ criterios, editable, errores, alCambiar, alQuitar }: {
+export function TablaRubrica({
+  criterios,
+  editable,
+  errores,
+  alCambiar,
+  alQuitar,
+}: {
   criterios: BorradorCriterio[];
   editable: boolean;
   errores: Record<string, ErroresCriterio>;
@@ -130,9 +142,9 @@ export function TablaRubrica({ criterios, editable, errores, alCambiar, alQuitar
                 />
               ) : (
                 <tr key={c.clave}>
-                  <td>{c.descripcion}</td>
-                  <td>{decimalEsCo(Number(c.peso))}</td>
-                  <td>{decimalEsCo(Number(c.puntaje))}</td>
+                  <th scope="row">{c.descripcion}</th>
+                  <td data-etiqueta="Peso (%)">{decimalEsCo(Number(c.peso))}</td>
+                  <td data-etiqueta="Puntaje máximo">{decimalEsCo(Number(c.puntaje))}</td>
                 </tr>
               ),
             )

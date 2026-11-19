@@ -436,7 +436,7 @@ Firmes y compactos, con texto en seminegrita.
 - **Border:** 1 px `borde-tabla`.
 - **Internal Padding:** 20 px; los hijos se separan con `gap` de 14 px y los párrafos no suman margen.
 - Las tarjetas de resumen (ruta crítica, panel) siguen la misma forma; cuando son enlace, al pasar el mouse el borde pasa a `primario` con transición de `duracion-rapida`.
-- **Franja compacta del panel (`.resumen-panel`):** 4 datos en una fila (2 bajo 960 px, 1 bajo 600 px) con relleno `espacio-4`, enlace a `#atencion` en equipos en atención y por calificar, y la próxima entrega.
+- **Franja compacta del panel (`.resumen-panel`):** 4 datos en una fila (2 bajo 960 px, 1 bajo 360 px) con relleno `espacio-4`, enlace a `#atencion` en equipos en atención y por calificar, y la próxima entrega.
 - **«Necesitan tu atención» (`.atencion`):** filas sobre `fondo` con insignia de estado, texto descriptivo y botón de acción a la derecha (debajo del texto bajo 600 px).
 - **«Entregas» (`.entregas`):** lista ordenada por hito separada por `borde-tabla`, con fecha y plazo coloreados por urgencia, insignia «Próxima» en el siguiente por vencer y estado enlazado por equipo.
 - **Tarjeta de proyecto (`.tarjeta-proyecto`):** rejilla `.rejilla-proyectos` en columnas de 320 px sin transición en el borde (las acciones van en botones al fondo con `margin-top: auto`); cabecera con insignia de estado o hito, descripción a 2 líneas, franja de 3 cifras sobre `fondo` (1 columna bajo 360 px), `BarraAvance` y próxima entrega o hito actual.
@@ -469,6 +469,14 @@ Firmes y compactos, con texto en seminegrita.
 
 ### Barra de avance
 - `<progress>` de 6 px de alto, esquinas en píldora (`radio-avance`, `999px`), pista `avance-pista`, relleno `avance`; verde (`avance-exito`) al 100 %. Siempre acompañada del porcentaje en texto pequeño con cifras tabulares.
+
+## Celular
+
+Ajustes para pantallas angostas (600 px o menos) manteniendo la paleta y la estructura general sin desborde horizontal entre 320 y 1440 px:
+
+- **Tablas a tarjetas (`@container (width < 600px)`):** `.tabla-contenedor` define `container-type: inline-size`. Bajo 600 px de contenedor se oculta `thead` (`display: none`), se anulan `min-width` y anchos fijos de columnas, cada fila pasa a tarjeta (`superficie`, borde `borde-tabla`, `radio-tarjeta`, relleno `espacio-4`, separación `espacio-3`), la celda principal (`<th scope="row">`) queda arriba en seminegrita y las demás celdas muestran «etiqueta | valor» con `::before` (`tamano-pequeno`, `texto-secundario`, sin repetir si ya tienen etiqueta accesible propia) y `overflow-wrap: anywhere` en los valores. Las tablas vacías (`tabla__vacia`) conservan su aspecto original.
+- **Panel 2×2 (`.resumen-panel`):** se mantiene en 2 columnas hasta 360 px y pasa a 1 columna solo bajo 360 px.
+- **Objetivos táctiles de 44 px en la barra superior:** bajo 600 px la barra conserva las 2 filas y todos sus elementos tocables (enlaces de navegación, campana, usuario/perfil y «Salir») tienen un área táctil mínima de 44 × 44 px mediante relleno, sin cambiar el tamaño de letra y sin desborde a 320 px.
 
 ## Do's and Don'ts
 
