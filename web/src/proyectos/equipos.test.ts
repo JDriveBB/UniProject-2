@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { ErrorApi } from '../api/cliente';
-import type { CorreoHabilitadoVista, EquipoVista, ResultadoHabilitacion, SolicitudCorreos } from '../api/tipos';
-import { agregarEstudiante, agregarMonitor, reemplazarEquipo } from './equipos';
+import type {
+  CorreoHabilitadoVista,
+  EquipoVista,
+  EstudianteProyectoVista,
+  ResultadoHabilitacion,
+  SolicitudCorreos,
+} from '../api/tipos';
+import {
+  agregarEstudiante,
+  agregarMonitor,
+  claveIntegrantes,
+  invitadosDe,
+  reemplazarEquipo,
+  sugerenciasDe,
+} from './equipos';
 import type { ApiEquipos } from './equipos';
 
 const equipo: EquipoVista = { idEquipo: 3, idProyecto: 1, nombreEquipo: 'Equipo Alfa', miembros: [], hitos: [] };
@@ -10,11 +23,17 @@ function habilitacion(parcial: Partial<ResultadoHabilitacion>): ResultadoHabilit
   return { habilitados: [], yaHabilitados: [], conOtroRol: [], ...parcial };
 }
 
+function estudiante(parcial: Partial<EstudianteProyectoVista> & { email: string }): EstudianteProyectoVista {
+  return { nombre: null, registrado: false, idEquipo: null, idEquipoInvitado: null, ...parcial };
+}
+
 function apiFalsa(
   resultado: ResultadoHabilitacion,
   alAgregar: (email: string) => Promise<EquipoVista>,
   pedidos: SolicitudCorreos[],
   agregados: string[],
+  invitaciones: string[] = [],
+  alInvitar: (email: string) => Promise<void> = async () => {},
 ): ApiEquipos {
   return {
     async habilitarCorreos(_idProyecto, solicitud) {
@@ -25,13 +44,19 @@ function apiFalsa(
       agregados.push(email);
       return alAgregar(email);
     },
+    async invitarAlEquipo(idEquipo, email) {
+      invitaciones.push(email);
+      await alInvitar(email);
+      return estudiante({ email, idEquipoInvitado: idEquipo });
+    },
   };
 }
 
 describe('agregarEstudiante y agregarMonitor en lote', () => {
-  it('resumen de estudiantes con API simulada: mezcla de habilitados nuevos, ya habilitados, otro rol y un fallo al agregar al equipo (los demás continúan)', async () => {
+  it('resumen de estudiantes con API simulada: agrega a los que tienen cuenta, invita a los que no (también al ya habilitado sin cuenta), otro rol y un fallo al agregar (los demás continúan)', async () => {
     const pedidos: SolicitudCorreos[] = [];
     const llamadosMiembro: string[] = [];
+    const llamadosInvitar: string[] = [];
 
     const nuevoSinCuenta: CorreoHabilitadoVista = {
       idCorreoHabilitado: 10,
@@ -82,6 +107,7 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
       },
       pedidos,
       llamadosMiembro,
+      llamadosInvitar,
     );
 
     const correosEntrada = [
@@ -96,11 +122,13 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
 
     expect(pedidos).toEqual([{ emails: correosEntrada, rol: 'ESTUDIANTE' }]);
     expect(llamadosMiembro).toEqual(['falla@uninorte.edu.co', 'ok@uninorte.edu.co', 'ya@uninorte.edu.co']);
+    expect(llamadosInvitar).toEqual(['nuevo@uninorte.edu.co', 'ya@uninorte.edu.co']);
 
     expect(resumen).toEqual({
       agregados: ['ok@uninorte.edu.co'],
-      habilitados: ['nuevo@uninorte.edu.co'],
-      yaHabilitados: ['ya@uninorte.edu.co'],
+      invitados: ['nuevo@uninorte.edu.co', 'ya@uninorte.edu.co'],
+      habilitados: [],
+      yaHabilitados: [],
       conOtroRol: ['docente@uninorte.edu.co'],
       errores: [
         {
@@ -180,9 +208,10 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
     expect(resumen.equipo).toEqual(equipoActualizado);
   });
 
-  it('correo ya habilitado sin cuenta (409 ESTUDIANTE_NO_REGISTRADO) queda en ya habilitados', async () => {
+  it('correo ya habilitado sin cuenta (409 ESTUDIANTE_NO_REGISTRADO) queda invitado al equipo', async () => {
     const pedidos: SolicitudCorreos[] = [];
     const llamadosMiembro: string[] = [];
+    const llamadosInvitar: string[] = [];
     const respuesta = habilitacion({
       yaHabilitados: ['sin-cuenta@uninorte.edu.co'],
     });
@@ -193,12 +222,67 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
       },
       pedidos,
       llamadosMiembro,
+      llamadosInvitar,
     );
     const resumen = await agregarEstudiante(api, 1, 3, ['sin-cuenta@uninorte.edu.co']);
 
     expect(llamadosMiembro).toEqual(['sin-cuenta@uninorte.edu.co']);
+    expect(llamadosInvitar).toEqual(['sin-cuenta@uninorte.edu.co']);
     expect(resumen.agregados).toEqual([]);
-    expect(resumen.yaHabilitados).toEqual(['sin-cuenta@uninorte.edu.co']);
+    expect(resumen.invitados).toEqual(['sin-cuenta@uninorte.edu.co']);
+    expect(resumen.yaHabilitados).toEqual([]);
+    expect(resumen.errores).toEqual([]);
+  });
+
+  it('si la invitación falla (ya invitado a otro equipo) queda en errores con el motivo del API', async () => {
+    const sinCuenta: CorreoHabilitadoVista = {
+      idCorreoHabilitado: 30,
+      email: 'ines@uninorte.edu.co',
+      rol: 'ESTUDIANTE',
+      idProyecto: 1,
+      fechaHabilitacion: '2026-11-06T10:00:00Z',
+      registrado: false,
+    };
+    const api = apiFalsa(
+      habilitacion({ habilitados: [sinCuenta] }),
+      async () => equipo,
+      [],
+      [],
+      [],
+      async () => {
+        throw new ErrorApi(409, 'YA_INVITADO', 'Ese estudiante ya está invitado a otro equipo de este proyecto');
+      },
+    );
+    const resumen = await agregarEstudiante(api, 1, 3, ['ines@uninorte.edu.co']);
+
+    expect(resumen.invitados).toEqual([]);
+    expect(resumen.errores).toEqual([
+      { email: 'ines@uninorte.edu.co', motivo: 'Ese estudiante ya está invitado a otro equipo de este proyecto' },
+    ]);
+    expect(resumen.equipo).toBeUndefined();
+  });
+
+  it('sugerenciasDe deja solo a los que no tienen equipo ni invitación; invitadosDe, los invitados de un equipo', () => {
+    const lista = [
+      estudiante({ email: 'ana@u.co', nombre: 'Ana', registrado: true, idEquipo: 3 }),
+      estudiante({ email: 'beto@u.co', nombre: 'Beto', registrado: true }),
+      estudiante({ email: 'ines@u.co', idEquipoInvitado: 3 }),
+      estudiante({ email: 'juan@u.co', idEquipoInvitado: 4 }),
+      estudiante({ email: 'luz@u.co' }),
+    ];
+    expect(sugerenciasDe(lista)).toEqual([
+      { email: 'beto@u.co', nombre: 'Beto', registrado: true },
+      { email: 'luz@u.co', nombre: null, registrado: false },
+    ]);
+    expect(invitadosDe(lista, 3)).toEqual(['ines@u.co']);
+    expect(invitadosDe(lista, 9)).toEqual([]);
+  });
+
+  it('claveIntegrantes cambia al agregar o quitar integrantes, no al cambiar el líder', () => {
+    const conAna: EquipoVista = { ...equipo, miembros: [{ idUsuario: 9, nombre: 'Ana', rolEquipo: 'INTEGRANTE' }] };
+    const anaLider: EquipoVista = { ...equipo, miembros: [{ idUsuario: 9, nombre: 'Ana', rolEquipo: 'LIDER' }] };
+    expect(claveIntegrantes([equipo])).not.toBe(claveIntegrantes([conAna]));
+    expect(claveIntegrantes([conAna])).toBe(claveIntegrantes([anaLider]));
   });
 
   it('reemplazarEquipo cambia el equipo por id o lo agrega al final', () => {

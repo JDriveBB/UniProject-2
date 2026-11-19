@@ -1,8 +1,8 @@
 import { useId, useRef, useState } from 'react';
-import type { ChangeEvent, ClipboardEvent, KeyboardEvent, MouseEvent } from 'react';
+import type { ChangeEvent, ClipboardEvent, FocusEvent, KeyboardEvent, MouseEvent } from 'react';
 import { MAXIMO_CORREOS_LOTE } from './correos';
-import { agregarTexto, quitar } from './fichas';
-import type { Ficha } from './fichas';
+import { agregarTexto, filtrarSugerencias, quitar } from './fichas';
+import type { Ficha, Sugerencia } from './fichas';
 
 const AYUDA_POR_DEFECTO = 'Escribe un correo y pulsa Enter. También puedes pegar una lista.';
 
@@ -13,11 +13,14 @@ export interface PropsCampoCorreos {
   alCambiar: (fichas: Ficha[]) => void;
   ayuda?: string;
   deshabilitado?: boolean;
+  /** D-11: estudiantes sin equipo ni invitación; se eligen con un clic (hasta 6, filtrados por lo escrito). */
+  sugerencias?: Sugerencia[];
 }
 
 /**
  * Campo de correos con fichas tipo "Para:" de Gmail: valida al confirmar cada ficha, admite pegar
- * listas separadas por espacios, comas, punto y coma o saltos de línea, y asocia errores al input.
+ * listas separadas por espacios, comas, punto y coma o saltos de línea, y asocia errores al input. Con
+ * sugerencias, muestra debajo hasta 6 botones que agregan ese correo como ficha.
  */
 export function CampoCorreos({
   id,
@@ -26,17 +29,21 @@ export function CampoCorreos({
   alCambiar,
   ayuda = AYUDA_POR_DEFECTO,
   deshabilitado = false,
+  sugerencias = [],
 }: PropsCampoCorreos) {
   const generado = useId();
   const idCampo = id ?? generado;
   const idAyuda = `${idCampo}-ayuda`;
   const idAviso = `${idCampo}-aviso`;
   const idErrores = `${idCampo}-errores`;
+  const idSugerencias = `${idCampo}-sugerencias`;
 
   const [texto, setTexto] = useState('');
   const [avisoLimite, setAvisoLimite] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listaRef = useRef<HTMLUListElement>(null);
+  const sugerenciasRef = useRef<HTMLDivElement>(null);
+  const visibles = filtrarSugerencias(sugerencias, fichas, texto);
 
   const fichasConProblema = fichas.filter((f) => f.error !== null || f.resultado !== undefined);
   const tieneErrores = fichasConProblema.length > 0;
@@ -109,10 +116,24 @@ export function CampoCorreos({
     }
   }
 
-  function alPerderFoco() {
+  /* Ir con Tab a una sugerencia no convierte en ficha lo escrito para buscarla. */
+  function alPerderFoco(evento: FocusEvent<HTMLInputElement>) {
+    if (evento.relatedTarget instanceof Node && sugerenciasRef.current?.contains(evento.relatedTarget)) {
+      return;
+    }
     if (texto.trim() !== '') {
       confirmarTexto(texto);
     }
+  }
+
+  function elegirSugerencia(email: string) {
+    const resultado = agregarTexto(fichas, email);
+    setAvisoLimite(resultado.aviso);
+    setTexto('');
+    if (resultado.fichas !== fichas) {
+      alCambiar(resultado.fichas);
+    }
+    inputRef.current?.focus();
   }
 
   function alPulsarContenedor(evento: MouseEvent<HTMLDivElement>) {
@@ -198,6 +219,31 @@ export function CampoCorreos({
             </li>
           ))}
         </ul>
+      )}
+      {visibles.length > 0 && (
+        <div ref={sugerenciasRef} className="sugerencias" role="group" aria-labelledby={idSugerencias}>
+          <p id={idSugerencias} className="sugerencias__titulo">
+            Sugerencias
+          </p>
+          <ul className="sugerencias__lista">
+            {visibles.map((s) => (
+              <li key={s.email}>
+                <button
+                  type="button"
+                  className="sugerencia"
+                  aria-label={`Agregar ${s.nombre ?? s.email}${s.registrado ? '' : ', sin cuenta'}`}
+                  disabled={deshabilitado}
+                  onMouseDown={(ev) => ev.preventDefault()}
+                  onClick={() => elegirSugerencia(s.email)}
+                >
+                  <span aria-hidden="true">+</span>
+                  <span className="sugerencia__nombre">{s.nombre ?? s.email}</span>
+                  {!s.registrado && <span className="sugerencia__nota">· sin cuenta</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

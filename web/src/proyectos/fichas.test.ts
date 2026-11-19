@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ResumenEstudiantes, ResumenMonitores } from './equipos';
+import type { Sugerencia } from './fichas';
 import {
   agregarTexto,
   aplicarResultadoEstudiantes,
   aplicarResultadoMonitores,
   AVISO_LIMITE_CORREOS,
+  filtrarSugerencias,
   quitar,
   TEXTO_HABILITADO_SIN_CUENTA,
   validas,
@@ -70,15 +72,39 @@ describe('agregarTexto, quitar y validas', () => {
   });
 });
 
+describe('filtrarSugerencias', () => {
+  const ines: Sugerencia = { email: 'ines@uninorte.edu.co', nombre: null, registrado: false };
+  const ana: Sugerencia = { email: 'ana@uninorte.edu.co', nombre: 'Ana Pérez', registrado: true };
+  const beto: Sugerencia = { email: 'beto@uninorte.edu.co', nombre: 'Beto Inés', registrado: true };
+
+  it('sin texto devuelve todas las que no están en las fichas, sin distinguir mayúsculas', () => {
+    const fichas = agregarTexto([], 'ANA@uninorte.edu.co').fichas;
+    expect(filtrarSugerencias([ines, ana, beto], fichas, '')).toEqual([ines, beto]);
+  });
+
+  it('filtra por nombre o correo sin distinguir mayúsculas ni tildes', () => {
+    expect(filtrarSugerencias([ines, ana, beto], [], 'INES')).toEqual([ines, beto]);
+    expect(filtrarSugerencias([ines, ana, beto], [], ' perez ')).toEqual([ana]);
+    expect(filtrarSugerencias([ines, ana, beto], [], 'beto@')).toEqual([beto]);
+    expect(filtrarSugerencias([ines, ana, beto], [], 'nadie')).toEqual([]);
+  });
+
+  it('devuelve como máximo 6', () => {
+    const muchas = Array.from({ length: 9 }, (_, i) => ({ email: `e${i}@u.co`, nombre: null, registrado: false }));
+    expect(filtrarSugerencias(muchas, [], '')).toEqual(muchas.slice(0, 6));
+  });
+});
+
 describe('aplicarResultadoEstudiantes y aplicarResultadoMonitores', () => {
-  it('estudiantes: quita agregados y habilitados, deja los demás con motivo y arma resumen corto', () => {
+  it('estudiantes: quita agregados e invitados, deja los demás con motivo y arma resumen corto', () => {
     const { fichas } = agregarTexto(
       [],
       'Ok1@uninorte.edu.co ok2@uninorte.edu.co inv@uninorte.edu.co ya@uninorte.edu.co doc@uninorte.edu.co err@uninorte.edu.co',
     );
     const resumen: ResumenEstudiantes = {
       agregados: ['ok1@uninorte.edu.co', 'ok2@uninorte.edu.co'],
-      habilitados: ['inv@uninorte.edu.co'],
+      invitados: ['inv@uninorte.edu.co'],
+      habilitados: [],
       yaHabilitados: ['ya@uninorte.edu.co'],
       conOtroRol: ['doc@uninorte.edu.co'],
       errores: [{ email: 'err@uninorte.edu.co', motivo: 'Ya pertenece a otro equipo' }],
@@ -91,7 +117,7 @@ describe('aplicarResultadoEstudiantes y aplicarResultadoMonitores', () => {
       { correo: 'err@uninorte.edu.co', error: null, resultado: 'Ya pertenece a otro equipo' },
     ]);
     expect(resultado.resumen).toBe(
-      `2 agregados · 1 ${TEXTO_HABILITADO_SIN_CUENTA.estudianteSingular} · 3 con problemas`,
+      '2 agregados · 1 invitado: entrará al equipo cuando cree su cuenta · 3 con problemas',
     );
   });
 
@@ -99,13 +125,15 @@ describe('aplicarResultadoEstudiantes y aplicarResultadoMonitores', () => {
     const { fichas } = agregarTexto([], 'a@u.co b@u.co c@u.co');
     const resultado = aplicarResultadoEstudiantes(fichas, {
       agregados: ['a@u.co'],
-      habilitados: ['b@u.co', 'c@u.co'],
+      invitados: ['b@u.co', 'c@u.co'],
+      habilitados: [],
       yaHabilitados: [],
       conOtroRol: [],
       errores: [],
     });
     expect(resultado.fichas).toEqual([]);
-    expect(resultado.resumen).toBe(`1 agregado · 2 ${TEXTO_HABILITADO_SIN_CUENTA.estudiantePlural}`);
+    expect(resultado.resumen).toBe('1 agregado · 2 invitados: entrarán al equipo cuando creen su cuenta');
+    expect(TEXTO_HABILITADO_SIN_CUENTA.estudiantePlural).toBe('invitados: entrarán al equipo cuando creen su cuenta');
   });
 
   it('monitores: quita asignados y habilitados, deja los demás con motivo y arma resumen corto', () => {

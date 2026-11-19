@@ -346,6 +346,23 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/proyectos/{idProyecto}/estudiantes:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [proyectos]
+      operationId: listarEstudiantes
+      summary: 'Correos de ESTUDIANTE habilitados en el proyecto, con o sin cuenta, con su equipo o su invitación (D-11, D-12). Solo el docente dueño'
+      responses:
+        '200':
+          description: Estudiantes habilitados, ordenados por correo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EstudianteProyectoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
   /api/proyectos/{idProyecto}/monitores:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
@@ -503,6 +520,32 @@ paths:
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '404': {$ref: '#/components/responses/NoEncontrado'}
+  /api/equipos/{idEquipo}/invitaciones:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    post:
+      tags: [equipos]
+      operationId: invitarAlEquipo
+      summary: 'Invita al equipo a un estudiante habilitado que aún no tiene cuenta: entra al equipo cuando se registra (D-12 20A). Invitarlo otra vez al mismo equipo no cambia nada. Solo el docente dueño'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudInvitacion'}
+      responses:
+        '201':
+          description: Estudiante invitado al equipo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EstudianteProyectoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409':
+          description: 'CORREO_NO_HABILITADO (no está habilitado como estudiante en el proyecto), YA_TIENE_CUENTA (se agrega con /miembros) o YA_INVITADO (ya está invitado a otro equipo del proyecto)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/equipos/{idEquipo}/lider:
     parameters:
       - $ref: '#/components/parameters/idEquipo'
@@ -1379,6 +1422,19 @@ components:
       required: [email]
       properties:
         email: {type: string, format: email, maxLength: 254}
+    SolicitudInvitacion:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+    EstudianteProyectoVista:
+      type: object
+      properties:
+        email: {type: string}
+        nombre: {$ref: '#/components/schemas/TextoNulo'}
+        registrado: {type: boolean}
+        idEquipo: {$ref: '#/components/schemas/IdNulo'}
+        idEquipoInvitado: {$ref: '#/components/schemas/IdNulo'}
     SolicitudLider:
       type: object
       required: [idUsuario]

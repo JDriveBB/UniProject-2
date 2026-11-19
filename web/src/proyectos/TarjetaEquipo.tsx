@@ -1,14 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { agregarMiembro, cambiarLider, habilitarCorreos, quitarMiembro } from '../api/proyectos';
-import type { EquipoVista, MiembroVista } from '../api/tipos';
+import { agregarMiembro, cambiarLider, habilitarCorreos, invitarAlEquipo, quitarMiembro } from '../api/proyectos';
+import type { EquipoVista, EstudianteProyectoVista, MiembroVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { ConfirmarQuitar } from '../componentes/ConfirmarQuitar';
 import { Insignia } from '../componentes/Insignia';
 import { CampoCorreos } from './CampoCorreos';
-import { agregarEstudiante } from './equipos';
+import { agregarEstudiante, invitadosDe, sugerenciasDe } from './equipos';
 import type { ApiEquipos } from './equipos';
 import { CAMPOS_CORREO, mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
@@ -23,22 +23,25 @@ import {
 } from './quitar';
 import type { ApiQuitar } from './quitar';
 
-const API_EQUIPOS: ApiEquipos = { habilitarCorreos, agregarMiembro };
+const API_EQUIPOS: ApiEquipos = { habilitarCorreos, agregarMiembro, invitarAlEquipo };
 const API_QUITAR: Pick<ApiQuitar, 'quitarMiembro'> = { quitarMiembro };
 
 /**
- * Una tarjeta de equipo de P03: integrantes, "Líder" o "Designar líder" y "Quitar" (Aclaración 2), y
- * "+ Agregar estudiante" (26b-7).
+ * Una tarjeta de equipo de P03: integrantes, "Líder" o "Designar líder" y "Quitar" (Aclaración 2), invitados sin
+ * cuenta (D-12) y "+ Agregar estudiante" (26b-7) con sugerencias de estudiantes sin equipo (D-11).
  */
 export function TarjetaEquipo({
   idProyecto,
   equipo,
+  estudiantes = [],
   editable,
   alActualizar,
   alHabilitarCorreo,
 }: {
   idProyecto: number;
   equipo: EquipoVista;
+  /** Estudiantes del proyecto (solo para el docente dueño); vacío si no se cargaron. */
+  estudiantes?: EstudianteProyectoVista[];
   editable: boolean;
   alActualizar: (equipo: EquipoVista) => void;
   alHabilitarCorreo?: () => void;
@@ -57,6 +60,7 @@ export function TarjetaEquipo({
   const idTitulo = base + '-titulo';
   const idArea = base + '-correos';
   const idMensaje = base + '-mensaje';
+  const invitados = invitadosDe(estudiantes, equipo.idEquipo);
   const correosValidos = validas(fichas);
   const hayErrorFormato = fichas.some((f) => f.error !== null);
   const puedeEnviar = correosValidos.length > 0 && !hayErrorFormato;
@@ -125,7 +129,7 @@ export function TarjetaEquipo({
       if (r.equipo) {
         alActualizar(r.equipo);
       }
-      if (r.agregados.length > 0 || r.habilitados.length > 0) {
+      if (r.agregados.length > 0 || (r.invitados ?? []).length > 0) {
         alHabilitarCorreo?.();
       }
       const aplicado = aplicarResultadoEstudiantes(fichas, r);
@@ -191,7 +195,7 @@ export function TarjetaEquipo({
       <h3 id={idTitulo} className="equipo__titulo" tabIndex={-1}>
         {equipo.nombreEquipo}
       </h3>
-      {equipo.miembros.length === 0 ? (
+      {equipo.miembros.length === 0 && invitados.length === 0 ? (
         <p className="texto-secundario">Sin integrantes todavía.</p>
       ) : (
         <ul className="equipo__miembros">
@@ -225,6 +229,15 @@ export function TarjetaEquipo({
               ) : null}
             </li>
           ))}
+          {invitados.map((email) => (
+            <li key={email} className="equipo__miembro equipo__invitado">
+              <span className="equipo__invitado-texto">
+                <span className="equipo__invitado-correo">{email}</span>
+                <span className="texto-secundario"> · sin cuenta</span>
+              </span>
+              <Insignia tono="neutro">Invitado</Insignia>
+            </li>
+          ))}
         </ul>
       )}
       {editable && porQuitar !== null && (
@@ -250,6 +263,7 @@ export function TarjetaEquipo({
               fichas={fichas}
               alCambiar={setFichas}
               deshabilitado={ocupado}
+              sugerencias={sugerenciasDe(estudiantes)}
             />
             <div className="pagina__acciones">
               <Boton type="submit" cargando={ocupado} disabled={!puedeEnviar}>

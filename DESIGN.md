@@ -427,6 +427,7 @@ Firmes y compactos, con texto en seminegrita.
 ### Chips (Insignias)
 - **Style:** píldora (`radio-insignia`), relleno 4 × 10 px, texto de 12 px en peso medio, sin borde, sin cortes de línea. Texto del estado sobre su fondo pálido: neutro, éxito, aviso, peligro, información, crítico.
 - **State:** el texto siempre dice el estado («Riesgo alto», «Prerrequisito crítico»). Cuando la insignia es un enlace, al pasar el mouse muestra un borde interior de su propio color. En el selector de dependencias la insignia lleva un botón «×» para quitarla.
+- **Invitados del equipo:** bajo los integrantes, el correo con «· sin cuenta» en `texto-secundario` y la insignia neutra «Invitado» (entra al equipo cuando cree su cuenta).
 - **Marcas en tablas:** como máximo una marca por fila, en orden de prioridad: «Bloqueada por dependencia» > «Riesgo alto» > «Riesgo medio» (ninguna si la tarea está completada). «Riesgo bajo» no aparece en tablas: solo se muestra en el detalle de la tarea junto al margen en horas de trabajo.
 
 ### Cards / Containers
@@ -448,6 +449,7 @@ Firmes y compactos, con texto en seminegrita.
 - **Casilla:** cuadro de 18 px dibujado (el `input` real sigue accesible), marcada en `primario` con visto blanco.
 - **Selectores:** tanto `<select class="campo__entrada">` (`appearance: none`) como el selector múltiple («Bloqueada por») usan el mismo chevron SVG de 12 px en `texto-secundario` (`--icono-chevron`), separado 12 px del borde derecho y con relleno derecho de 32 px para que el texto no lo tape.
 - **Campo de fichas (`.campo-fichas`):** contenedor con forma de campo que muestra el anillo de foco con `:focus-within`, lista de fichas en píldora (`.ficha` neutra o `.ficha--error` en peligro, con motivo en texto debajo y botón «✕» ≥ 24 px, 44 px en celular) y entrada de correo sin desborde desde 320 px.
+- **Sugerencias del campo de fichas (`.sugerencias`):** debajo del campo, el título «Sugerencias» en texto pequeño `texto-secundario` y hasta 6 botones `.sugerencia` filtrados por lo escrito (nombre o correo, sin tildes): píldora de borde punteado `borde-tabla` sobre `superficie`, texto `primario` con «+» y el nombre (o el correo, con «· sin cuenta» en `texto-secundario` si no tiene cuenta); al pasar el mouse, borde sólido `primario` y fondo `info-fondo`. Nombre accesible «Agregar …». Sin sugerencias no se muestra.
 
 ### Tables
 - Recuadro `.tabla-contenedor`: borde `borde-tabla`, esquinas de 12 px, fondo blanco, `position: relative` y desplazamiento horizontal propio.

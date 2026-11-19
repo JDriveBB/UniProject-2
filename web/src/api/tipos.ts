@@ -143,6 +143,23 @@ export interface SolicitudLider {
   idUsuario: number;
 }
 
+/** POST /api/equipos/{id}/invitaciones (D-12): correo habilitado de un estudiante sin cuenta. */
+export interface SolicitudInvitacion {
+  email: string;
+}
+
+/** GET /api/proyectos/{id}/estudiantes (D-11, D-12): correo de estudiante habilitado, con o sin cuenta. */
+export interface EstudianteProyectoVista {
+  email: string;
+  /** null si aún no tiene cuenta. */
+  nombre: string | null;
+  registrado: boolean;
+  /** Equipo del proyecto donde es integrante, o null. */
+  idEquipo: number | null;
+  /** Equipo al que entrará cuando cree su cuenta, o null. */
+  idEquipoInvitado: number | null;
+}
+
 /** POST /api/proyectos/{id}/correos (K2): habilita correos de estudiantes o monitores en el proyecto. */
 export interface SolicitudCorreos {
   emails: string[];

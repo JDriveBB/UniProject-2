@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.configuracionacademica.web;
 
 import co.uniproject.nucleo.configuracionacademica.servicio.EquipoVista;
+import co.uniproject.nucleo.configuracionacademica.servicio.EstudianteProyectoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.HitoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.MonitorVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.ProyectoDetalle;
@@ -40,8 +41,11 @@ public class ControladorProyectos {
     private final ServicioEquipos equipos;
     private final ServicioCorreosProyecto correos;
 
-    public ControladorProyectos(ServicioProyectos proyectos, ServicioHitos hitos, ServicioEquipos equipos,
-                                ServicioCorreosProyecto correos) {
+    public ControladorProyectos(
+            ServicioProyectos proyectos,
+            ServicioHitos hitos,
+            ServicioEquipos equipos,
+            ServicioCorreosProyecto correos) {
         this.proyectos = proyectos;
         this.hitos = hitos;
         this.equipos = equipos;
@@ -50,8 +54,8 @@ public class ControladorProyectos {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProyectoVista crear(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                               @Valid @RequestBody SolicitudProyecto solicitud) {
+    public ProyectoVista crear(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @Valid @RequestBody SolicitudProyecto solicitud) {
         return proyectos.crear(usuario, solicitud);
     }
 
@@ -61,67 +65,80 @@ public class ControladorProyectos {
     }
 
     @GetMapping("/{idProyecto}")
-    public ProyectoDetalle detalle(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                   @PathVariable("idProyecto") long idProyecto) {
+    public ProyectoDetalle detalle(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
         return proyectos.detalle(usuario, idProyecto);
     }
 
     @PutMapping("/{idProyecto}")
-    public ProyectoVista actualizar(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                    @PathVariable("idProyecto") long idProyecto,
-                                    @Valid @RequestBody SolicitudProyecto solicitud) {
+    public ProyectoVista actualizar(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudProyecto solicitud) {
         return proyectos.actualizar(usuario, idProyecto, solicitud);
     }
 
     @PostMapping("/{idProyecto}/hitos")
     @ResponseStatus(HttpStatus.CREATED)
-    public HitoVista crearHito(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                               @PathVariable("idProyecto") long idProyecto,
-                               @Valid @RequestBody SolicitudHito solicitud) {
+    public HitoVista crearHito(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudHito solicitud) {
         return hitos.crear(usuario, idProyecto, solicitud);
     }
 
     @PostMapping("/{idProyecto}/equipos")
     @ResponseStatus(HttpStatus.CREATED)
-    public EquipoVista crearEquipo(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                   @PathVariable("idProyecto") long idProyecto,
-                                   @Valid @RequestBody SolicitudEquipo solicitud) {
+    public EquipoVista crearEquipo(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudEquipo solicitud) {
         return equipos.crear(usuario, idProyecto, solicitud);
     }
 
     @PostMapping("/{idProyecto}/correos")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResultadoHabilitacion habilitarCorreos(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                                  @PathVariable("idProyecto") long idProyecto,
-                                                  @Valid @RequestBody SolicitudCorreos solicitud) {
+    public ResultadoHabilitacion habilitarCorreos(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudCorreos solicitud) {
         return correos.habilitar(usuario, idProyecto, solicitud);
     }
 
     @GetMapping("/{idProyecto}/correos")
-    public List<CorreoHabilitadoVista> listarCorreos(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                                     @PathVariable("idProyecto") long idProyecto) {
+    public List<CorreoHabilitadoVista> listarCorreos(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
         return correos.listar(usuario, idProyecto);
     }
 
     @DeleteMapping("/{idProyecto}/correos/{idCorreoHabilitado}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void retirarCorreo(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                              @PathVariable("idProyecto") long idProyecto,
-                              @PathVariable("idCorreoHabilitado") long idCorreoHabilitado) {
+    public void retirarCorreo(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @PathVariable("idCorreoHabilitado") long idCorreoHabilitado) {
         correos.retirarCorreo(usuario, idProyecto, idCorreoHabilitado);
     }
 
+    /** D-11 y D-12: estudiantes habilitados del proyecto con su equipo o invitación. Solo el docente dueño. */
+    @GetMapping("/{idProyecto}/estudiantes")
+    public List<EstudianteProyectoVista> listarEstudiantes(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
+        return correos.estudiantes(usuario, idProyecto);
+    }
+
     @GetMapping("/{idProyecto}/monitores")
-    public List<MonitorVista> listarMonitores(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                              @PathVariable("idProyecto") long idProyecto) {
+    public List<MonitorVista> listarMonitores(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
         return correos.monitores(usuario, idProyecto);
     }
 
     @DeleteMapping("/{idProyecto}/monitores/{idMonitor}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void quitarMonitor(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                              @PathVariable("idProyecto") long idProyecto,
-                              @PathVariable("idMonitor") long idMonitor) {
+    public void quitarMonitor(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @PathVariable("idMonitor") long idMonitor) {
         correos.quitarMonitor(usuario, idProyecto, idMonitor);
     }
 }

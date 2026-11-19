@@ -49,10 +49,15 @@ public class ServicioCorreosProyecto {
     private final Clock reloj;
     private final JdbcClient jdbc;
 
-    public ServicioCorreosProyecto(ProyectoRepositorio proyectos, CorreoHabilitadoRepositorio correos,
-                                   UsuarioRepositorio usuarios, MonitorProyectoRepositorio monitores,
-                                   Permisos permisos, RegistroAuditoria auditoria, Clock reloj,
-                                   JdbcClient jdbc) {
+    public ServicioCorreosProyecto(
+            ProyectoRepositorio proyectos,
+            CorreoHabilitadoRepositorio correos,
+            UsuarioRepositorio usuarios,
+            MonitorProyectoRepositorio monitores,
+            Permisos permisos,
+            RegistroAuditoria auditoria,
+            Clock reloj,
+            JdbcClient jdbc) {
         this.proyectos = proyectos;
         this.correos = correos;
         this.usuarios = usuarios;
@@ -69,13 +74,15 @@ public class ServicioCorreosProyecto {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
         RolPlataforma rol = solicitud.rol();
         if (rol != RolPlataforma.ESTUDIANTE && rol != RolPlataforma.MONITOR) {
-            throw new SolicitudInvalidaException("ROL_INVALIDO", "En un proyecto solo se habilitan estudiantes o monitores");
+            throw new SolicitudInvalidaException(
+                    "ROL_INVALIDO", "En un proyecto solo se habilitan estudiantes o monitores");
         }
-        Proyecto proyecto = proyectos.findById(idProyecto)
+        Proyecto proyecto = proyectos
+                .findById(idProyecto)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El proyecto no existe"));
         if (rol == RolPlataforma.MONITOR && !proyecto.getUsaMonitores()) {
-            throw new ReglaNegocioException("PROYECTO_SIN_MONITORES",
-                    "Activa los monitores en el proyecto antes de habilitar sus correos");
+            throw new ReglaNegocioException(
+                    "PROYECTO_SIN_MONITORES", "Activa los monitores en el proyecto antes de habilitar sus correos");
         }
         Set<String> existentes = correos.findByIdProyectoOrderByEmail(idProyecto).stream()
                 .map(CorreoHabilitado::getEmail)
@@ -121,11 +128,18 @@ public class ServicioCorreosProyecto {
             try {
                 c = correos.saveAndFlush(c);
             } catch (DataIntegrityViolationException e) {
-                throw new ReglaNegocioException("CORREO_HABILITADO_EN_PARALELO",
+                throw new ReglaNegocioException(
+                        "CORREO_HABILITADO_EN_PARALELO",
                         "Otra operación habilitó alguno de estos correos al mismo tiempo. Vuelve a intentarlo");
             }
-            auditoria.registrar(EntradaAuditoria.cambio(usuario.idUsuario(), "correo_habilitado",
-                    c.getIdCorreoHabilitado(), AccionAuditoria.HABILITAR_CORREO, "rol_plataforma", null, rol.name()));
+            auditoria.registrar(EntradaAuditoria.cambio(
+                    usuario.idUsuario(),
+                    "correo_habilitado",
+                    c.getIdCorreoHabilitado(),
+                    AccionAuditoria.HABILITAR_CORREO,
+                    "rol_plataforma",
+                    null,
+                    rol.name()));
             habilitados.add(CorreoHabilitadoVista.de(c));
         }
         return new ResultadoHabilitacion(habilitados, yaHabilitados, conOtroRol);
@@ -137,6 +151,30 @@ public class ServicioCorreosProyecto {
         return correos.findByIdProyectoOrderByEmail(idProyecto).stream()
                 .map(CorreoHabilitadoVista::de)
                 .toList();
+    }
+
+    /**
+     * D-11 y D-12: correos de ESTUDIANTE habilitados en el proyecto, con o sin cuenta, su equipo y su invitación, para
+     * sugerirlos al armar los equipos. Las cuentas suprimidas (bloque 27) no aparecen. Ordenados por correo.
+     */
+    @Transactional(readOnly = true)
+    public List<EstudianteProyectoVista> estudiantes(UsuarioAutenticado usuario, long idProyecto) {
+        permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
+        return jdbc.sql("SELECT c.email, u.nombre, c.fecha_uso IS NOT NULL AS registrado, "
+                        + "(SELECT m.id_equipo FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
+                        + "WHERE e.id_proyecto = c.id_proyecto AND m.id_usuario = c.id_usuario_registrado LIMIT 1) AS id_equipo, "
+                        + "c.id_equipo_invitado FROM correo_habilitado c "
+                        + "LEFT JOIN usuario u ON u.id_usuario = c.id_usuario_registrado "
+                        + "WHERE c.id_proyecto = :proyecto AND c.rol_plataforma = 'ESTUDIANTE' "
+                        + "AND u.fecha_anonimizacion IS NULL ORDER BY c.email")
+                .param("proyecto", idProyecto)
+                .query((rs, fila) -> new EstudianteProyectoVista(
+                        rs.getString("email"),
+                        rs.getString("nombre"),
+                        rs.getBoolean("registrado"),
+                        rs.getObject("id_equipo", Long.class),
+                        rs.getObject("id_equipo_invitado", Long.class)))
+                .list();
     }
 
     @Transactional(readOnly = true)
@@ -171,11 +209,17 @@ public class ServicioCorreosProyecto {
         correos.deleteAll(aBorrar);
         correos.flush();
 
-        auditoria.registrar(EntradaAuditoria.cambio(usuario.idUsuario(), "monitor_proyecto", idProyecto,
-                AccionAuditoria.ELIMINAR, "id_monitor", String.valueOf(idMonitor), null));
+        auditoria.registrar(EntradaAuditoria.cambio(
+                usuario.idUsuario(),
+                "monitor_proyecto",
+                idProyecto,
+                AccionAuditoria.ELIMINAR,
+                "id_monitor",
+                String.valueOf(idMonitor),
+                null));
         for (CorreoHabilitado c : aBorrar) {
-            auditoria.registrar(EntradaAuditoria.de(usuario.idUsuario(), "correo_habilitado",
-                    c.getIdCorreoHabilitado(), AccionAuditoria.ELIMINAR));
+            auditoria.registrar(EntradaAuditoria.de(
+                    usuario.idUsuario(), "correo_habilitado", c.getIdCorreoHabilitado(), AccionAuditoria.ELIMINAR));
         }
     }
 
@@ -187,20 +231,22 @@ public class ServicioCorreosProyecto {
     @Transactional
     public void retirarCorreo(UsuarioAutenticado usuario, long idProyecto, long idCorreoHabilitado) {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
-        int borradas = jdbc.sql("DELETE FROM correo_habilitado WHERE id_correo_habilitado = :id AND id_proyecto = :p AND fecha_uso IS NULL")
+        int borradas = jdbc.sql(
+                        "DELETE FROM correo_habilitado WHERE id_correo_habilitado = :id AND id_proyecto = :p AND fecha_uso IS NULL")
                 .param("id", idCorreoHabilitado)
                 .param("p", idProyecto)
                 .update();
         if (borradas == 1) {
-            auditoria.registrar(EntradaAuditoria.de(usuario.idUsuario(), "correo_habilitado",
-                    idCorreoHabilitado, AccionAuditoria.ELIMINAR));
+            auditoria.registrar(EntradaAuditoria.de(
+                    usuario.idUsuario(), "correo_habilitado", idCorreoHabilitado, AccionAuditoria.ELIMINAR));
             return;
         }
         Optional<CorreoHabilitado> opt = correos.findById(idCorreoHabilitado);
         if (opt.isEmpty() || !Objects.equals(opt.get().getIdProyecto(), idProyecto)) {
             throw new RecursoNoEncontradoException("Esa habilitación no existe en el proyecto");
         }
-        throw new ReglaNegocioException("HABILITACION_USADA",
+        throw new ReglaNegocioException(
+                "HABILITACION_USADA",
                 "Esa persona ya creó su cuenta. Quítala de su equipo o de los monitores del proyecto");
     }
 }

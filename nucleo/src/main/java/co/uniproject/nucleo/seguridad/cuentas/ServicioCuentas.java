@@ -5,6 +5,7 @@ import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
 import co.uniproject.nucleo.configuracionacademica.dominio.MonitorProyecto;
 import co.uniproject.nucleo.configuracionacademica.repositorio.MonitorProyectoRepositorio;
+import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.dominio.CorreoHabilitado;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
@@ -17,6 +18,7 @@ import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -40,17 +42,24 @@ public class ServicioCuentas {
     private final UsuarioRepositorio usuarios;
     private final CorreoHabilitadoRepositorio correos;
     private final MonitorProyectoRepositorio monitores;
+    private final ServicioEquipos equipos;
     private final PasswordEncoder codificador;
     private final RegistroAuditoria auditoria;
     private final Clock reloj;
     private final String hashFicticio;
 
-    public ServicioCuentas(UsuarioRepositorio usuarios, CorreoHabilitadoRepositorio correos,
-                           MonitorProyectoRepositorio monitores, PasswordEncoder codificador,
-                           RegistroAuditoria auditoria, Clock reloj) {
+    public ServicioCuentas(
+            UsuarioRepositorio usuarios,
+            CorreoHabilitadoRepositorio correos,
+            MonitorProyectoRepositorio monitores,
+            ServicioEquipos equipos,
+            PasswordEncoder codificador,
+            RegistroAuditoria auditoria,
+            Clock reloj) {
         this.usuarios = usuarios;
         this.correos = correos;
         this.monitores = monitores;
+        this.equipos = equipos;
         this.codificador = codificador;
         this.auditoria = auditoria;
         this.reloj = reloj;
@@ -64,10 +73,11 @@ public class ServicioCuentas {
 
     /** Reglas de contraseña del registro (26a), también para cambio y restablecimiento (28-7). */
     static void exigirContrasenaValida(String contrasena) {
-        if (contrasena == null || contrasena.length() < MINIMO_CARACTERES_CONTRASENA
+        if (contrasena == null
+                || contrasena.length() < MINIMO_CARACTERES_CONTRASENA
                 || bytes(contrasena) > MAXIMO_BYTES_CONTRASENA) {
-            throw new SolicitudInvalidaException("CONTRASENA_INVALIDA",
-                    "La contraseña debe tener al menos 10 caracteres y no más de 72 bytes");
+            throw new SolicitudInvalidaException(
+                    "CONTRASENA_INVALIDA", "La contraseña debe tener al menos 10 caracteres y no más de 72 bytes");
         }
     }
 
@@ -77,10 +87,11 @@ public class ServicioCuentas {
      */
     @Transactional
     public Optional<UsuarioAutenticado> autenticar(String email, String contrasena) {
-        Optional<Usuario> usuario = usuarios.findByEmail(normalizarEmail(email))
-                .filter(u -> u.getFechaAnonimizacion() == null);
+        Optional<Usuario> usuario =
+                usuarios.findByEmail(normalizarEmail(email)).filter(u -> u.getFechaAnonimizacion() == null);
         boolean valida = bytes(contrasena) <= MAXIMO_BYTES_CONTRASENA
-                && codificador.matches(contrasena, usuario.map(Usuario::getPasswordHash).orElse(hashFicticio))
+                && codificador.matches(
+                        contrasena, usuario.map(Usuario::getPasswordHash).orElse(hashFicticio))
                 && usuario.isPresent();
         Long id = usuario.map(Usuario::getIdUsuario).orElse(null);
         if (!valida) {
@@ -92,7 +103,11 @@ public class ServicioCuentas {
         return Optional.of(new UsuarioAutenticado(u.getIdUsuario(), u.getNombre(), u.getEmail(), u.getRolPlataforma()));
     }
 
-    /** Crea la cuenta si el correo está habilitado y sin usar. El rol sale de la habilitación, no de la petición. */
+    /**
+     * Crea la cuenta si el correo está habilitado y sin usar. El rol sale de la habilitación, no de la petición. Las
+     * habilitaciones con invitación a un equipo (D-12 20A) la consumen: el estudiante entra al equipo en esta misma
+     * transacción si las reglas del equipo se cumplen; si no, la cuenta se crea igual (ServicioEquipos.incorporarInvitado).
+     */
     @Transactional
     public UsuarioSesion registrar(SolicitudRegistro solicitud) {
         String email = normalizarEmail(solicitud.email());
@@ -102,23 +117,24 @@ public class ServicioCuentas {
         if (usuarios.existsByEmail(email)) {
             throw registroNoDisponible();
         }
-        List<CorreoHabilitado> habilitados = correos.findByEmailAndFechaUsoIsNull(email);
+        List<CorreoHabilitado> habilitados = correos.bloquearPendientes(email);
         if (habilitados.isEmpty()) {
             throw registroNoDisponible();
         }
-        Set<RolPlataforma> roles = habilitados.stream()
-                .map(CorreoHabilitado::getRolPlataforma)
-                .collect(Collectors.toSet());
+        Set<RolPlataforma> roles =
+                habilitados.stream().map(CorreoHabilitado::getRolPlataforma).collect(Collectors.toSet());
         if (roles.size() > 1) {
             throw registroNoDisponible();
         }
         Instant ahora = Instant.now(reloj);
-        Usuario usuario = nuevoUsuario(solicitud.nombre(), email, hash, roles.iterator().next(), ahora);
+        Usuario usuario =
+                nuevoUsuario(solicitud.nombre(), email, hash, roles.iterator().next(), ahora);
         try {
             usuario = usuarios.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException e) {
             throw registroNoDisponible();
         }
+        List<Invitacion> invitaciones = new ArrayList<>();
         for (CorreoHabilitado c : habilitados) {
             c.setIdUsuarioRegistrado(usuario.getIdUsuario());
             c.setFechaUso(ahora);
@@ -128,12 +144,22 @@ public class ServicioCuentas {
                 m.setIdMonitor(usuario.getIdUsuario());
                 monitores.save(m);
             }
+            if (c.getIdEquipoInvitado() != null) {
+                // La invitación se consume siempre (CHECK de V8: una habilitación usada no queda invitada).
+                invitaciones.add(new Invitacion(c.getIdCorreoHabilitado(), c.getIdProyecto(), c.getIdEquipoInvitado()));
+                c.setIdEquipoInvitado(null);
+            }
         }
         correos.saveAll(habilitados);
-        auditoria.registrar(EntradaAuditoria.de(usuario.getIdUsuario(), "usuario", usuario.getIdUsuario(),
-                AccionAuditoria.REGISTRO_CUENTA));
+        auditoria.registrar(EntradaAuditoria.de(
+                usuario.getIdUsuario(), "usuario", usuario.getIdUsuario(), AccionAuditoria.REGISTRO_CUENTA));
+        for (Invitacion i : invitaciones) {
+            equipos.incorporarInvitado(usuario.getIdUsuario(), i.idCorreoHabilitado(), i.idProyecto(), i.idEquipo());
+        }
         return vista(usuario);
     }
+
+    private record Invitacion(long idCorreoHabilitado, long idProyecto, long idEquipo) {}
 
     /** El administrador habilita el correo de un docente; el docente crea su cuenta con /api/cuentas/registro. */
     @Transactional
@@ -157,8 +183,14 @@ public class ServicioCuentas {
         } catch (DataIntegrityViolationException e) {
             throw yaHabilitado();
         }
-        auditoria.registrar(EntradaAuditoria.cambio(idAdministrador, "correo_habilitado", c.getIdCorreoHabilitado(),
-                AccionAuditoria.HABILITAR_CORREO, "rol_plataforma", null, RolPlataforma.DOCENTE.name()));
+        auditoria.registrar(EntradaAuditoria.cambio(
+                idAdministrador,
+                "correo_habilitado",
+                c.getIdCorreoHabilitado(),
+                AccionAuditoria.HABILITAR_CORREO,
+                "rol_plataforma",
+                null,
+                RolPlataforma.DOCENTE.name()));
         return CorreoHabilitadoVista.de(c);
     }
 
@@ -184,9 +216,10 @@ public class ServicioCuentas {
             return false;
         }
         exigirContrasenaValida(contrasena);
-        Usuario admin = usuarios.saveAndFlush(nuevoUsuario(nombre, email, codificador.encode(contrasena),
-                RolPlataforma.ADMINISTRADOR, Instant.now(reloj)));
-        auditoria.registrar(EntradaAuditoria.de(null, "usuario", admin.getIdUsuario(), AccionAuditoria.REGISTRO_CUENTA));
+        Usuario admin = usuarios.saveAndFlush(nuevoUsuario(
+                nombre, email, codificador.encode(contrasena), RolPlataforma.ADMINISTRADOR, Instant.now(reloj)));
+        auditoria.registrar(
+                EntradaAuditoria.de(null, "usuario", admin.getIdUsuario(), AccionAuditoria.REGISTRO_CUENTA));
         return true;
     }
 
@@ -203,8 +236,8 @@ public class ServicioCuentas {
     }
 
     private static UsuarioSesion vista(Usuario u) {
-        return new UsuarioSesion(u.getIdUsuario(), u.getNombre(), u.getEmail(), u.getRolPlataforma(),
-                u.getTelegramChatId() != null);
+        return new UsuarioSesion(
+                u.getIdUsuario(), u.getNombre(), u.getEmail(), u.getRolPlataforma(), u.getTelegramChatId() != null);
     }
 
     private static int bytes(String texto) {

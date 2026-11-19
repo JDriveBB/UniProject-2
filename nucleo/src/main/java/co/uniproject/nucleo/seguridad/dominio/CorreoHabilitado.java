@@ -42,6 +42,10 @@ public class CorreoHabilitado {
     @Column(name = "fecha_uso")
     private Instant fechaUso;
 
+    /** V8 (D-12 20A): equipo al que entra el estudiante al crear su cuenta; null = sin invitación. */
+    @Column(name = "id_equipo_invitado")
+    private Long idEquipoInvitado;
+
     public Long getIdCorreoHabilitado() {
         return idCorreoHabilitado;
     }
@@ -104,5 +108,13 @@ public class CorreoHabilitado {
 
     public void setFechaUso(Instant fechaUso) {
         this.fechaUso = fechaUso;
+    }
+
+    public Long getIdEquipoInvitado() {
+        return idEquipoInvitado;
+    }
+
+    public void setIdEquipoInvitado(Long idEquipoInvitado) {
+        this.idEquipoInvitado = idEquipoInvitado;
     }
 }

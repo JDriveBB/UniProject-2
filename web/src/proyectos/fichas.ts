@@ -8,12 +8,21 @@ export type Ficha = {
   resultado?: string;
 };
 
-export const AVISO_LIMITE_CORREOS = 'Máximo 50 correos por vez.';
+/** Estudiante habilitado que se puede elegir con un clic en el campo de fichas (D-11). */
+export interface Sugerencia {
+  email: string;
+  /** null si aún no tiene cuenta. */
+  nombre: string | null;
+  registrado: boolean;
+}
 
-/** Textos de correos habilitados sin cuenta; se exportan aparte porque otra tarea los ajustará. */
+export const AVISO_LIMITE_CORREOS = 'Máximo 50 correos por vez.';
+export const MAXIMO_SUGERENCIAS = 6;
+
+/** Textos de correos habilitados sin cuenta: los estudiantes quedan invitados al equipo (D-12). */
 export const TEXTO_HABILITADO_SIN_CUENTA = {
-  estudianteSingular: 'habilitado sin cuenta (agrégalo cuando cree su cuenta)',
-  estudiantePlural: 'habilitados sin cuenta (agrégalos cuando cree su cuenta)',
+  estudianteSingular: 'invitado: entrará al equipo cuando cree su cuenta',
+  estudiantePlural: 'invitados: entrarán al equipo cuando creen su cuenta',
   monitorSingular: 'habilitado sin cuenta (aparecerá cuando cree su cuenta)',
   monitorPlural: 'habilitados sin cuenta (aparecerán cuando creen su cuenta)',
 } as const;
@@ -56,6 +65,24 @@ export function agregarTexto(fichas: Ficha[], texto: string): { fichas: Ficha[];
 export function quitar(fichas: Ficha[], correo: string): Ficha[] {
   const clave = correo.toLowerCase();
   return fichas.filter((f) => f.correo.toLowerCase() !== clave);
+}
+
+/** Minúsculas y sin tildes, para buscar «ines» en «Inés». */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
+/**
+ * Hasta MAXIMO_SUGERENCIAS sugerencias que aún no están en las fichas (sin distinguir mayúsculas) y cuyo nombre o
+ * correo contiene el texto escrito (sin distinguir mayúsculas ni tildes). Texto vacío: las primeras.
+ */
+export function filtrarSugerencias(sugerencias: Sugerencia[], fichas: Ficha[], texto: string): Sugerencia[] {
+  const enFichas = new Set(fichas.map((f) => f.correo.toLowerCase()));
+  const buscado = normalizar(texto.trim());
+  return sugerencias
+    .filter((s) => !enFichas.has(s.email.toLowerCase()))
+    .filter((s) => buscado === '' || normalizar(`${s.nombre ?? ''} ${s.email}`).includes(buscado))
+    .slice(0, MAXIMO_SUGERENCIAS);
 }
 
 /** Devuelve las fichas sin error de formato. */
@@ -129,7 +156,7 @@ export function aplicarResultadoEstudiantes(
   return aplicarResultado(
     fichas,
     resumen.agregados,
-    resumen.habilitados,
+    [...(resumen.invitados ?? []), ...resumen.habilitados],
     resumen.yaHabilitados,
     resumen.conOtroRol,
     resumen.errores,

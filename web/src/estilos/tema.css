@@ -4118,3 +4118,98 @@ select.campo__entrada {
     min-block-size: var(--tamano-tactil);
   }
 }
+
+/* ===== Sugerencias del campo de fichas e invitados del equipo (T-027, D-11 y D-12) ===== */
+.sugerencias {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.sugerencias__titulo {
+  margin: 0;
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.sugerencias__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-1) var(--espacio-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sugerencias__lista > li {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.sugerencia {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  max-width: 100%;
+  min-block-size: 24px;
+  padding: var(--espacio-1) var(--espacio-3);
+  border: 1px dashed var(--color-borde-tabla);
+  border-radius: var(--radio-insignia);
+  background: var(--color-superficie);
+  color: var(--color-primario);
+  font: inherit;
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  line-height: 1.3;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sugerencia:hover:not(:disabled) {
+  border-style: solid;
+  border-color: var(--color-primario);
+  background: var(--color-info-fondo);
+}
+
+.sugerencia:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sugerencia__nombre {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sugerencia__nota {
+  flex-shrink: 0;
+  color: var(--color-texto-secundario);
+  font-weight: var(--peso-regular);
+}
+
+.equipo__invitado-texto {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sugerencia {
+    transition:
+      background-color var(--duracion-rapida) ease-out,
+      border-color var(--duracion-rapida) ease-out,
+      scale var(--duracion-presion) ease-out;
+  }
+
+  .sugerencia:active:not(:disabled) {
+    scale: var(--escala-presion);
+  }
+}
+
+@media (pointer: coarse) {
+  .sugerencia {
+    min-block-size: var(--tamano-tactil);
+  }
+}

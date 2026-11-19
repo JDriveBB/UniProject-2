@@ -3,6 +3,7 @@ import type {
   CorreoHabilitadoVista,
   CriterioVista,
   EquipoVista,
+  EstudianteProyectoVista,
   HitoVista,
   MonitorVista,
   ProyectoDetalle,
@@ -12,6 +13,7 @@ import type {
   SolicitudCriterio,
   SolicitudEquipo,
   SolicitudHito,
+  SolicitudInvitacion,
   SolicitudLider,
   SolicitudMiembro,
   SolicitudProyecto,
@@ -52,8 +54,11 @@ export function crearCriterio(idHito: number, solicitud: SolicitudCriterio): Pro
   return api.post<CriterioVista>(`/api/hitos/${idHito}/criterios`, solicitud);
 }
 
-export function actualizarCriterio(idHito: number, idCriterio: number,
-                                   solicitud: SolicitudCriterio): Promise<CriterioVista> {
+export function actualizarCriterio(
+  idHito: number,
+  idCriterio: number,
+  solicitud: SolicitudCriterio,
+): Promise<CriterioVista> {
   return api.put<CriterioVista>(`/api/hitos/${idHito}/criterios/${idCriterio}`, solicitud);
 }
 
@@ -71,6 +76,17 @@ export function crearEquipo(idProyecto: number, nombreEquipo: string): Promise<E
 export function agregarMiembro(idEquipo: number, email: string): Promise<EquipoVista> {
   const solicitud: SolicitudMiembro = { email };
   return api.post<EquipoVista>(`/api/equipos/${idEquipo}/miembros`, solicitud);
+}
+
+/** invitarAlEquipo (D-12): estudiante habilitado sin cuenta; entra al equipo al registrarse. 409 CORREO_NO_HABILITADO, YA_TIENE_CUENTA o YA_INVITADO. */
+export function invitarAlEquipo(idEquipo: number, email: string): Promise<EstudianteProyectoVista> {
+  const solicitud: SolicitudInvitacion = { email };
+  return api.post<EstudianteProyectoVista>(`/api/equipos/${idEquipo}/invitaciones`, solicitud);
+}
+
+/** listarEstudiantes (D-11, D-12): estudiantes habilitados con su equipo o invitación. Solo el docente dueño (403). */
+export function listarEstudiantes(idProyecto: number): Promise<EstudianteProyectoVista[]> {
+  return api.get<EstudianteProyectoVista[]>(`/api/proyectos/${idProyecto}/estudiantes`);
 }
 
 /** cambiarLider: 409 NO_ES_MIEMBRO. */

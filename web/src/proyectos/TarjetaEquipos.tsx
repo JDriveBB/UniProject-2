@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { crearEquipo, detalleProyecto } from '../api/proyectos';
-import type { EquipoVista } from '../api/tipos';
+import { crearEquipo, detalleProyecto, listarEstudiantes } from '../api/proyectos';
+import type { EquipoVista, EstudianteProyectoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
@@ -11,6 +11,7 @@ import { Tarjeta } from '../componentes/Tarjeta';
 import { CAMPOS_EQUIPO, mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
 import { CorreosPendientes } from './CorreosPendientes';
+import { claveIntegrantes } from './equipos';
 import { FilaMonitores } from './FilaMonitores';
 import { TarjetaEquipo } from './TarjetaEquipo';
 import { MAXIMO_NOMBRE_EQUIPO, validarNombreEquipo } from './validacion';
@@ -35,12 +36,14 @@ interface PropsEquipos {
 function RejillaEquipos({
   idProyecto,
   equipos,
+  estudiantes,
   editable,
   alActualizarEquipo,
   alHabilitarCorreo,
 }: {
   idProyecto: number;
   equipos: EquipoVista[];
+  estudiantes: EstudianteProyectoVista[];
   editable: boolean;
   alActualizarEquipo: (equipo: EquipoVista) => void;
   alHabilitarCorreo: () => void;
@@ -55,6 +58,7 @@ function RejillaEquipos({
           key={e.idEquipo}
           idProyecto={idProyecto}
           equipo={e}
+          estudiantes={estudiantes}
           editable={editable}
           alActualizar={alActualizarEquipo}
           alHabilitarCorreo={alHabilitarCorreo}
@@ -76,6 +80,8 @@ export function TarjetaEquipos({
 }: PropsEquipos) {
   const avisar = useAvisos();
   const [versionCorreos, setVersionCorreos] = useState(0);
+  const [estudiantes, setEstudiantes] = useState<EstudianteProyectoVista[]>([]);
+  const integrantes = claveIntegrantes(equipos);
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
   const [intentado, setIntentado] = useState(false);
@@ -107,6 +113,27 @@ export function TarjetaEquipos({
       vigente = false;
     };
   }, [idProyecto, versionCorreos, alActualizarEquipo]);
+
+  /* D-11 y D-12: estudiantes del proyecto (sugerencias e invitados) una vez, y de nuevo al habilitar, invitar,
+     retirar, agregar o quitar integrantes. Solo el docente dueño puede pedirlos. */
+  useEffect(() => {
+    if (!editable || idProyecto === null) {
+      return;
+    }
+    let vigente = true;
+    listarEstudiantes(idProyecto)
+      .then((lista) => {
+        if (vigente) {
+          setEstudiantes(lista);
+        }
+      })
+      .catch(() => {
+        // sin la lista no hay sugerencias ni invitados a la vista; el resto de la tarjeta sigue igual
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [editable, idProyecto, versionCorreos, integrantes]);
 
   function cerrar() {
     setAbierto(false);
@@ -141,6 +168,7 @@ export function TarjetaEquipos({
         <RejillaEquipos
           idProyecto={idProyecto}
           equipos={equipos}
+          estudiantes={estudiantes}
           editable={editable}
           alActualizarEquipo={alActualizarEquipo}
           alHabilitarCorreo={correoHabilitado}

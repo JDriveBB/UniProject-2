@@ -1,5 +1,5 @@
 import { ErrorApi } from '../api/cliente';
-import type { EquipoVista, ResultadoHabilitacion, SolicitudCorreos } from '../api/tipos';
+import type { EquipoVista, EstudianteProyectoVista, ResultadoHabilitacion, SolicitudCorreos } from '../api/tipos';
 import { CAMPOS_CORREO, mensajeErrorApi } from './errores';
 import { separarCorreos } from './correos';
 
@@ -7,6 +7,7 @@ import { separarCorreos } from './correos';
 export interface ApiEquipos {
   habilitarCorreos(idProyecto: number, solicitud: SolicitudCorreos): Promise<ResultadoHabilitacion>;
   agregarMiembro(idEquipo: number, email: string): Promise<EquipoVista>;
+  invitarAlEquipo(idEquipo: number, email: string): Promise<EstudianteProyectoVista>;
 }
 
 export interface ErrorAlAgregar {
@@ -16,6 +17,15 @@ export interface ErrorAlAgregar {
 
 export interface ResumenEstudiantes {
   agregados: string[];
+  /**
+   * Sin cuenta: quedaron invitados y entran al equipo cuando se registran (D-12). Opcional solo para resúmenes
+   * armados a mano en pruebas.
+   */
+  invitados?: string[];
+  /**
+   * agregarEstudiante ya no los llena (D-12: los sin cuenta quedan invitados); se conservan porque
+   * mensajeResultadoEstudiantes (correos.ts) los usa.
+   */
   habilitados: string[];
   yaHabilitados: string[];
   conOtroRol: string[];
@@ -30,14 +40,17 @@ export interface ResumenMonitores {
   conOtroRol: string[];
 }
 
-export const PENDIENTE_ESTUDIANTE =
-  'Correo habilitado. Cuando el estudiante cree su cuenta con ese correo, agrégalo de nuevo a este equipo.';
 export const OTRO_ROL_ESTUDIANTE = 'Ese correo ya tiene una cuenta que no es de estudiante.';
 
+function esNoRegistrado(e: unknown): boolean {
+  return e instanceof ErrorApi && e.estado === 409 && e.codigo === 'ESTUDIANTE_NO_REGISTRADO';
+}
+
 /**
- * "+ Agregar estudiante" en lote (bloque 31): habilita todos los correos en UNA llamada
- * habilitarCorreos(idProyecto, { emails, rol: 'ESTUDIANTE' }); para los que ya tienen cuenta de estudiante,
- * los agrega al equipo con agregarMiembro uno a uno; los demás quedan solo habilitados.
+ * "+ Agregar estudiante" en lote (bloque 31, D-12): habilita todos los correos en UNA llamada
+ * habilitarCorreos(idProyecto, { emails, rol: 'ESTUDIANTE' }); a los que tienen cuenta de estudiante (y a los ya
+ * habilitados, por si la tienen) los agrega al equipo con agregarMiembro uno a uno; a los que no tienen cuenta
+ * (o responden ESTUDIANTE_NO_REGISTRADO) los invita al equipo con invitarAlEquipo: entran al registrarse.
  * Devuelve un resumen por categoría. Un error en un correo no detiene los demás.
  */
 export async function agregarEstudiante(
@@ -50,6 +63,7 @@ export async function agregarEstudiante(
   if (lista.length === 0) {
     return {
       agregados: [],
+      invitados: [],
       habilitados: [],
       yaHabilitados: [],
       conOtroRol: [],
@@ -58,50 +72,64 @@ export async function agregarEstudiante(
   }
 
   const hab = await api.habilitarCorreos(idProyecto, { emails: lista, rol: 'ESTUDIANTE' });
-  const conCuenta = hab.habilitados.filter((c) => c.registrado);
-  const sinCuenta = hab.habilitados.filter((c) => !c.registrado);
+  const porAgregar = [...hab.habilitados.filter((c) => c.registrado).map((c) => c.email), ...hab.yaHabilitados];
+  const porInvitar = hab.habilitados.filter((c) => !c.registrado).map((c) => c.email);
 
   const agregados: string[] = [];
+  const invitados: string[] = [];
   const errores: ErrorAlAgregar[] = [];
   let ultimoEquipo: EquipoVista | undefined;
 
-  for (const c of conCuenta) {
-    try {
-      ultimoEquipo = await api.agregarMiembro(idEquipo, c.email);
-      agregados.push(c.email);
-    } catch (e) {
-      if (e instanceof ErrorApi && e.estado === 409 && e.codigo === 'ESTUDIANTE_NO_REGISTRADO') {
-        sinCuenta.push(c);
-      } else {
-        const motivo = mensajeErrorApi(e, CAMPOS_CORREO);
-        errores.push({ email: c.email, motivo });
-      }
-    }
-  }
-
-  const yaHabilitados: string[] = [];
-  for (const correo of hab.yaHabilitados) {
+  for (const correo of porAgregar) {
     try {
       ultimoEquipo = await api.agregarMiembro(idEquipo, correo);
       agregados.push(correo);
     } catch (e) {
-      if (e instanceof ErrorApi && e.estado === 409 && e.codigo === 'ESTUDIANTE_NO_REGISTRADO') {
-        yaHabilitados.push(correo);
+      if (esNoRegistrado(e)) {
+        porInvitar.push(correo);
       } else {
-        const motivo = mensajeErrorApi(e, CAMPOS_CORREO);
-        errores.push({ email: correo, motivo });
+        errores.push({ email: correo, motivo: mensajeErrorApi(e, CAMPOS_CORREO) });
       }
+    }
+  }
+
+  for (const correo of porInvitar) {
+    try {
+      await api.invitarAlEquipo(idEquipo, correo);
+      invitados.push(correo);
+    } catch (e) {
+      errores.push({ email: correo, motivo: mensajeErrorApi(e, CAMPOS_CORREO) });
     }
   }
 
   return {
     agregados,
-    habilitados: sinCuenta.map((c) => c.email),
-    yaHabilitados,
+    invitados,
+    habilitados: [],
+    yaHabilitados: [],
     conOtroRol: hab.conOtroRol,
     errores,
     equipo: ultimoEquipo,
   };
+}
+
+/** Sugerencias del campo de fichas (D-11): estudiantes habilitados sin equipo ni invitación, con o sin cuenta. */
+export function sugerenciasDe(
+  estudiantes: EstudianteProyectoVista[],
+): Pick<EstudianteProyectoVista, 'email' | 'nombre' | 'registrado'>[] {
+  return estudiantes
+    .filter((e) => e.idEquipo === null && e.idEquipoInvitado === null)
+    .map(({ email, nombre, registrado }) => ({ email, nombre, registrado }));
+}
+
+/** Correos invitados a ese equipo que aún no crean su cuenta (D-12), en el orden de la lista. */
+export function invitadosDe(estudiantes: EstudianteProyectoVista[], idEquipo: number): string[] {
+  return estudiantes.filter((e) => e.idEquipoInvitado === idEquipo).map((e) => e.email);
+}
+
+/** Clave que cambia solo cuando cambian los integrantes de algún equipo (para recargar los estudiantes). */
+export function claveIntegrantes(equipos: EquipoVista[]): string {
+  return equipos.map((e) => `${e.idEquipo}:${e.miembros.map((m) => m.idUsuario).join(',')}`).join('|');
 }
 
 /**
