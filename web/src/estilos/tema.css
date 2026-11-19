@@ -1332,12 +1332,119 @@ a {
   gap: var(--espacio-5);
 }
 
+.tarjeta-proyecto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tarjeta-proyecto > .tarjeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.tarjeta-proyecto__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-3);
+}
+
+.tarjeta-proyecto__encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.tarjeta-proyecto__titulo {
+  overflow-wrap: break-word;
+}
+
 .tarjeta-proyecto__descripcion {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   overflow-wrap: anywhere;
+}
+
+.tarjeta-proyecto__cifras {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espacio-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--espacio-2) var(--espacio-3);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.tarjeta-proyecto__cifra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  min-width: 0;
+}
+
+.tarjeta-proyecto__etiqueta {
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-proyecto__valor {
+  margin: 0;
+  font-size: var(--tamano-titulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+  font-variant-numeric: tabular-nums;
+}
+
+.tarjeta-proyecto__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-1) var(--espacio-3);
+  min-width: 0;
+}
+
+.tarjeta-proyecto__dato {
+  min-width: 0;
+  font-size: var(--tamano-pequeno);
+  overflow-wrap: break-word;
+}
+
+.tarjeta-proyecto__equipo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+}
+
+.tarjeta-proyecto__nombre-equipo {
+  min-width: 0;
+  font-weight: var(--peso-seminegrita);
+  overflow-wrap: break-word;
+}
+
+.tarjeta-proyecto__acciones {
+  margin-top: auto;
+}
+
+@media (max-width: 359px) {
+  .tarjeta-proyecto__cifras {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tarjeta-proyecto__cifra {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
 }
 
 /* 960px: las variables CSS no valen dentro de @media. */

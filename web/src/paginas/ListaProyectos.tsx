@@ -1,44 +1,74 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { mensajeDeError } from '../api/cliente';
-import { listarProyectos } from '../api/proyectos';
+import { panelProyecto } from '../api/panel';
+import { detalleProyecto, listarProyectos } from '../api/proyectos';
+import { tableroHito } from '../api/tareas';
 import type { ProyectoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
-import { Tarjeta } from '../componentes/Tarjeta';
-import { rangoFechas } from '../formato';
+import { fechaIsoBogota } from '../formato';
+import { TarjetaProyecto } from '../proyectos/TarjetaProyecto';
+import { cargarResumenes, type ApiResumenes, type ResumenProyecto } from '../proyectos/tarjetas';
 import { modoDeVista } from '../proyectos/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 
-type EstadoLista =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; proyectos: ProyectoVista[] };
+const API_RESUMENES: ApiResumenes = { panelProyecto, detalleProyecto, tableroHito };
 
-/** /proyectos. SIN FIGMA: diseño provisional con las tarjetas del sistema (decisión 26b-4). */
+type EstadoLista =
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; proyectos: ProyectoVista[] };
+
+/** /proyectos. SIN FIGMA: tarjetas de proyecto con detalle para docente y estudiante. */
 export function ListaProyectos() {
   const usuario = useUsuario();
   const [lista, setLista] = useState<EstadoLista>({ estado: 'cargando' });
+  const [resumenes, setResumenes] = useState<Map<number, ResumenProyecto> | null>(null);
+  const [vuelta, setVuelta] = useState(0);
   const esDocente = usuario.rol === 'DOCENTE';
 
-  const cargar = useCallback(async () => {
-    try {
-      setLista({ estado: 'listo', proyectos: await listarProyectos() });
-    } catch (e) {
-      setLista({ estado: 'error', mensaje: mensajeDeError(e) });
-    }
-  }, []);
-
   useEffect(() => {
+    let vigente = true;
+    async function cargar() {
+      let proyectos: ProyectoVista[];
+      try {
+        proyectos = await listarProyectos();
+      } catch (e) {
+        if (vigente) {
+          setLista({ estado: 'error', mensaje: mensajeDeError(e) });
+        }
+        return;
+      }
+      if (!vigente) {
+        return;
+      }
+      setLista({ estado: 'listo', proyectos });
+      if (proyectos.length === 0) {
+        setResumenes(new Map());
+        return;
+      }
+      const mapa = await cargarResumenes(
+        API_RESUMENES,
+        proyectos,
+        { idUsuario: usuario.idUsuario, rol: usuario.rol },
+        fechaIsoBogota(new Date()),
+      );
+      if (vigente) {
+        setResumenes(mapa);
+      }
+    }
     void cargar();
-  }, [cargar]);
+    return () => {
+      vigente = false;
+    };
+  }, [usuario.idUsuario, usuario.rol, vuelta]);
 
   function reintentar() {
     setLista({ estado: 'cargando' });
-    void cargar();
+    setResumenes(null);
+    setVuelta((v) => v + 1);
   }
 
   return (
@@ -75,25 +105,14 @@ export function ListaProyectos() {
       )}
       {lista.estado === 'listo' && lista.proyectos.length > 0 && (
         <div className="rejilla-proyectos">
-          {lista.proyectos.map((p) => {
-            const edita = modoDeVista(usuario, p) === 'edicion';
-            return (
-              <Tarjeta key={p.idProyecto} titulo={p.nombre}>
-                <p className="texto-secundario">{rangoFechas(p.fechaInicio, p.fechaFin)}</p>
-                {p.descripcion !== null && <p className="tarjeta-proyecto__descripcion">{p.descripcion}</p>}
-                <div className="pagina__acciones">
-                  <Link className="boton boton--secundario" to={rutas.proyecto(p.idProyecto)}>
-                    {edita ? 'Configurar' : 'Ver proyecto'}
-                  </Link>
-                  {edita && (
-                    <Link className="boton boton--secundario" to={rutas.panelProyecto(p.idProyecto)}>
-                      Panel
-                    </Link>
-                  )}
-                </div>
-              </Tarjeta>
-            );
-          })}
+          {lista.proyectos.map((p) => (
+            <TarjetaProyecto
+              key={p.idProyecto}
+              proyecto={p}
+              edita={modoDeVista(usuario, p) === 'edicion'}
+              resumen={resumenes?.get(p.idProyecto)}
+            />
+          ))}
         </div>
       )}
     </div>

@@ -438,6 +438,7 @@ Firmes y compactos, con texto en seminegrita.
 - **Franja compacta del panel (`.resumen-panel`):** 4 datos en una fila (2 bajo 960 px, 1 bajo 600 px) con relleno `espacio-4`, enlace a `#atencion` en equipos en atención y por calificar, y la próxima entrega.
 - **«Necesitan tu atención» (`.atencion`):** filas sobre `fondo` con insignia de estado, texto descriptivo y botón de acción a la derecha (debajo del texto bajo 600 px).
 - **«Entregas» (`.entregas`):** lista ordenada por hito separada por `borde-tabla`, con fecha y plazo coloreados por urgencia, insignia «Próxima» en el siguiente por vencer y estado enlazado por equipo.
+- **Tarjeta de proyecto (`.tarjeta-proyecto`):** rejilla `.rejilla-proyectos` en columnas de 320 px sin transición en el borde (las acciones van en botones al fondo con `margin-top: auto`); cabecera con insignia de estado o hito, descripción a 2 líneas, franja de 3 cifras sobre `fondo` (1 columna bajo 360 px), `BarraAvance` y próxima entrega o hito actual.
 
 ### Inputs / Fields
 - **Style:** fondo blanco, borde de 1 px, esquinas de 10 px. En ingreso y registro: borde `borde`, relleno 12 × 14 px, etiqueta de 14 px. Dentro del marco: borde `borde-tabla`, relleno 10 × 12 px, etiqueta de 13 px. Etiqueta y campo separados 6 px.

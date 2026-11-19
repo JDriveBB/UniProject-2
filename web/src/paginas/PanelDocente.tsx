@@ -3,12 +3,13 @@ import { Link, Navigate, useParams } from 'react-router';
 import { mensajeDeError } from '../api/cliente';
 import { panelProyecto } from '../api/panel';
 import { detalleProyecto, listarProyectos } from '../api/proyectos';
+import { tableroHito } from '../api/tareas';
 import type { ProyectoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
-import { fechaIsoBogota, rangoFechas } from '../formato';
+import { fechaIsoBogota } from '../formato';
 import { cargarPanel, type DatosPanel } from '../panel/carga';
 import { ResumenPanel } from '../panel/ResumenPanel';
 import { TarjetaAlertas } from '../panel/TarjetaAlertas';
@@ -26,10 +27,14 @@ import {
   SIN_ACCESO_PANEL,
   textoActualizado,
 } from '../panel/vista';
+import { TarjetaProyecto } from '../proyectos/TarjetaProyecto';
+import { cargarResumenes, type ApiResumenes, type ResumenProyecto } from '../proyectos/tarjetas';
 import { idDeRuta } from '../proyectos/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 import { mensajeErrorAbrir } from '../tablero/ubicacion';
+
+const API_RESUMENES: ApiResumenes = { panelProyecto, detalleProyecto, tableroHito };
 
 type EstadoElegir =
   { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; proyectos: ProyectoVista[] };
@@ -37,28 +42,48 @@ type EstadoElegir =
 export function ElegirPanel() {
   const usuario = useUsuario();
   const [estado, setEstado] = useState<EstadoElegir>({ estado: 'cargando' });
+  const [resumenes, setResumenes] = useState<Map<number, ResumenProyecto> | null>(null);
   const [vuelta, setVuelta] = useState(0);
 
   useEffect(() => {
     let vigente = true;
-    listarProyectos()
-      .then((lista) => {
-        if (vigente) {
-          setEstado({ estado: 'listo', proyectos: proyectosPropios(lista, usuario.idUsuario) });
-        }
-      })
-      .catch((e: unknown) => {
+    async function cargar() {
+      let lista: ProyectoVista[];
+      try {
+        lista = await listarProyectos();
+      } catch (e) {
         if (vigente) {
           setEstado({ estado: 'error', mensaje: mensajeDeError(e) });
         }
-      });
+        return;
+      }
+      if (!vigente) {
+        return;
+      }
+      const propios = proyectosPropios(lista, usuario.idUsuario);
+      setEstado({ estado: 'listo', proyectos: propios });
+      if (propios.length < 2) {
+        return;
+      }
+      const mapa = await cargarResumenes(
+        API_RESUMENES,
+        propios,
+        { idUsuario: usuario.idUsuario, rol: usuario.rol },
+        fechaIsoBogota(new Date()),
+      );
+      if (vigente) {
+        setResumenes(mapa);
+      }
+    }
+    void cargar();
     return () => {
       vigente = false;
     };
-  }, [usuario.idUsuario, vuelta]);
+  }, [usuario.idUsuario, usuario.rol, vuelta]);
 
   function reintentar() {
     setEstado({ estado: 'cargando' });
+    setResumenes(null);
     setVuelta((v) => v + 1);
   }
 
@@ -104,16 +129,11 @@ export function ElegirPanel() {
   return (
     <div className="pagina">
       <EncabezadoPagina titulo="Panel del docente" descripcion="Tienes varios proyectos. Elige uno." />
-      <ul className="lista-simple">
+      <div className="rejilla-proyectos">
         {proyectos.map((p) => (
-          <li key={p.idProyecto}>
-            <Link className="enlace-fuerte" to={rutas.panelProyecto(p.idProyecto)}>
-              {p.nombre}
-            </Link>
-            <span className="texto-secundario">{` · ${rangoFechas(p.fechaInicio, p.fechaFin)}`}</span>
-          </li>
+          <TarjetaProyecto key={p.idProyecto} proyecto={p} edita resumen={resumenes?.get(p.idProyecto)} />
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
