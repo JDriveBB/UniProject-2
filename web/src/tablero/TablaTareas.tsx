@@ -9,11 +9,25 @@ import { rutas } from '../rutas';
 import { estadoTarea, marcasDe } from './marcas';
 
 /** Tabla de P04 (decisión 26c-10): columnas y anchos de Figma. El título abre el detalle de la tarea (P07, 26d). */
-export function TablaTareas({ tareas, codigos, puedeCrear }: {
+export function TablaTareas({
+  tareas,
+  codigos,
+  puedeCrear,
+}: {
   tareas: TareaVista[];
   codigos: Map<number, string>;
   puedeCrear: boolean;
 }) {
+  const mensaje = puedeCrear
+    ? 'Aún no hay tareas en este hito. Crea la primera con «Nueva tarea».'
+    : 'Aún no hay tareas en este hito.';
+  if (tareas.length === 0) {
+    return (
+      <div className="tabla-contenedor">
+        <p className="tabla__vacia vacio-tareas">{mensaje}</p>
+      </div>
+    );
+  }
   const columnas: ColumnaTabla<TareaVista>[] = [
     { titulo: 'ID', clase: 'tabla__col-id', celda: (t) => codigos.get(t.idTarea) ?? '' },
     {
@@ -60,7 +74,7 @@ export function TablaTareas({ tareas, codigos, puedeCrear }: {
       columnas={columnas}
       filas={tareas}
       claveFila={(t) => t.idTarea}
-      vacio={puedeCrear ? 'Aún no hay tareas en este hito. Crea la primera con «Nueva tarea».' : 'Aún no hay tareas en este hito.'}
+      vacio={mensaje}
     />
   );
 }

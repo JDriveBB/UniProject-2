@@ -735,6 +735,11 @@ a {
   color: var(--color-texto-secundario);
 }
 
+.vacio-tareas {
+  margin: 0;
+  padding: var(--espacio-6) var(--espacio-4);
+}
+
 /* Páginas dentro del marco. */
 .pagina {
   display: flex;
@@ -1275,20 +1280,26 @@ a {
 /* Pestañas de hitos (P04): sin fondo; la activa en azul con borde inferior. */
 .pestanas {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--separacion-pestanas);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--color-borde-tabla);
 }
 
 .pestana {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--espacio-2);
   padding: var(--relleno-pestana);
+  margin-bottom: -1px;
   border-bottom: var(--borde-pestana-activa) solid transparent;
   font-size: var(--tamano-pestana);
   font-weight: var(--peso-regular);
   color: var(--color-texto-secundario);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .pestana:hover {
@@ -1323,6 +1334,7 @@ a {
 
 .resumen-hito__etiqueta {
   font-weight: var(--peso-medio);
+  white-space: nowrap;
 }
 
 /* Barra de avance (P04): <progress> estilado; verde al 100 %. */
@@ -1372,6 +1384,7 @@ a {
 .avance__texto {
   font-size: var(--tamano-pequeno);
   font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Leyenda «Marcas:» y marcas de cada fila (P04). */
@@ -1394,13 +1407,18 @@ a {
   gap: var(--separacion-marcas);
 }
 
-/* Tabla de tareas (P04): anchos de Figma; Marcas toma el resto. */
+/* Tabla de tareas (P04): anchos de Figma; Marcas toma el resto, con un mínimo de 18rem (dos insignias por línea).
+   Si la tarjeta es más angosta, la tabla se desplaza en vez de aplastar las marcas. */
 .tabla--tareas {
   table-layout: fixed;
+  min-width: calc(
+    var(--ancho-col-id) + var(--ancho-col-tarea) + var(--ancho-col-encargado) + var(--ancho-col-estado) +
+      var(--ancho-col-avance) + var(--ancho-col-fecha) + 18rem
+  );
 }
 
 .tabla--tareas td {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .tabla__col-id {
@@ -1427,6 +1445,20 @@ a {
   width: var(--ancho-col-fecha);
 }
 
+/* Bajo 1360 px la columna Tarea cede 60 px para que la tabla quepa completa a 1280 px. */
+@media (max-width: 1360px) {
+  .tabla--tareas {
+    min-width: calc(
+      var(--ancho-col-id) + 15rem + var(--ancho-col-encargado) + var(--ancho-col-estado) + var(--ancho-col-avance) +
+        var(--ancho-col-fecha) + 18rem
+    );
+  }
+
+  .tabla--tareas .tabla__col-tarea {
+    width: 15rem;
+  }
+}
+
 .enlace-tarea {
   color: var(--color-texto);
   text-decoration: none;
@@ -1435,6 +1467,23 @@ a {
 .enlace-tarea:hover {
   color: var(--color-primario);
   text-decoration: underline;
+}
+
+/* Tablero en celular: debe ir después de las reglas base de P04 para ganarles. */
+@media (max-width: 600px) {
+  .pestanas {
+    gap: var(--espacio-5);
+  }
+
+  .resumen-hito {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-3);
+  }
+
+  .avance--hito .avance__barra {
+    width: 6rem;
+  }
 }
 
 /* P05: modal sobre el tablero (<dialog> con showModal). */
