@@ -870,6 +870,12 @@ a {
   line-height: 1.2;
 }
 
+/* Campana de notificaciones: solo en celular (ahí reemplaza a la palabra, que sigue para lectores de pantalla). */
+.barra__campana {
+  display: none;
+  flex-shrink: 0;
+}
+
 .barra__usuario {
   display: flex;
   flex-direction: column;
@@ -909,17 +915,69 @@ a {
     padding: var(--espacio-5) var(--espacio-4);
   }
 
+  /* Celular: dos líneas. Arriba marca, campana, usuario y Salir; abajo los enlaces principales. */
   .barra {
-    padding: var(--espacio-3) var(--espacio-4);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      'marca notif usuario salir'
+      'nav nav nav nav';
+    align-items: center;
+    column-gap: var(--espacio-4);
     row-gap: var(--espacio-2);
+    padding: var(--espacio-3) var(--espacio-4);
   }
 
-  .barra__izquierda {
+  .barra__izquierda,
+  .barra__derecha {
+    display: contents;
+  }
+
+  .barra__marca {
+    grid-area: marca;
+  }
+
+  .barra__derecha > .barra__enlace {
+    grid-area: notif;
+  }
+
+  .barra__usuario {
+    grid-area: usuario;
+    min-width: 0;
+    max-width: 8rem;
+  }
+
+  .barra__nombre,
+  .barra__rol {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .barra__salir {
+    grid-area: salir;
+  }
+
+  .barra__nav {
+    grid-area: nav;
     gap: var(--espacio-5);
   }
 
-  .barra__derecha {
-    gap: var(--espacio-4);
+  .barra__campana {
+    display: block;
+  }
+
+  .barra__texto-notificaciones {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
