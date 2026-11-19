@@ -39,7 +39,7 @@ export function CriteriosEvaluados({ evaluacion }: PropsCriteriosEvaluados) {
     <Tarjeta titulo="Rúbrica de evaluación">
       <Tabla
         titulo="Calificación por criterio"
-        clase="tabla--evaluacion"
+        clase="tabla--evaluacion tabla--criterios-evaluados"
         claveFila={(c) => c.idCriterio}
         vacio="La evaluación no tiene criterios."
         columnas={COLUMNAS}

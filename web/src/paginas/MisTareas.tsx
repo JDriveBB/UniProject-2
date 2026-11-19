@@ -14,9 +14,7 @@ import { rutas } from '../rutas';
 import { estadoTarea, marcasDe } from '../tablero/marcas';
 
 type EstadoCarga =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; tareas: MiTareaVista[] };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; tareas: MiTareaVista[] };
 
 export function MisTareas() {
   const [carga, setCarga] = useState<EstadoCarga>({ estado: 'cargando' });
@@ -107,6 +105,7 @@ export function MisTareas() {
       <EncabezadoPagina titulo="Mis tareas" descripcion="Tareas a tu cargo en todos tus proyectos." />
       <Tabla
         titulo="Mis tareas"
+        clase="tabla--mis-tareas"
         vacio="No tienes tareas asignadas."
         claveFila={(t) => t.idTarea}
         columnas={columnas}

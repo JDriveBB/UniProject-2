@@ -28,18 +28,14 @@ export function TablaHistorial({ entradas, vacio }: PropsTablaHistorial) {
     {
       titulo: 'Detalle',
       celda: (f) =>
-        f.detalle !== '' ? (
-          <p className="texto-largo">{f.detalle}</p>
-        ) : (
-          <span className="texto-secundario">—</span>
-        ),
+        f.detalle !== '' ? <p className="texto-largo">{f.detalle}</p> : <span className="texto-secundario">—</span>,
     },
   ];
 
   return (
     <Tabla
       titulo="Historial de cambios del equipo"
-      clase="tabla--historial"
+      clase="tabla--historial tabla--historial-reporte"
       claveFila={(f) => f.idLog}
       vacio={vacio}
       columnas={columnas}

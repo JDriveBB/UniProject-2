@@ -29,11 +29,7 @@ export interface PropsTablaNotasIndividuales {
   alHecho: (m: Mensaje, recargar: boolean) => void;
 }
 
-export function TablaNotasIndividuales({
-  evaluacion,
-  alActualizar,
-  alHecho,
-}: PropsTablaNotasIndividuales) {
+export function TablaNotasIndividuales({ evaluacion, alActualizar, alHecho }: PropsTablaNotasIndividuales) {
   const [borradores, setBorradores] = useState<Record<number, string>>(() => {
     const inicial: Record<number, string> = {};
     for (const n of evaluacion.notas) {
@@ -86,10 +82,7 @@ export function TablaNotasIndividuales({
         texto: `Nota final de ${n.nombre} confirmada: ${textoNota(valor)}.`,
       });
     } catch (errApi: unknown) {
-      alHecho(
-        { tipo: 'error', texto: mensajeErrorEvaluacion(errApi, CAMPOS_NOTA_FINAL) },
-        esConflicto(errApi)
-      );
+      alHecho({ tipo: 'error', texto: mensajeErrorEvaluacion(errApi, CAMPOS_NOTA_FINAL) }, esConflicto(errApi));
     } finally {
       setEnviando(null);
     }
@@ -127,18 +120,12 @@ export function TablaNotasIndividuales({
         notaFinal: numeroNota(borradores[n.idEstudiante] ?? ''),
       }));
 
-      const res = await confirmarTodas(
-        { confirmarNota },
-        evaluacion.idEvaluacion,
-        filasParaConfirmar
-      );
+      const res = await confirmarTodas({ confirmarNota }, evaluacion.idEvaluacion, filasParaConfirmar);
 
       setModalConfirmarTodas(false);
 
       if (res.reemplazada) {
-        const motivo =
-          res.fallidas[0]?.motivo ??
-          'La evaluación fue modificada por otro usuario.';
+        const motivo = res.fallidas[0]?.motivo ?? 'La evaluación fue modificada por otro usuario.';
         alHecho({ tipo: 'error', texto: motivo }, true);
         return;
       }
@@ -146,10 +133,7 @@ export function TablaNotasIndividuales({
       if (res.fallidas.length === 0) {
         const mensaje: Mensaje = {
           tipo: 'exito',
-          texto:
-            res.confirmadas === 1
-              ? 'Se confirmó 1 nota.'
-              : `Se confirmaron ${res.confirmadas} notas.`,
+          texto: res.confirmadas === 1 ? 'Se confirmó 1 nota.' : `Se confirmaron ${res.confirmadas} notas.`,
         };
         if (res.evaluacion !== null) {
           alActualizar(res.evaluacion, mensaje);
@@ -174,7 +158,7 @@ export function TablaNotasIndividuales({
       setModalConfirmarTodas(false);
       alHecho(
         { tipo: 'error', texto: mensajeErrorEvaluacion(errInesperado, CAMPOS_NOTA_FINAL) },
-        esConflicto(errInesperado)
+        esConflicto(errInesperado),
       );
     } finally {
       setEnviandoTodas(false);
@@ -193,7 +177,7 @@ export function TablaNotasIndividuales({
     },
     {
       titulo: 'Sugerida',
-      clase: 'tabla__col-nota',
+      clase: 'tabla__col-nota tabla__col-sugerida',
       celda: (n) => (n.notaSugerida !== null ? textoNota(n.notaSugerida) : '—'),
     },
     {
@@ -249,9 +233,7 @@ export function TablaNotasIndividuales({
         return (
           <div className="estado-nota">
             <Insignia tono={estado.tono}>{estado.texto}</Insignia>
-            {n.fechaConfirmacion !== null && (
-              <span className="texto-secundario">{fechaHora(n.fechaConfirmacion)}</span>
-            )}
+            {n.fechaConfirmacion !== null && <span className="texto-secundario">{fechaHora(n.fechaConfirmacion)}</span>}
           </div>
         );
       },
@@ -293,7 +275,7 @@ export function TablaNotasIndividuales({
         <p className="texto-secundario">{EXPLICACION_ICE}</p>
         <Tabla
           titulo="Notas individuales del equipo"
-          clase="tabla--evaluacion"
+          clase="tabla--evaluacion tabla--notas-individuales"
           claveFila={(n) => n.idEstudiante}
           vacio="La evaluación no tiene notas individuales."
           columnas={columnas}
@@ -313,27 +295,16 @@ export function TablaNotasIndividuales({
           alEnviar={() => void ejecutarConfirmarTodas()}
           acciones={(cerrar) => (
             <>
-              <Boton
-                type="button"
-                variante="secundario"
-                disabled={enviandoTodas}
-                onClick={cerrar}
-              >
+              <Boton type="button" variante="secundario" disabled={enviandoTodas} onClick={cerrar}>
                 {BOTON_CANCELAR}
               </Boton>
-              <Boton
-                type="submit"
-                variante="primario"
-                cargando={enviandoTodas}
-              >
+              <Boton type="submit" variante="primario" cargando={enviandoTodas}>
                 {BOTON_CONFIRMAR_TODAS}
               </Boton>
             </>
           )}
         >
-          <p className="modal__texto">
-            {textoConfirmarTodas(pendientes.length)}
-          </p>
+          <p className="modal__texto">{textoConfirmarTodas(pendientes.length)}</p>
         </Modal>
       )}
     </>

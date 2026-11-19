@@ -631,7 +631,7 @@ a {
 /* 960px: las variables CSS no valen dentro de @media. */
 @media (max-width: 960px) {
   .acceso {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .acceso__marca {
@@ -640,6 +640,17 @@ a {
 
   .acceso__nombre {
     font-size: var(--tamano-titulo-pagina);
+  }
+}
+
+/* Celular: menos relleno para que la tarjeta quepa a 320 px. */
+@media (max-width: 600px) {
+  .acceso__contenido {
+    padding: var(--espacio-4);
+  }
+
+  .tarjeta-acceso {
+    padding: var(--espacio-6);
   }
 }
 
@@ -697,7 +708,9 @@ a {
 }
 
 /* Tabla del sistema de diseño (P04). */
+/* position: relative: el <caption> oculto (absoluto) queda dentro del recuadro y no ensancha la página. */
 .tabla-contenedor {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tabla);
@@ -745,6 +758,11 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--espacio-5);
+}
+
+/* Párrafos sueltos de una página: la separación la da el gap de .pagina, no el margen del navegador. */
+.pagina > .texto-secundario {
+  margin: 0;
 }
 
 .pagina__cabecera {
@@ -1262,7 +1280,7 @@ a {
 /* Lista de proyectos (sin Figma, provisional). */
 .rejilla-proyectos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--ancho-tarjeta-proyecto), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--ancho-tarjeta-proyecto)), 1fr));
   gap: var(--espacio-5);
 }
 
@@ -1515,6 +1533,11 @@ a {
   .tabla--tareas .tabla__col-tarea {
     width: 15rem;
   }
+}
+
+/* Mis tareas: la tabla no baja de 56rem; en pantallas angostas se desplaza en vez de partir el hito en 6 líneas. */
+.tabla--mis-tareas {
+  min-width: 56rem;
 }
 
 .enlace-tarea {
@@ -2415,6 +2438,10 @@ a {
   min-width: 0;
 }
 
+.nota-grupal .campo__etiqueta {
+  white-space: nowrap;
+}
+
 .campo--retroalimentacion {
   flex: 1 1 0;
   min-width: 0;
@@ -2446,7 +2473,7 @@ a {
 }
 
 .tabla--evaluacion td {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .tabla__col-ice {
@@ -2469,6 +2496,51 @@ a {
   white-space: nowrap;
 }
 
+/* Criterios: «Criterio» y «Retroalimentación» conservan al menos 10rem cada una; si no caben, la tabla se
+   desplaza dentro de su recuadro. */
+.tabla--criterios-evaluados {
+  min-width: calc(var(--ancho-col-peso) + var(--ancho-col-nota) + 2 * 10rem);
+}
+
+/* Notas individuales: «Estudiante» conserva al menos 8rem. */
+.tabla--notas-individuales {
+  min-width: calc(
+    8rem + var(--ancho-col-ice) + 2 * var(--ancho-col-nota) + var(--ancho-col-estado-nota) + var(--ancho-col-confirmar)
+  );
+}
+
+/* Bajo 1360 px las columnas fijas ceden espacio para que la tabla quepa completa a 1280 px. */
+@media (max-width: 1360px) {
+  .tabla--notas-individuales {
+    min-width: calc(8rem + 5.25rem + 5.5rem + 7rem + 8rem + 8.5rem);
+  }
+
+  .tabla--notas-individuales th,
+  .tabla--notas-individuales td {
+    padding-inline: var(--espacio-3);
+  }
+
+  .tabla--notas-individuales .tabla__col-ice {
+    width: 5.25rem;
+  }
+
+  .tabla--notas-individuales .tabla__col-nota {
+    width: 7rem;
+  }
+
+  .tabla--notas-individuales .tabla__col-sugerida {
+    width: 5.5rem;
+  }
+
+  .tabla--notas-individuales .tabla__col-estado-nota {
+    width: 8rem;
+  }
+
+  .tabla--notas-individuales .tabla__col-confirmar {
+    width: 8.5rem;
+  }
+}
+
 /* Textos y estados */
 .texto-largo {
   margin: 0;
@@ -2485,14 +2557,33 @@ a {
 
 /* Entregas de tareas */
 .entrega {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 3rem;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--espacio-2);
+  gap: var(--espacio-2) var(--espacio-3);
   padding: var(--relleno-evidencia);
   border-radius: var(--radio);
   background: var(--color-fondo);
+}
+
+.entrega > .texto-secundario {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Celular: el nombre de la tarea arriba; debajo, el estado a la izquierda y el avance a la derecha. */
+@media (max-width: 600px) {
+  .entrega {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .entrega > .enlace-tarea {
+    grid-column: 1 / -1;
+  }
+
+  .entrega > :nth-child(2) {
+    justify-self: start;
+  }
 }
 
 /* ===== Bloque 26f-1: panel del docente (RF10). Provisional, sin Figma ===== */
@@ -2707,6 +2798,15 @@ a {
 
 .tabla__col-accion {
   width: var(--ancho-col-accion);
+}
+
+/* Historial del reporte: «Detalle» conserva al menos 12rem; si no cabe, la tabla se desplaza. */
+.tabla--historial-reporte {
+  min-width: calc(var(--ancho-col-fecha-hora) + var(--ancho-col-autor) + var(--ancho-col-accion) + 12rem);
+}
+
+.tabla--historial-reporte td {
+  overflow-wrap: break-word;
 }
 
 /* 960px: las variables CSS no valen dentro de @media. */
