@@ -1,11 +1,13 @@
 import { Link } from 'react-router';
 import type { PanelEquipo } from '../api/tipos';
+import { Ayuda } from '../componentes/Ayuda';
+import { EXPLICACION_ESTADO } from '../componentes/ayudas';
 import { BarraAvance } from '../componentes/BarraAvance';
 import { Insignia } from '../componentes/Insignia';
 import { Tabla, type ColumnaTabla } from '../componentes/Tabla';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { rutas } from '../rutas';
-import { EXPLICACION_ESTADO, estadoEquipo } from './vista';
+import { estadoEquipo } from './vista';
 
 export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
   const columnas: ColumnaTabla<PanelEquipo>[] = [
@@ -56,7 +58,7 @@ export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
   ];
 
   return (
-    <Tarjeta titulo="Equipos">
+    <Tarjeta titulo="Equipos" acciones={<Ayuda termino="Equipos">{EXPLICACION_ESTADO}</Ayuda>}>
       <Tabla
         titulo="Avance y riesgo por equipo"
         clase="tabla--panel tabla--panel-equipos"
@@ -65,7 +67,6 @@ export function TarjetaEquiposPanel({ equipos }: { equipos: PanelEquipo[] }) {
         columnas={columnas}
         filas={equipos}
       />
-      <p className="texto-ayuda">{EXPLICACION_ESTADO}</p>
     </Tarjeta>
   );
 }

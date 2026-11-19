@@ -6,6 +6,7 @@ import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 import { equiposDelUsuario, hitoActual, hitosDelEquipo } from '../tablero/ubicacion';
@@ -14,9 +15,7 @@ import type { ApiUbicacion, EquipoUbicado } from '../tablero/ubicacion';
 const API_UBICACION: ApiUbicacion = { listarProyectos, detalleProyecto };
 
 type Busqueda =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; equipos: EquipoUbicado[] };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; equipos: EquipoUbicado[] };
 
 type Destino = 'tablero' | 'rutaCritica';
 
@@ -81,10 +80,12 @@ function MiEquipo({ destino }: { destino: Destino }) {
         </div>
       )}
       {busqueda.estado === 'listo' && busqueda.equipos.length === 0 && (
-        <p className="pagina__vacio">Aún no perteneces a ningún equipo. Tu docente te agrega a uno desde el proyecto.</p>
+        <EstadoVacio titulo="Aún no tienes equipo">Tu docente te agrega a uno desde el proyecto.</EstadoVacio>
       )}
       {busqueda.estado === 'listo' && busqueda.equipos.length === 1 && (
-        <p className="pagina__vacio">El proyecto de tu equipo aún no tiene hitos.</p>
+        <EstadoVacio titulo="Tu proyecto aún no tiene hitos">
+          Cuando tu docente los configure en el proyecto, los verás aquí.
+        </EstadoVacio>
       )}
       {busqueda.estado === 'listo' && busqueda.equipos.length > 1 && (
         <ul className="lista-simple">

@@ -1,6 +1,8 @@
 import { Link } from 'react-router';
 import type { TareaVista } from '../api/tipos';
 import { BarraAvance } from '../componentes/BarraAvance';
+import { Boton } from '../componentes/Boton';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { Insignia } from '../componentes/Insignia';
 import { Tabla } from '../componentes/Tabla';
 import type { ColumnaTabla } from '../componentes/Tabla';
@@ -13,19 +15,32 @@ export function TablaTareas({
   tareas,
   codigos,
   puedeCrear,
+  alCrear,
 }: {
   tareas: TareaVista[];
   codigos: Map<number, string>;
   puedeCrear: boolean;
+  alCrear?: () => void;
 }) {
   const mensaje = puedeCrear
     ? 'Aún no hay tareas en este hito. Crea la primera con «Nueva tarea».'
     : 'Aún no hay tareas en este hito.';
   if (tareas.length === 0) {
     return (
-      <div className="tabla-contenedor">
-        <p className="tabla__vacia vacio-tareas">{mensaje}</p>
-      </div>
+      <EstadoVacio
+        titulo="Aún no hay tareas en este hito"
+        accion={
+          puedeCrear && alCrear !== undefined ? (
+            <Boton variante="primario" onClick={alCrear}>
+              Nueva tarea
+            </Boton>
+          ) : undefined
+        }
+      >
+        {puedeCrear
+          ? 'Crea la primera con «Nueva tarea».'
+          : 'El líder del equipo aún no ha creado tareas en este hito.'}
+      </EstadoVacio>
     );
   }
   const columnas: ColumnaTabla<TareaVista>[] = [

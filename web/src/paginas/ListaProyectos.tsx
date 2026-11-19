@@ -9,6 +9,7 @@ import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { fechaIsoBogota } from '../formato';
 import { TarjetaProyecto } from '../proyectos/TarjetaProyecto';
 import { cargarResumenes, type ApiResumenes, type ResumenProyecto } from '../proyectos/tarjetas';
@@ -96,13 +97,24 @@ export function ListaProyectos() {
           </div>
         </div>
       )}
-      {lista.estado === 'listo' && lista.proyectos.length === 0 && (
-        <p className="pagina__vacio">
-          {esDocente
-            ? 'Aún no tienes proyectos. Crea el primero con «Nuevo proyecto».'
-            : 'Aún no participas en ningún proyecto.'}
-        </p>
-      )}
+      {lista.estado === 'listo' &&
+        lista.proyectos.length === 0 &&
+        (esDocente ? (
+          <EstadoVacio
+            titulo="Aún no tienes proyectos"
+            accion={
+              <Link className="boton boton--primario" to={rutas.proyectoNuevo()}>
+                Nuevo proyecto
+              </Link>
+            }
+          >
+            Crea el primero con «Nuevo proyecto».
+          </EstadoVacio>
+        ) : (
+          <EstadoVacio titulo="Aún no participas en ningún proyecto">
+            Cuando un docente te agregue a uno, lo verás aquí.
+          </EstadoVacio>
+        ))}
       {lista.estado === 'listo' && lista.proyectos.length > 0 && (
         <div className="rejilla-proyectos">
           {lista.proyectos.map((p) => (

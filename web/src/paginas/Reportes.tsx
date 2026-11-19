@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { mensajeDeError } from '../api/cliente';
 import { consultarEvaluacion } from '../api/evaluacion';
 import { detalleProyecto, listarProyectos } from '../api/proyectos';
@@ -11,6 +11,7 @@ import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { fechaIsoBogota } from '../formato';
 import { mensajeErrorCarga, type Mensaje } from '../proyectos/errores';
@@ -43,9 +44,8 @@ import {
   resumenHito,
   SIN_CAMBIOS_EQUIPO,
   SIN_CAMBIOS_HITO,
-  SIN_EQUIPOS,
-  SIN_PROYECTOS,
 } from '../reportes/vista';
+import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 import { etiquetaHito, hitosDelEquipo, mensajeErrorAbrir, SIN_ACCESO_EQUIPO } from '../tablero/ubicacion';
 
@@ -259,7 +259,16 @@ export function Reportes() {
       </div>
 
       {proyectos.lista.length === 0 ? (
-        <p className="pagina__vacio">{SIN_PROYECTOS}</p>
+        <EstadoVacio
+          titulo="Aún no tienes proyectos"
+          accion={
+            <Link className="boton boton--primario" to={rutas.proyectoNuevo()}>
+              Nuevo proyecto
+            </Link>
+          }
+        >
+          Cuando crees uno con equipos, aquí verás su trazabilidad.
+        </EstadoVacio>
       ) : (
         <>
           {proyecto !== null && (
@@ -290,7 +299,16 @@ export function Reportes() {
               <Cargando />
             )
           ) : datosProyecto.equipos.length === 0 ? (
-            <p className="pagina__vacio">{SIN_EQUIPOS}</p>
+            <EstadoVacio
+              titulo="Este proyecto aún no tiene equipos"
+              accion={
+                <Link className="boton boton--primario" to={rutas.proyecto(datosProyecto.proyecto.idProyecto)}>
+                  Configurar proyecto
+                </Link>
+              }
+            >
+              Agrega equipos desde la configuración para consultar su trazabilidad.
+            </EstadoVacio>
           ) : equipo !== null ? (
             contenidoVigente === null ? (
               <Cargando />

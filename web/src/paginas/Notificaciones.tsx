@@ -8,6 +8,7 @@ import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { Insignia } from '../componentes/Insignia';
 import { fechaHora } from '../formato';
 import {
@@ -19,7 +20,6 @@ import {
   marcaTipo,
   NO_DISPONIBLE,
   NUEVA,
-  SIN_NOTIFICACIONES,
   SOLO_BANDEJA,
   VINCULAR_TELEGRAM,
   TEXTO_LIMITE,
@@ -171,7 +171,9 @@ export function Notificaciones() {
       )}
 
       {datos.notificaciones.length === 0 ? (
-        <p className="pagina__vacio">{SIN_NOTIFICACIONES}</p>
+        <EstadoVacio titulo="No tienes notificaciones">
+          Aquí verás los mismos avisos que te llegan por Telegram.
+        </EstadoVacio>
       ) : (
         <>
           <ul className="lista-notificaciones" aria-label="Notificaciones">

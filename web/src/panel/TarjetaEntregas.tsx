@@ -1,9 +1,11 @@
 import { Link } from 'react-router';
+import { Ayuda } from '../componentes/Ayuda';
+import { EXPLICACION_VENCIDO } from '../componentes/ayudas';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { fechaDia } from '../formato';
 import { rutas } from '../rutas';
-import { EXPLICACION_VENCIDO, type Entrega, type UrgenciaEntrega } from './vista';
+import type { Entrega, UrgenciaEntrega } from './vista';
 
 function clasePlazo(urgencia: UrgenciaEntrega): string {
   if (urgencia === 'normal') {
@@ -13,16 +15,18 @@ function clasePlazo(urgencia: UrgenciaEntrega): string {
 }
 
 export function TarjetaEntregas({ entregas }: { entregas: Entrega[] }) {
+  const ayuda = <Ayuda termino="Entregas">{EXPLICACION_VENCIDO}</Ayuda>;
+
   if (entregas.length === 0) {
     return (
-      <Tarjeta titulo="Entregas">
+      <Tarjeta titulo="Entregas" acciones={ayuda}>
         <p className="pagina__vacio">El proyecto aún no tiene hitos.</p>
       </Tarjeta>
     );
   }
 
   return (
-    <Tarjeta titulo="Entregas">
+    <Tarjeta titulo="Entregas" acciones={ayuda}>
       <ol className="entregas">
         {entregas.map((entrega) => (
           <li
@@ -59,7 +63,6 @@ export function TarjetaEntregas({ entregas }: { entregas: Entrega[] }) {
           </li>
         ))}
       </ol>
-      <p className="texto-ayuda">{EXPLICACION_VENCIDO}</p>
     </Tarjeta>
   );
 }

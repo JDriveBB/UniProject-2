@@ -7,16 +7,11 @@ import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { fechaIsoBogota } from '../formato';
 import { cargarHistorial, type DatosHistorial } from '../historial/carga';
-import {
-  aplicarFiltros,
-  filtrosDeBusqueda,
-  opcionesAccion,
-  rutaHistorial,
-  type Filtros,
-} from '../historial/filtros';
+import { aplicarFiltros, filtrosDeBusqueda, opcionesAccion, rutaHistorial, type Filtros } from '../historial/filtros';
 import { FiltrosHistorial } from '../historial/FiltrosHistorial';
 import { LineaTiempoHistorial } from '../historial/LineaTiempoHistorial';
 import {
@@ -25,7 +20,6 @@ import {
   HISTORIAL_RECORTADO_EQUIPO,
   indiceEquipo,
   NOTAS_RESERVADAS,
-  SIN_COINCIDENCIAS,
   SOLO_EQUIPO_Y_DOCENTE,
   TAMANO_PAGINA,
   TITULO_HISTORIAL,
@@ -35,7 +29,7 @@ import {
 } from '../historial/vista';
 import { idDeRuta } from '../proyectos/vista';
 import { LIMITE_HISTORIAL } from '../reportes/carga';
-import { EXPLICACION_HISTORIAL, SIN_CAMBIOS_EQUIPO } from '../reportes/vista';
+import { EXPLICACION_HISTORIAL } from '../reportes/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 import { mensajeErrorAbrir, SIN_ACCESO_EQUIPO } from '../tablero/ubicacion';
@@ -59,7 +53,7 @@ export function HistorialEquipo({ idRuta }: { idRuta: string }) {
   const idEquipo = idDeRuta(idRuta);
 
   const [carga, setCarga] = useState<EstadoCarga>(() =>
-    idEquipo === null ? { estado: 'error', mensaje: SIN_ACCESO_EQUIPO } : { estado: 'cargando' }
+    idEquipo === null ? { estado: 'error', mensaje: SIN_ACCESO_EQUIPO } : { estado: 'cargando' },
   );
   const [vuelta, setVuelta] = useState(0);
   const [cantidad, setCantidad] = useState(TAMANO_PAGINA);
@@ -153,7 +147,11 @@ export function HistorialEquipo({ idRuta }: { idRuta: string }) {
   const indice = indiceEquipo(equipo, datos.hitos, datos.tableros);
   const visibles = entradasVisibles(datos.entradas, visor);
   const acciones = opcionesAccion(visibles);
-  const filtros = filtrosDeBusqueda(search, acciones.map((o) => o.valor), datos.hitos);
+  const filtros = filtrosDeBusqueda(
+    search,
+    acciones.map((o) => o.valor),
+    datos.hitos,
+  );
   const coinciden = aplicarFiltros(visibles, filtros, indice.tareasPorHito);
   const mostradas = coinciden.slice(0, cantidad);
   const hoy = fechaIsoBogota(new Date());
@@ -168,10 +166,7 @@ export function HistorialEquipo({ idRuta }: { idRuta: string }) {
 
   return (
     <div className="pagina">
-      <EncabezadoPagina
-        titulo={TITULO_HISTORIAL}
-        descripcion={`${equipo.nombreEquipo} · ${proyecto.nombre}`}
-      >
+      <EncabezadoPagina titulo={TITULO_HISTORIAL} descripcion={`${equipo.nombreEquipo} · ${proyecto.nombre}`}>
         <div className="pagina__acciones">
           <Link className="boton boton--secundario" to={rutas.tableroEquipo(equipo.idEquipo)}>
             Volver al tablero
@@ -182,21 +177,18 @@ export function HistorialEquipo({ idRuta }: { idRuta: string }) {
       <p className="texto-secundario">{EXPLICACION_HISTORIAL}</p>
       {!visor.esDocente && <p className="texto-secundario">{NOTAS_RESERVADAS}</p>}
 
-      <FiltrosHistorial
-        filtros={filtros}
-        acciones={acciones}
-        hitos={datos.hitos}
-        alCambiar={cambiar}
-      />
+      <FiltrosHistorial filtros={filtros} acciones={acciones} hitos={datos.hitos} alCambiar={cambiar} />
 
       <Tarjeta titulo="Línea de tiempo">
-        {datos.entradas.length === LIMITE_HISTORIAL && (
-          <p className="texto-ayuda">{HISTORIAL_RECORTADO_EQUIPO}</p>
-        )}
+        {datos.entradas.length === LIMITE_HISTORIAL && <p className="texto-ayuda">{HISTORIAL_RECORTADO_EQUIPO}</p>}
         {visibles.length === 0 ? (
-          <p className="pagina__vacio">{SIN_CAMBIOS_EQUIPO}</p>
+          <EstadoVacio titulo="Aún no hay cambios" nivel={3}>
+            Cuando el equipo cree tareas, registre avances o envíe hitos, quedarán registrados aquí.
+          </EstadoVacio>
         ) : coinciden.length === 0 ? (
-          <p className="pagina__vacio">{SIN_COINCIDENCIAS}</p>
+          <EstadoVacio titulo="Ningún cambio coincide con el filtro" nivel={3}>
+            Prueba cambiando la acción, el integrante, el hito o el rango de fechas.
+          </EstadoVacio>
         ) : (
           <>
             <p className="texto-secundario" aria-live="polite">
@@ -211,10 +203,7 @@ export function HistorialEquipo({ idRuta }: { idRuta: string }) {
             />
             {coinciden.length > mostradas.length && (
               <div>
-                <Boton
-                  variante="secundario"
-                  onClick={mostrarMas}
-                >
+                <Boton variante="secundario" onClick={mostrarMas}>
                   {textoMostrarMas(coinciden.length - mostradas.length)}
                 </Boton>
               </div>

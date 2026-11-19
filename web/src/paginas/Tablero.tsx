@@ -8,6 +8,7 @@ import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { puedeVerHistorial } from '../historial/vista';
 import type { Mensaje } from '../proyectos/errores';
 import { idDeRuta } from '../proyectos/vista';
@@ -147,6 +148,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   }
   const { equipo: ubicado, hitos } = ubicacion;
   const verHistorial = puedeVerHistorial(ubicado, usuario.idUsuario);
+  const esDocente = ubicado.proyecto.idDocente === usuario.idUsuario;
   const descripcion = `${ubicado.equipo.nombreEquipo} · ${ubicado.proyecto.nombre}`;
   if (hito === null) {
     return (
@@ -160,12 +162,24 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
             </div>
           )}
         </EncabezadoPagina>
-        <p className="pagina__vacio">El proyecto aún no tiene hitos.</p>
+        <EstadoVacio
+          titulo="El proyecto aún no tiene hitos"
+          accion={
+            esDocente ? (
+              <Link className="boton boton--primario" to={rutas.proyecto(ubicado.proyecto.idProyecto)}>
+                Configurar proyecto
+              </Link>
+            ) : undefined
+          }
+        >
+          {esDocente
+            ? 'Define al menos un hito desde la configuración para empezar a usar el tablero.'
+            : 'Cuando el docente configure los hitos del proyecto, los verás aquí.'}
+        </EstadoVacio>
       </div>
     );
   }
   const rol = rolEnEquipo(ubicado.equipo, usuario.idUsuario);
-  const esDocente = ubicado.proyecto.idDocente === usuario.idUsuario;
   const actual = contenido !== null && contenido.idHitoEquipo === hito.idHitoEquipo ? contenido : null;
   const tablero = actual === null ? null : actual.tablero;
   const editable = tablero !== null && tablero.editable;
@@ -276,7 +290,12 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
         <>
           <ResumenHito tablero={tablero} />
           <LeyendaMarcas />
-          <TablaTareas tareas={tablero.tareas} codigos={codigos} puedeCrear={puedeCrear} />
+          <TablaTareas
+            tareas={tablero.tareas}
+            codigos={codigos}
+            puedeCrear={puedeCrear}
+            alCrear={() => setModalAbierto(true)}
+          />
         </>
       )}
       {modalAbierto && tablero !== null && (

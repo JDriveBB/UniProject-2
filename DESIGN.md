@@ -477,6 +477,12 @@ Firmes y compactos, con texto en seminegrita.
 ### Barra de avance
 - `<progress>` de 6 px de alto, esquinas en píldora (`radio-avance`, `999px`), pista `avance-pista`, relleno `avance`; verde (`avance-exito`) al 100 %. Siempre acompañada del porcentaje en texto pequeño con cifras tabulares.
 
+### Estado vacío
+- Bloque centrado en `superficie` con borde punteado `borde-tabla`, radio `radio-tarjeta`, relleno generoso (`espacio-8` × `espacio-5`; `espacio-6` × `espacio-4` bajo 600 px), título en seminegrita (`titulo-tarjeta`), texto en `texto-secundario` y acción opcional debajo.
+
+### Ayuda a pedido
+- Botón «?» de `44 × 44` px (círculo interior `22` px con borde `borde`, activo en `primario` sobre `info-fondo`) con `aria-expanded`, que revela debajo un panel en `superficie` con borde `borde-tabla`, radio `radio`, sombra `--sombra` y transición de opacidad en `duracion-rapida`; cierra con `Escape` o clic fuera.
+
 ## Celular
 
 Ajustes para pantallas angostas (600 px o menos) manteniendo la paleta y la estructura general sin desborde horizontal entre 320 y 1440 px:

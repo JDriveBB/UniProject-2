@@ -9,6 +9,7 @@ import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { fechaIsoBogota } from '../formato';
 import { cargarPanel, type DatosPanel } from '../panel/carga';
 import { ResumenPanel } from '../panel/ResumenPanel';
@@ -116,12 +117,16 @@ export function ElegirPanel() {
     return (
       <div className="pagina">
         <EncabezadoPagina titulo="Panel del docente" />
-        <p className="pagina__vacio">Aún no tienes proyectos. Crea el primero con «Nuevo proyecto».</p>
-        <div className="pagina__acciones">
-          <Link className="boton boton--primario" to={rutas.proyectoNuevo()}>
-            Nuevo proyecto
-          </Link>
-        </div>
+        <EstadoVacio
+          titulo="Aún no tienes proyectos"
+          accion={
+            <Link className="boton boton--primario" to={rutas.proyectoNuevo()}>
+              Nuevo proyecto
+            </Link>
+          }
+        >
+          Crea el primero con «Nuevo proyecto».
+        </EstadoVacio>
       </div>
     );
   }

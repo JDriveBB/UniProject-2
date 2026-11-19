@@ -227,6 +227,11 @@
   /* Avisos breves de éxito (T-023). */
   --ancho-aviso: 24rem;
   --borde-aviso: 4px;
+
+  /* Estados vacíos y ayuda a pedido (T-024). */
+  --tamano-tactil: 44px;
+  --tamano-icono-ayuda: 1.375rem;
+  --ancho-panel-ayuda: 20rem;
 }
 
 *,
@@ -3570,10 +3575,6 @@ select.campo__entrada {
     overflow-wrap: anywhere;
   }
 
-  .tabla-contenedor .tabla tbody td:empty {
-    display: none;
-  }
-
   .tabla-contenedor .tabla tbody td.tabla__vacia {
     display: block;
     padding: var(--espacio-3) var(--espacio-4);
@@ -3586,6 +3587,11 @@ select.campo__entrada {
     align-items: center;
     justify-items: start;
     gap: var(--espacio-1) var(--espacio-3);
+  }
+
+  .tabla-contenedor .tabla tbody td[data-etiqueta]:not([data-etiqueta='']):empty,
+  .tabla-contenedor .tabla tbody td:empty {
+    display: none;
   }
 
   .tabla-contenedor .tabla tbody td[data-etiqueta]:not([data-etiqueta=''])::before {
@@ -3799,5 +3805,135 @@ select.campo__entrada {
 
   .aviso {
     max-width: var(--ancho-aviso);
+  }
+}
+
+/* ===== Estados vacíos y ayuda a pedido (T-024) ===== */
+.estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-2);
+  width: 100%;
+  min-width: 0;
+  padding: var(--espacio-8) var(--espacio-5);
+  border: 1px dashed var(--color-borde-tabla);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-superficie);
+  text-align: center;
+}
+
+.estado-vacio__titulo {
+  margin: 0;
+  max-width: 100%;
+  font-size: var(--tamano-titulo-tarjeta);
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-texto);
+  overflow-wrap: break-word;
+}
+
+.estado-vacio__texto {
+  margin: 0;
+  max-width: 34rem;
+  color: var(--color-texto-secundario);
+  overflow-wrap: break-word;
+}
+
+.estado-vacio__accion {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--separacion-botones);
+  margin-top: var(--espacio-2);
+}
+
+.dato-tarea__etiqueta--con-ayuda {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.ayuda {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ayuda__boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--tamano-tactil);
+  min-block-size: var(--tamano-tactil);
+  margin: calc((var(--tamano-icono-ayuda) - var(--tamano-tactil)) / 2);
+  padding: 0;
+  border: none;
+  border-radius: var(--radio-insignia);
+  background: transparent;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.ayuda__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--tamano-icono-ayuda);
+  block-size: var(--tamano-icono-ayuda);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-insignia);
+  background: var(--color-superficie);
+  color: var(--color-texto-secundario);
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-seminegrita);
+  line-height: 1;
+  transition:
+    border-color var(--duracion-rapida) ease-out,
+    background-color var(--duracion-rapida) ease-out,
+    color var(--duracion-rapida) ease-out;
+}
+
+.ayuda__boton:hover .ayuda__icono,
+.ayuda__boton[aria-expanded='true'] .ayuda__icono {
+  border-color: var(--color-primario);
+  background: var(--color-info-fondo);
+  color: var(--color-primario);
+}
+
+.ayuda__panel {
+  position: absolute;
+  top: calc(100% + var(--espacio-1));
+  left: var(--ayuda-x, 0px);
+  z-index: 20;
+  width: min(var(--ancho-panel-ayuda), calc(100vw - 2 * var(--espacio-5)));
+  padding: var(--espacio-3) var(--espacio-4);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  box-shadow: var(--sombra);
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-regular);
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+  opacity: 1;
+  transition: opacity var(--duracion-rapida) ease-out;
+}
+
+.ayuda__panel[hidden] {
+  display: none;
+}
+
+@starting-style {
+  .ayuda__panel:not([hidden]) {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .estado-vacio {
+    padding: var(--espacio-6) var(--espacio-4);
   }
 }

@@ -4,9 +4,12 @@ import { detalleProyecto } from '../api/proyectos';
 import { rutaCritica, tableroHito } from '../api/tareas';
 import type { RutaCriticaVista, TableroHito } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { Ayuda } from '../componentes/Ayuda';
+import { AYUDA_RUTA_CRITICA } from '../componentes/ayudas';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
+import { EstadoVacio } from '../componentes/EstadoVacio';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { decimalEsCo, fechaDia } from '../formato';
 import { idDeRuta } from '../proyectos/vista';
@@ -116,9 +119,19 @@ function PaginaRutaCritica({ idRuta }: { idRuta: string }) {
           <p className="dato-resumen__valor">{`${ruta.criticas.length} de ${ruta.nodos.length}`}</p>
         </div>
       </div>
-      <Tarjeta titulo="Grafo de dependencias">
+      <Tarjeta titulo="Grafo de dependencias" acciones={<Ayuda termino="Ruta crítica">{AYUDA_RUTA_CRITICA}</Ayuda>}>
         {red.nodos.length === 0 ? (
-          <p className="pagina__vacio">Aún no hay tareas en este hito: la ruta crítica aparece cuando el líder crea tareas.</p>
+          <EstadoVacio
+            titulo="Aún no hay tareas en este hito"
+            nivel={3}
+            accion={
+              <Link className="boton boton--primario" to={rutas.tableroEnHito(tablero.idEquipo, tablero.idHitoEquipo)}>
+                Ir al tablero
+              </Link>
+            }
+          >
+            La ruta crítica aparece cuando el líder crea tareas.
+          </EstadoVacio>
         ) : (
           <GrafoDependencias red={red} codigos={codigosDeTareas(tablero.tareas)} />
         )}

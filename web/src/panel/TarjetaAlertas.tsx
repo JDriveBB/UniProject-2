@@ -1,20 +1,14 @@
 import { Link } from 'react-router';
+import { Ayuda } from '../componentes/Ayuda';
+import { EXPLICACION_ALERTAS } from '../componentes/ayudas';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { rutas } from '../rutas';
-import {
-  BLOQUEADA,
-  EXPLICACION_ALERTAS,
-  INACTIVO,
-  SIN_ALERTAS,
-  textoBloqueo,
-  textoInactivo,
-  type AlertasEquipo,
-} from './vista';
+import { BLOQUEADA, INACTIVO, SIN_ALERTAS, textoBloqueo, textoInactivo, type AlertasEquipo } from './vista';
 
 export function TarjetaAlertas({ alertas }: { alertas: AlertasEquipo[] }) {
   return (
-    <Tarjeta titulo="Alertas">
+    <Tarjeta titulo="Alertas" acciones={<Ayuda termino="Alertas">{EXPLICACION_ALERTAS}</Ayuda>}>
       {alertas.length === 0 ? (
         <p className="pagina__vacio">{SIN_ALERTAS}</p>
       ) : (
@@ -54,7 +48,6 @@ export function TarjetaAlertas({ alertas }: { alertas: AlertasEquipo[] }) {
           })}
         </div>
       )}
-      <p className="texto-ayuda">{EXPLICACION_ALERTAS}</p>
     </Tarjeta>
   );
 }

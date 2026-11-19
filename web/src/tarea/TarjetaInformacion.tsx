@@ -1,4 +1,6 @@
 import type { TareaVista } from '../api/tipos';
+import { Ayuda } from '../componentes/Ayuda';
+import { AYUDA_RIESGO, AYUDA_RUTA_CRITICA } from '../componentes/ayudas';
 import { BarraAvance } from '../componentes/BarraAvance';
 import { Boton } from '../componentes/Boton';
 import { Insignia } from '../componentes/Insignia';
@@ -47,7 +49,10 @@ export function TarjetaInformacion({
         </div>
         {riesgo !== null && (
           <div className="dato-tarea">
-            <dt className="dato-tarea__etiqueta">Riesgo de retraso</dt>
+            <dt className="dato-tarea__etiqueta dato-tarea__etiqueta--con-ayuda">
+              <span>Riesgo de retraso</span>
+              <Ayuda termino="Riesgo de retraso">{AYUDA_RIESGO}</Ayuda>
+            </dt>
             <dd className="dato-tarea__valor dato-tarea__riesgo">
               <Insignia tono={riesgo.marca.tono}>{riesgo.marca.texto}</Insignia>
               {riesgo.detalle !== '' && <span className="texto-secundario">{riesgo.detalle}</span>}
@@ -56,7 +61,10 @@ export function TarjetaInformacion({
         )}
         {tarea.enRutaCritica && (
           <div className="dato-tarea">
-            <dt className="dato-tarea__etiqueta">Ruta crítica</dt>
+            <dt className="dato-tarea__etiqueta dato-tarea__etiqueta--con-ayuda">
+              <span>Ruta crítica</span>
+              <Ayuda termino="Ruta crítica">{AYUDA_RUTA_CRITICA}</Ayuda>
+            </dt>
             <dd className="dato-tarea__valor">Sí · si se atrasa, se atrasa el hito</dd>
           </div>
         )}
