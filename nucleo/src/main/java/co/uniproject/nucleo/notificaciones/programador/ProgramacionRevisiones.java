@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.notificaciones.programador;
 
 import co.uniproject.eventos.Topologia;
+import co.uniproject.nucleo.ejecucion.servicio.RefrescoRiesgo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,15 +14,19 @@ public class ProgramacionRevisiones {
 
     private final RevisionRiesgo riesgo;
     private final RevisionInactividad inactividad;
+    private final RefrescoRiesgo refresco;
 
-    public ProgramacionRevisiones(RevisionRiesgo riesgo, RevisionInactividad inactividad) {
+    public ProgramacionRevisiones(RevisionRiesgo riesgo, RevisionInactividad inactividad, RefrescoRiesgo refresco) {
         this.riesgo = riesgo;
         this.inactividad = inactividad;
+        this.refresco = refresco;
     }
 
     @Scheduled(cron = "${uniproject.programador.cron-riesgo}", zone = Topologia.ZONA)
     public void revisarRiesgo() {
         try {
+            int hitos = refresco.refrescarEnCurso();
+            log.info("Recálculo de riesgo: {} hitos", hitos);
             int n = riesgo.revisar();
             log.info("Revisión de riesgo: {} alertas nuevas", n);
         } catch (Exception e) {
