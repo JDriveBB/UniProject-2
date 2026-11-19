@@ -447,6 +447,7 @@ Firmes y compactos, con texto en seminegrita.
 - **Error / Disabled:** `aria-invalid` pone el borde en `peligro` y el mensaje va debajo en texto pequeño `peligro`. Solo lectura: fondo `fondo`.
 - **Casilla:** cuadro de 18 px dibujado (el `input` real sigue accesible), marcada en `primario` con visto blanco.
 - **Selectores:** tanto `<select class="campo__entrada">` (`appearance: none`) como el selector múltiple («Bloqueada por») usan el mismo chevron SVG de 12 px en `texto-secundario` (`--icono-chevron`), separado 12 px del borde derecho y con relleno derecho de 32 px para que el texto no lo tape.
+- **Campo de fichas (`.campo-fichas`):** contenedor con forma de campo que muestra el anillo de foco con `:focus-within`, lista de fichas en píldora (`.ficha` neutra o `.ficha--error` en peligro, con motivo en texto debajo y botón «✕» ≥ 24 px, 44 px en celular) y entrada de correo sin desborde desde 320 px.
 
 ### Tables
 - Recuadro `.tabla-contenedor`: borde `borde-tabla`, esquinas de 12 px, fondo blanco, `position: relative` y desplazamiento horizontal propio.

@@ -3937,3 +3937,184 @@ select.campo__entrada {
     padding: var(--espacio-6) var(--espacio-4);
   }
 }
+
+/* ===== Campo de correos con fichas (T-026) ===== */
+.equipo,
+.campo:has(.campo-fichas) {
+  min-width: 0;
+}
+
+.campo-fichas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  cursor: text;
+  transition:
+    border-color var(--duracion-rapida) ease-out,
+    box-shadow var(--duracion-rapida) ease-out;
+}
+
+.campo-fichas:hover:not(.campo-fichas--deshabilitado):not(:focus-within):not(.campo-fichas--error) {
+  border-color: var(--color-texto-secundario);
+}
+
+.campo-fichas:focus-within {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--foco);
+}
+
+.campo-fichas--error {
+  border-color: var(--color-peligro);
+}
+
+.campo-fichas--deshabilitado {
+  background: var(--color-fondo);
+  cursor: not-allowed;
+}
+
+.campo-fichas__lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-1) var(--espacio-2);
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--espacio-1) var(--espacio-1) var(--espacio-1) var(--espacio-3);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio-insignia);
+  background: var(--color-neutro-fondo);
+  color: var(--color-texto);
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  line-height: 1.3;
+}
+
+.ficha--error {
+  border-color: var(--color-peligro);
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+}
+
+.ficha__correo {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ficha__quitar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 24px;
+  min-block-size: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radio-insignia);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--duracion-rapida) ease-out,
+    color var(--duracion-rapida) ease-out;
+}
+
+.ficha__quitar:hover:not(:disabled) {
+  background: var(--color-borde-tabla);
+  color: var(--color-peligro);
+}
+
+.ficha--error .ficha__quitar:hover:not(:disabled) {
+  background: var(--color-peligro);
+  color: var(--color-texto-sobre-primario);
+}
+
+.ficha__quitar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.campo-fichas__entrada {
+  flex: 1 1 min(100%, 8rem);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--espacio-1) 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--color-texto);
+}
+
+.campo-fichas__entrada:focus-visible {
+  box-shadow: none;
+}
+
+.campo-fichas__entrada::placeholder {
+  color: var(--color-texto-secundario);
+}
+
+.campo-fichas__ayuda {
+  margin: 0;
+}
+
+.campo-fichas__errores {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.campo-fichas__errores .campo__error {
+  overflow-wrap: anywhere;
+}
+
+@media (forced-colors: active) {
+  .campo-fichas:focus-within {
+    outline-color: Highlight;
+  }
+}
+
+@media (pointer: coarse) {
+  .campo-fichas {
+    min-block-size: var(--tamano-tactil);
+  }
+
+  .ficha__quitar {
+    min-inline-size: var(--tamano-tactil);
+    min-block-size: var(--tamano-tactil);
+  }
+}
+
+@media (max-width: 600px) {
+  .ficha {
+    padding-left: var(--espacio-4);
+  }
+
+  .ficha__quitar {
+    min-inline-size: var(--tamano-tactil);
+    min-block-size: var(--tamano-tactil);
+  }
+}

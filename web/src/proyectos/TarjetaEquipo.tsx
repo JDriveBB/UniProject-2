@@ -5,14 +5,15 @@ import type { EquipoVista, MiembroVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
-import { CampoArea } from '../componentes/CampoArea';
 import { ConfirmarQuitar } from '../componentes/ConfirmarQuitar';
 import { Insignia } from '../componentes/Insignia';
+import { CampoCorreos } from './CampoCorreos';
 import { agregarEstudiante } from './equipos';
 import type { ApiEquipos } from './equipos';
-import { mensajeResultadoEstudiantes, separarCorreos, validarLoteCorreos } from './correos';
 import { CAMPOS_CORREO, mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
+import { aplicarResultadoEstudiantes, validas } from './fichas';
+import type { Ficha } from './fichas';
 import {
   bloqueoParaQuitar,
   preguntaQuitarIntegrante,
@@ -45,18 +46,26 @@ export function TarjetaEquipo({
   const avisar = useAvisos();
   const base = useId();
   const [abierto, setAbierto] = useState(false);
-  const [textoCorreos, setTextoCorreos] = useState('');
-  const [intentado, setIntentado] = useState(false);
+  const [fichas, setFichas] = useState<Ficha[]>([]);
   const [ocupado, setOcupado] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [porQuitar, setPorQuitar] = useState<MiembroVista | null>(null);
   const volverA = useRef<string | null>(null);
   const focoEnAlerta = useRef(false);
+  const enfocarEn = useRef<'campo' | 'agregar' | null>(null);
   const idAgregar = base + '-agregar';
   const idTitulo = base + '-titulo';
   const idArea = base + '-correos';
   const idMensaje = base + '-mensaje';
-  const errorCorreos = intentado ? (validarLoteCorreos(textoCorreos) ?? undefined) : undefined;
+  const correosValidos = validas(fichas);
+  const hayErrorFormato = fichas.some((f) => f.error !== null);
+  const puedeEnviar = correosValidos.length > 0 && !hayErrorFormato;
+  const textoBoton =
+    correosValidos.length === 0
+      ? 'Agregar estudiantes'
+      : correosValidos.length === 1
+        ? 'Agregar 1 estudiante'
+        : `Agregar ${correosValidos.length} estudiantes`;
   const idQuitar = (idUsuario: number) => `${base}-quitar-${idUsuario}`;
   /* Aclaración 3: con la confirmación abierta no se puede designar líder ni abrir otra confirmación. */
   const bloqueado = ocupado || porQuitar !== null;
@@ -77,41 +86,57 @@ export function TarjetaEquipo({
     }
   }, [mensaje, idMensaje]);
 
+  useEffect(() => {
+    if (abierto && enfocarEn.current === 'campo') {
+      document.getElementById(idArea)?.focus();
+      enfocarEn.current = null;
+    } else if (!abierto && enfocarEn.current === 'agregar') {
+      document.getElementById(idAgregar)?.focus();
+      enfocarEn.current = null;
+    }
+  }, [abierto, idArea, idAgregar]);
+
+  function abrir() {
+    setMensaje(null);
+    enfocarEn.current = 'campo';
+    setAbierto(true);
+  }
+
   function cerrar() {
+    enfocarEn.current = 'agregar';
     setAbierto(false);
-    setTextoCorreos('');
-    setIntentado(false);
+    setFichas([]);
   }
 
   async function alAgregar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    setIntentado(true);
-    setMensaje(null);
-    const err = validarLoteCorreos(textoCorreos);
-    if (err !== null) {
-      document.getElementById(idArea)?.focus();
+    if (!puedeEnviar || ocupado) {
       return;
     }
+    setMensaje(null);
     setOcupado(true);
     try {
-      const correos = separarCorreos(textoCorreos);
-      const r = await agregarEstudiante(API_EQUIPOS, idProyecto, equipo.idEquipo, correos);
+      const r = await agregarEstudiante(
+        API_EQUIPOS,
+        idProyecto,
+        equipo.idEquipo,
+        correosValidos.map((f) => f.correo),
+      );
       if (r.equipo) {
         alActualizar(r.equipo);
       }
       if (r.agregados.length > 0 || r.habilitados.length > 0) {
         alHabilitarCorreo?.();
       }
-      const pendientes = [...r.errores.map((e) => e.email), ...r.conOtroRol];
-      if (pendientes.length === 0) {
-        setTextoCorreos('');
-        setIntentado(false);
+      const aplicado = aplicarResultadoEstudiantes(fichas, r);
+      setFichas(aplicado.fichas);
+      if (aplicado.fichas.length === 0) {
         setAbierto(false);
-      } else {
-        setTextoCorreos(pendientes.join('\n'));
-        setIntentado(false);
       }
-      setMensaje(mensajeResultadoEstudiantes(r));
+      setMensaje({
+        tipo: aplicado.fichas.length === 0 ? 'exito' : 'aviso',
+        texto: aplicado.resumen,
+      });
       focoEnAlerta.current = true;
     } catch (e) {
       setMensaje({ tipo: 'error', texto: mensajeErrorApi(e, CAMPOS_CORREO) });
@@ -211,24 +236,24 @@ export function TarjetaEquipo({
           alCancelar={() => alCancelarQuitar(porQuitar)}
         />
       )}
+      {mensaje !== null && (
+        <Alerta id={idMensaje} tabIndex={-1} tipo={mensaje.tipo}>
+          {mensaje.texto}
+        </Alerta>
+      )}
       {editable &&
         (abierto ? (
           <form className="pila" onSubmit={(ev) => void alAgregar(ev)} noValidate>
-            <CampoArea
+            <CampoCorreos
               id={idArea}
               etiqueta="Correo del estudiante"
-              ayuda="Escribe o pega uno o varios correos, separados por espacio o salto de línea."
-              placeholder="nombre@uninorte.edu.co"
-              autoComplete="off"
-              value={textoCorreos}
-              onChange={(ev) => setTextoCorreos(ev.target.value)}
-              error={errorCorreos}
-              rows={3}
-              required
+              fichas={fichas}
+              alCambiar={setFichas}
+              deshabilitado={ocupado}
             />
             <div className="pagina__acciones">
-              <Boton type="submit" cargando={ocupado}>
-                Agregar
+              <Boton type="submit" cargando={ocupado} disabled={!puedeEnviar}>
+                {textoBoton}
               </Boton>
               <Boton variante="secundario" onClick={cerrar} disabled={ocupado}>
                 Cancelar
@@ -237,16 +262,11 @@ export function TarjetaEquipo({
           </form>
         ) : (
           <div>
-            <Boton id={idAgregar} variante="secundario" onClick={() => setAbierto(true)}>
+            <Boton id={idAgregar} variante="secundario" onClick={abrir}>
               + Agregar estudiante
             </Boton>
           </div>
         ))}
-      {mensaje !== null && (
-        <Alerta id={idMensaje} tabIndex={-1} tipo={mensaje.tipo}>
-          {mensaje.texto}
-        </Alerta>
-      )}
     </section>
   );
 }
