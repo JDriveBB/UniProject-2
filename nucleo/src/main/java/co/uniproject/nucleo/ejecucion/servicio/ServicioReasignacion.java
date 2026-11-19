@@ -56,6 +56,8 @@ public class ServicioReasignacion {
 
     @Transactional
     public ResultadoReasignacion reasignar(UsuarioAutenticado usuario, long idTarea, SolicitudReasignacion s) {
+        // Limite conocido (informe de auditoria): el permiso se evalua ANTES de esperar el candado del hito; quien
+        // deja de ser encargado por una reasignacion simultanea aun puede completar esta llamada (ventana minima).
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));
         BloqueoHito.bloquearPorTarea(jdbc, idTarea);
         Tarea t = tareas.findById(idTarea).orElseThrow();

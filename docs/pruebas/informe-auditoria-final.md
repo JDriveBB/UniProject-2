@@ -40,11 +40,14 @@ RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10: parcial nominal (48
 - Ítems del hallazgo 8, 9 y 12.
 
 ## 5. Estado de las correcciones (2026-11-18)
+Auditoría posterior a las correcciones (revisor, 2026-11-18): aprobado, sin hallazgos altos ni regresiones; 1 media y 3 bajas que cubre el bloque 44 (ver tabla).
+
 | Bloque | Cubre | Estado |
 |---|---|---|
 | 41 | Registro con límite por IP y respuesta uniforme (hallazgo 1); supresión de observaciones de avance y de corrección, y de su resumen en la outbox (4); rechazo de U+0000 y de números/booleanos como texto (5) | Fusionado (revisor: aprobado, ronda 1) |
 | 42 | Candado por hito en dependencias, avance, evidencias, tareas, reasignación, correcciones, comentarios y apoyo; `PARTE_REPETIDA`; un equipo por estudiante con `FOR NO KEY UPDATE` sobre `proyecto` (2, 3, 6) | Fusionado (revisor: aprobado, ronda 1) |
 | 43 | Aviso de sesión terminada, creación parcial de proyecto, descarga de evidencias, SPA para rutas desconocidas, detalles de validación, contrato, (7, 10, 11); queda fuera el destino de `tarea.reasignada` | Fusionado (revisor: 1 corrección de prueba, aplicada) |
+| 44 | Filtro de sesión revocada también para rutas codificadas (`/%61pi/`); candado en `cambiarLider` y en criterios de rúbrica; `.env.example` sin token interno de ejemplo; comentario del límite en `ServicioReasignacion` | En curso |
 
 ### Límites conocidos tras las correcciones
 - Lo ya publicado en RabbitMQ o en la cola de fallidos conserva el texto original (decisión 27-5): la anonimización reescribe la outbox y la bandeja, no re-publica.
@@ -53,3 +56,4 @@ RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10: parcial nominal (48
 - El permiso se evalúa antes de esperar el candado: quien deja de ser encargado por una reasignación simultánea aún puede guardar un avance en esa ventana mínima.
 - Destino distinto de `tarea.reasignada` para el encargado anterior (bandeja `/tareas/{id}`, Telegram `/mis-tareas`): no corregido; exige guardar el papel del destinatario en la notificación o consultar el encargado actual. Gravedad baja.
 - Si hay un `<dialog>` abierto, el aviso de sesión terminada queda detrás hasta cerrarlo.
+- La supresión no anonimiza la retroalimentación escrita por el docente (`evaluacion_hito.retroalimentacion_general`, `calificacion_criterio.retroalimentacion`): es texto sobre los estudiantes, no dato del titular.
