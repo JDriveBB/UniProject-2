@@ -27,11 +27,7 @@ export function TarjetaHistorial({ avances }: PropsTarjetaHistorial) {
     {
       titulo: 'Observación',
       celda: (f) =>
-        f.observacion !== null && f.observacion !== '' ? (
-          f.observacion
-        ) : (
-          <span className="texto-secundario">—</span>
-        ),
+        f.observacion !== null && f.observacion !== '' ? f.observacion : <span className="texto-secundario">—</span>,
     },
   ];
 
@@ -39,7 +35,7 @@ export function TarjetaHistorial({ avances }: PropsTarjetaHistorial) {
     <Tarjeta titulo="Historial de avances">
       <Tabla
         titulo="Historial de avances de la tarea"
-        clase="tabla--historial"
+        clase="tabla--historial tabla--avances"
         claveFila={(f) => f.idRegistro}
         vacio="Aún no hay avances registrados."
         columnas={columnas}

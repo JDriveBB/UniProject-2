@@ -2151,6 +2151,32 @@ a {
   width: var(--ancho-col-avance-historial);
 }
 
+/* Historial de avances de la tarea: «Observación» conserva al menos 12rem; si la tarjeta es angosta, la tabla
+   se desplaza en vez de partir la observación letra por letra. */
+.tabla--avances {
+  min-width: calc(var(--ancho-col-fecha-hora) + var(--ancho-col-autor) + var(--ancho-col-avance-historial) + 12rem);
+}
+
+.tabla--avances td {
+  overflow-wrap: break-word;
+}
+
+/* Bajo 1360 px las columnas fijas ceden espacio para que la tabla quepa completa a 1280 px. */
+@media (max-width: 1360px) {
+  .tabla--avances {
+    min-width: calc(11rem + 11rem + 7rem + 12rem);
+  }
+
+  .tabla--avances .tabla__col-fecha-hora,
+  .tabla--avances .tabla__col-autor {
+    width: 11rem;
+  }
+
+  .tabla--avances .tabla__col-avance-historial {
+    width: 7rem;
+  }
+}
+
 /* Tarjeta Acciones */
 .accion-tarea {
   display: flex;
@@ -2213,6 +2239,7 @@ a {
 }
 
 .campo__entrada--comentario {
+  width: 100%;
   min-height: var(--alto-comentario);
 }
 
