@@ -85,6 +85,7 @@
   --relleno-boton-ingreso: 14px 18px;
   --relleno-insignia: 4px 10px;
   --sombra: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --sombra-enlace-hover: 0 2px 8px rgba(22, 40, 80, 0.08); /* tarjetas de resumen que son enlace, al pasar el mouse */
   --foco: 0 0 0 2px var(--color-superficie), 0 0 0 4px var(--color-primario);
   /* Ingreso, registro y formularios (bloque 26a, Figma P01a/P01b) */
   --ancho-panel-marca: 620px;
@@ -1716,7 +1717,7 @@ a {
 
 .dato-resumen--enlace:hover {
   border-color: var(--color-primario);
-  box-shadow: 0 2px 8px rgba(22, 40, 80, 0.08);
+  box-shadow: var(--sombra-enlace-hover);
 }
 
 .dato-resumen__etiqueta {

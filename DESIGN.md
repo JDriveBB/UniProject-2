@@ -370,6 +370,7 @@ El sistema es plano. La profundidad se da por capas de tono (fondo gris, superfi
 
 ### Shadow Vocabulary
 - **Sombra de ingreso** (`--sombra`: `0 8px 24px rgba(0, 0, 0, 0.06)`): solo la tarjeta de ingreso y registro.
+- **Sombra de enlace** (`--sombra-enlace-hover`: `0 2px 8px rgba(22, 40, 80, 0.08)`): solo al pasar el mouse por una tarjeta de resumen que es enlace (junto con el borde `primario`); en reposo no hay sombra.
 - **Anillo de foco** (`--foco`: anillo blanco de 2 px y anillo azul `primario` de 2 px por fuera): todo elemento con foco de teclado.
 - **Foco sobre marca** (`--foco-sobre-marca`: anillo blanco de 2 px): foco dentro de la barra superior azul marino.
 

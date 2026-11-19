@@ -536,6 +536,11 @@
         "purpose": "Solo la tarjeta de ingreso y registro."
       },
       {
+        "name": "sombra-enlace-hover",
+        "value": "0 2px 8px rgba(22, 40, 80, 0.08)",
+        "purpose": "Solo al pasar el mouse por una tarjeta de resumen que es enlace."
+      },
+      {
         "name": "foco",
         "value": "0 0 0 2px var(--color-superficie), 0 0 0 4px var(--color-primario)",
         "purpose": "Anillo de foco de teclado en toda la aplicación."
