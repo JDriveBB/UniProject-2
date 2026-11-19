@@ -5,6 +5,7 @@ import type { Marca } from '../tablero/marcas';
 export const SIN_NOTIFICACIONES =
   'Aún no tienes notificaciones. Aquí verás los mismos avisos que te llegan por Telegram.';
 export const SOLO_BANDEJA = 'Solo en la bandeja: cuando se generó no tenías Telegram vinculado.';
+export const VINCULAR_TELEGRAM = 'Vincular Telegram en tu perfil';
 export const LIMITE_BANDEJA = 50;
 export const TEXTO_LIMITE = 'Se muestran las 50 notificaciones más recientes.';
 export const TODAS_LEIDAS = 'Marcaste todas las notificaciones como leídas.';

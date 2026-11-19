@@ -20,6 +20,7 @@ import {
   NUEVA,
   SIN_NOTIFICACIONES,
   SOLO_BANDEJA,
+  VINCULAR_TELEGRAM,
   TEXTO_LIMITE,
   textoNoLeidas,
   TODAS_LEIDAS,
@@ -201,7 +202,9 @@ export function Notificaciones() {
                     </div>
                     <p className="notificacion__mensaje">{n.mensaje}</p>
                     {n.estadoEnvio === 'SIN_TELEGRAM' && (
-                      <p className="texto-ayuda">{SOLO_BANDEJA}</p>
+                      <p className="texto-ayuda">
+                        {SOLO_BANDEJA} <Link to="/perfil">{VINCULAR_TELEGRAM}</Link>
+                      </p>
                     )}
                   </div>
                   <div className="notificacion__acciones">
