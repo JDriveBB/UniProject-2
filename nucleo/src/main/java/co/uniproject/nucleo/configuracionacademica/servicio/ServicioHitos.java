@@ -93,6 +93,7 @@ public class ServicioHitos {
     @Transactional
     public CriterioVista crearCriterio(UsuarioAutenticado usuario, long idHito, SolicitudCriterio solicitud) {
         hitoDelDocente(usuario, idHito);
+        bloquearHito(idHito);
         exigirRubricaLibre(idHito);
         exigirPesos(idHito, null, solicitud.pesoPorcentaje());
         CriterioRubrica c = new CriterioRubrica();
@@ -108,6 +109,7 @@ public class ServicioHitos {
     public CriterioVista actualizarCriterio(UsuarioAutenticado usuario, long idHito, long idCriterio,
                                             SolicitudCriterio solicitud) {
         hitoDelDocente(usuario, idHito);
+        bloquearHito(idHito);
         CriterioRubrica c = criterioDelHito(idHito, idCriterio);
         exigirRubricaLibre(idHito);
         exigirPesos(idHito, idCriterio, solicitud.pesoPorcentaje());
@@ -125,6 +127,7 @@ public class ServicioHitos {
     @Transactional
     public void eliminarCriterio(UsuarioAutenticado usuario, long idHito, long idCriterio) {
         hitoDelDocente(usuario, idHito);
+        bloquearHito(idHito);
         CriterioRubrica c = criterioDelHito(idHito, idCriterio);
         exigirRubricaLibre(idHito);
         criterios.delete(c);
@@ -156,6 +159,14 @@ public class ServicioHitos {
             throw new ReglaNegocioException("RUBRICA_EN_USO",
                     "La rúbrica ya se usó para calificar este hito: no se puede cambiar");
         }
+    }
+
+    /** Serializa altas y ediciones de criterios del mismo hito para que la suma de pesos no pase de 100 %. */
+    private void bloquearHito(long idHito) {
+        jdbc.sql("SELECT id_hito FROM hito WHERE id_hito = :hito FOR NO KEY UPDATE")
+                .param("hito", idHito)
+                .query(Long.class)
+                .single();
     }
 
     private void exigirPesos(long idHito, Long idCriterioExcluido, BigDecimal pesoNuevo) {

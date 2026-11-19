@@ -118,6 +118,10 @@ public class ServicioEquipos {
     @Transactional
     public EquipoVista quitarMiembro(UsuarioAutenticado usuario, long idEquipo, long idUsuario) {
         Equipo equipo = equipoDelDocente(usuario, idEquipo);
+        jdbc.sql("SELECT id_equipo FROM equipo WHERE id_equipo = :equipo FOR NO KEY UPDATE")
+                .param("equipo", idEquipo)
+                .query(Long.class)
+                .single();
         MiembroEquipoId id = new MiembroEquipoId(idEquipo, idUsuario);
         if (!miembros.existsById(id)) {
             throw new RecursoNoEncontradoException("Esa persona no es miembro del equipo");
@@ -133,6 +137,10 @@ public class ServicioEquipos {
     @Transactional
     public EquipoVista cambiarLider(UsuarioAutenticado usuario, long idEquipo, SolicitudLider solicitud) {
         Equipo equipo = equipoDelDocente(usuario, idEquipo);
+        jdbc.sql("SELECT id_equipo FROM equipo WHERE id_equipo = :equipo FOR NO KEY UPDATE")
+                .param("equipo", idEquipo)
+                .query(Long.class)
+                .single();
         long nuevo = solicitud.idUsuario();
         if (!permisos.esIntegranteDelEquipo(nuevo, idEquipo)) {
             throw new ReglaNegocioException("NO_ES_MIEMBRO", "El líder debe ser miembro del equipo");
@@ -147,10 +155,13 @@ public class ServicioEquipos {
                             + "AND rol_equipo = 'LIDER'")
                     .param("equipo", idEquipo)
                     .update();
-            jdbc.sql("UPDATE miembro_equipo SET rol_equipo = 'LIDER' WHERE id_equipo = :equipo AND id_usuario = :usuario")
+            int promovidos = jdbc.sql("UPDATE miembro_equipo SET rol_equipo = 'LIDER' WHERE id_equipo = :equipo AND id_usuario = :usuario")
                     .param("equipo", idEquipo)
                     .param("usuario", nuevo)
                     .update();
+            if (promovidos != 1) {
+                throw new ReglaNegocioException("NO_ES_MIEMBRO", "El líder debe ser miembro del equipo");
+            }
             auditoria.registrar(EntradaAuditoria.cambio(usuario.idUsuario(), "equipo", idEquipo,
                     AccionAuditoria.ACTUALIZAR, "lider", anterior.map(String::valueOf).orElse(null),
                     String.valueOf(nuevo)));
