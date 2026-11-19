@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { crearEquipo, detalleProyecto } from '../api/proyectos';
 import type { EquipoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Campo } from '../componentes/Campo';
 import { Casilla } from '../componentes/Casilla';
@@ -14,8 +15,9 @@ import { FilaMonitores } from './FilaMonitores';
 import { TarjetaEquipo } from './TarjetaEquipo';
 import { MAXIMO_NOMBRE_EQUIPO, validarNombreEquipo } from './validacion';
 
-const NOTA = 'Todos los usuarios se registran como estudiantes. El docente designa al líder de cada equipo y, si la '
-  + 'institución trabaja con monitores, a los monitores del proyecto.';
+const NOTA =
+  'Todos los usuarios se registran como estudiantes. El docente designa al líder de cada equipo y, si la ' +
+  'institución trabaja con monitores, a los monitores del proyecto.';
 
 interface PropsEquipos {
   /** null mientras el proyecto no se ha guardado por primera vez. */
@@ -30,7 +32,13 @@ interface PropsEquipos {
   alActualizarEquipo: (equipo: EquipoVista) => void;
 }
 
-function RejillaEquipos({ idProyecto, equipos, editable, alActualizarEquipo, alHabilitarCorreo }: {
+function RejillaEquipos({
+  idProyecto,
+  equipos,
+  editable,
+  alActualizarEquipo,
+  alHabilitarCorreo,
+}: {
   idProyecto: number;
   equipos: EquipoVista[];
   editable: boolean;
@@ -66,6 +74,7 @@ export function TarjetaEquipos({
   alCambiarUsaMonitores,
   alActualizarEquipo,
 }: PropsEquipos) {
+  const avisar = useAvisos();
   const [versionCorreos, setVersionCorreos] = useState(0);
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
@@ -116,7 +125,7 @@ export function TarjetaEquipos({
     try {
       alActualizarEquipo(await crearEquipo(idProyecto, nombre.trim()));
       cerrar();
-      setMensaje({ tipo: 'exito', texto: 'Equipo creado.' });
+      avisar('Equipo creado.');
     } catch (e) {
       setMensaje({ tipo: 'error', texto: mensajeErrorApi(e, CAMPOS_EQUIPO) });
     } finally {
@@ -173,11 +182,7 @@ export function TarjetaEquipos({
       {editable &&
         usaMonitores &&
         (usaMonitoresGuardado && idProyecto !== null ? (
-          <FilaMonitores
-            idProyecto={idProyecto}
-            version={versionCorreos}
-            alHabilitarCorreo={correoHabilitado}
-          />
+          <FilaMonitores idProyecto={idProyecto} version={versionCorreos} alHabilitarCorreo={correoHabilitado} />
         ) : (
           <p className="texto-secundario">Guarda el proyecto para habilitar monitores.</p>
         ))}

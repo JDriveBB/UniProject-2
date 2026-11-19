@@ -3,6 +3,7 @@ import { mensajeDeError } from '../api/cliente';
 import { datosPersonales } from '../api/perfil';
 import type { DatosPersonales } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
@@ -15,12 +16,11 @@ import type { Mensaje } from '../proyectos/errores';
 import { useUsuario } from '../sesion/ContextoSesion';
 
 type EstadoCarga =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; datos: DatosPersonales };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; datos: DatosPersonales };
 
 export function Perfil() {
   const usuario = useUsuario();
+  const avisarBreve = useAvisos();
   const [carga, setCarga] = useState<EstadoCarga>({ estado: 'cargando' });
   const [vuelta, setVuelta] = useState(0);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
@@ -54,6 +54,11 @@ export function Perfil() {
   }, [foco, idAviso]);
 
   function avisar(m: Mensaje) {
+    if (m.tipo === 'exito') {
+      setMensaje(null);
+      avisarBreve(m.texto);
+      return;
+    }
     setMensaje(m);
     setFoco(idAviso);
   }
@@ -93,27 +98,16 @@ export function Perfil() {
             telegramVinculado={usuario.telegramVinculado}
             alCambiarNombre={(nombre) =>
               setCarga((prev) =>
-                prev.estado === 'listo'
-                  ? { estado: 'listo', datos: { ...prev.datos, nombre } }
-                  : prev,
+                prev.estado === 'listo' ? { estado: 'listo', datos: { ...prev.datos, nombre } } : prev,
               )
             }
             avisar={avisar}
           />
-          <TarjetaContrasena
-            telegramVinculado={usuario.telegramVinculado}
-            avisar={avisar}
-          />
+          <TarjetaContrasena telegramVinculado={usuario.telegramVinculado} avisar={avisar} />
         </div>
         <div id={ID_TELEGRAM} className="perfil__columna">
-          <TarjetaTelegram
-            vinculado={usuario.telegramVinculado}
-            avisar={avisar}
-          />
-          <TarjetaEliminarCuenta
-            rol={usuario.rol}
-            avisar={avisar}
-          />
+          <TarjetaTelegram vinculado={usuario.telegramVinculado} avisar={avisar} />
+          <TarjetaEliminarCuenta rol={usuario.rol} avisar={avisar} />
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { ErrorApi, mensajeDeError } from '../api/cliente';
 import { avisarCambioBandeja, bandeja, marcarLeida, marcarTodasLeidas } from '../api/notificaciones';
 import type { Bandeja, NotificacionVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
@@ -27,12 +28,10 @@ import {
 } from '../notificaciones/vista';
 import type { Mensaje } from '../proyectos/errores';
 
-type EstadoCarga =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; datos: Bandeja };
+type EstadoCarga = { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; datos: Bandeja };
 
 export function Notificaciones() {
+  const avisar = useAvisos();
   const navegar = useNavigate();
   const [carga, setCarga] = useState<EstadoCarga>({ estado: 'cargando' });
   const [vuelta, setVuelta] = useState(0);
@@ -89,9 +88,7 @@ export function Notificaciones() {
     try {
       await marcarLeida(n.idNotificacion);
       setCarga((prev) =>
-        prev.estado === 'listo'
-          ? { estado: 'listo', datos: marcarEnBandeja(prev.datos, n.idNotificacion) }
-          : prev
+        prev.estado === 'listo' ? { estado: 'listo', datos: marcarEnBandeja(prev.datos, n.idNotificacion) } : prev,
       );
       avisarCambioBandeja();
       setFoco(`${prefijoFila}-${n.idNotificacion}`);
@@ -113,13 +110,11 @@ export function Notificaciones() {
     try {
       await marcarTodasLeidas();
       setCarga((prev) =>
-        prev.estado === 'listo'
-          ? { estado: 'listo', datos: marcarTodasEnBandeja(prev.datos) }
-          : prev
+        prev.estado === 'listo' ? { estado: 'listo', datos: marcarTodasEnBandeja(prev.datos) } : prev,
       );
       avisarCambioBandeja();
-      setMensaje({ tipo: 'exito', texto: TODAS_LEIDAS });
-      setFoco(idAviso);
+      setMensaje(null);
+      avisar(TODAS_LEIDAS);
     } catch (e: unknown) {
       setMensaje({ tipo: 'error', texto: mensajeDeError(e) });
       setFoco(idAviso);
@@ -183,9 +178,7 @@ export function Notificaciones() {
             {datos.notificaciones.map((n) => {
               const marca = marcaTipo(n.tipo);
               const destino = enlaceInterno(n.enlace);
-              const clasesFila = ['notificacion', !n.leida && 'notificacion--no-leida']
-                .filter(Boolean)
-                .join(' ');
+              const clasesFila = ['notificacion', !n.leida && 'notificacion--no-leida'].filter(Boolean).join(' ');
 
               return (
                 <li
@@ -241,9 +234,7 @@ export function Notificaciones() {
               );
             })}
           </ul>
-          {datos.notificaciones.length >= LIMITE_BANDEJA && (
-            <p className="texto-ayuda">{TEXTO_LIMITE}</p>
-          )}
+          {datos.notificaciones.length >= LIMITE_BANDEJA && <p className="texto-ayuda">{TEXTO_LIMITE}</p>}
         </>
       )}
     </div>

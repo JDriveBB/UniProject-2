@@ -12,6 +12,7 @@ import {
 } from '../api/proyectos';
 import type { EquipoVista, ProyectoDetalle } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
@@ -79,6 +80,7 @@ export function NuevoProyecto() {
  */
 function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
   const usuario = useUsuario();
+  const avisar = useAvisos();
   const navegar = useNavigate();
   const ubicacion = useLocation();
   const esNuevo = idRuta === null;
@@ -221,13 +223,13 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
         setBorrador(recargado);
         setSeleccion(claveSeleccionada(claveElegida, recargado));
         setIntentado(false);
-        setMensaje({ tipo: 'exito', texto: 'Cambios guardados.' });
+        avisar('Cambios guardados.');
       }
     } catch {
       /* Aclaración 3: se conserva el mensaje del paso fallido; con datos viejos no se deja volver a guardar. */
       setDesincronizado(true);
       if (fallo === null) {
-        setMensaje({ tipo: 'exito', texto: 'Cambios guardados.' });
+        avisar('Cambios guardados.');
       }
     } finally {
       setGuardando(false);
@@ -284,7 +286,9 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
               setBorrador((b) => conCriterio(b, claveHito, claveCriterio, cambios))
             }
             alAgregarCriterio={alAgregarCriterio}
-            alQuitarCriterio={(claveHito, claveCriterio) => setBorrador((b) => sinCriterio(b, claveHito, claveCriterio))}
+            alQuitarCriterio={(claveHito, claveCriterio) =>
+              setBorrador((b) => sinCriterio(b, claveHito, claveCriterio))
+            }
           />
           <TarjetaEquipos
             idProyecto={idProyecto}

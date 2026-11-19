@@ -459,6 +459,13 @@ Firmes y compactos, con texto en seminegrita.
 ### Alerts
 - Relleno 12 × 16 px, esquinas de 10 px, texto del estado sobre su fondo pálido (error, éxito, aviso, información). El aviso de sesión vencida queda pegado arriba al desplazarse.
 
+### Avisos breves
+- Confirmaciones de éxito cuya información ya se refleja en la pantalla; errores, advertencias, evaluaciones con notas e instrucciones («Proyecto creado. Ahora puedes…») permanecen como alertas en la página.
+- Contenedor `.avisos` fijo abajo a la derecha con `espacio-5` de margen (abajo al centro con 16 px a cada lado bajo 600 px) y `z-index` por encima del contenido y de la barra; sin `popover`. Existe desde la carga dentro del marco con `role="region"`, `aria-label="Avisos"` y una zona interna `aria-live="polite"`.
+- Máximo 3 visibles (si entra otro, sale el más viejo) y textos repetidos seguidos se juntan sin apilarse. No aparecen mientras haya un `<dialog open>` (esperan a que se cierre) y nunca roban el foco al mostrarse.
+- Tarjeta `.aviso`: fondo `superficie`, borde `borde-tabla`, franja izquierda `exito`, `radio-tarjeta`, sombra `--sombra`, texto que escala hasta 200 % sin cortarse ni desbordar a 320 px, y botón «Cerrar» enfocable (`aria-label="Cerrar aviso"`). Cierre automático a los 4 s, pausado mientras tenga foco o el mouse encima; al cerrarse con teclado, el foco pasa al siguiente aviso o vuelve a `main`.
+- Entrada con `@starting-style` en `duracion-media` y `curva-salida`: solo opacidad por defecto, y desplazamiento (`desplazamiento-entrada`) únicamente bajo `@media (prefers-reduced-motion: no-preference)`.
+
 ### Navigation
 - **Barra superior:** fondo `marca-fondo`, relleno 14 × 32 px. Marca a la izquierda (20 px, negrita, blanca); enlaces en `texto-sobre-marca-secundario`, que pasan a blanco al pasar el mouse (`duracion-rapida`); el activo en blanco y seminegrita. A la derecha: notificaciones con contador rojo en píldora, nombre y rol del usuario, y «Salir». En celular, ver **The Barra En Dos Líneas Rule**.
 - **Pestañas de hitos:** sin fondo, línea inferior de 1 px `borde-tabla`; la activa en `primario`, seminegrita y borde inferior de 2 px, con transición de `duracion-rapida`. Si no caben, se desplazan en horizontal.

@@ -10,15 +10,17 @@ for (const coincidencia of bloqueRoot.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)) {
 }
 
 interface DeclaracionConContexto {
+  preludios: readonly string[];
   propiedad: string;
   valor: string;
   enMovimientoPermitido: boolean;
 }
 
-/** Recorre declaraciones CSS sin comentarios registrando si están dentro de `@media (prefers-reduced-motion: no-preference)`. */
+/** Recorre declaraciones CSS sin comentarios registrando sus preludios y si están dentro de `@media (prefers-reduced-motion: no-preference)`. */
 function recorrerDeclaraciones(css: string): DeclaracionConContexto[] {
   const resultado: DeclaracionConContexto[] = [];
   const pilaMovimiento: boolean[] = [];
+  const pilaPreludios: string[] = [];
   let inicioSegmento = 0;
   let comilla: string | null = null;
 
@@ -42,12 +44,14 @@ function recorrerDeclaraciones(css: string): DeclaracionConContexto[] {
       const esMediaPermitido = /@media\s*\(\s*prefers-reduced-motion:\s*no-preference\s*\)/.test(preludio);
       const heredado = pilaMovimiento.at(-1) ?? false;
       pilaMovimiento.push(heredado || esMediaPermitido);
+      pilaPreludios.push(preludio);
       inicioSegmento = i + 1;
     } else if (ch === ';' || ch === '}') {
       const trozo = css.slice(inicioSegmento, i).trim();
       const dosPuntos = trozo.indexOf(':');
       if (dosPuntos > 0 && !trozo.startsWith('@')) {
         resultado.push({
+          preludios: [...pilaPreludios],
           propiedad: trozo.slice(0, dosPuntos).trim().toLowerCase(),
           valor: trozo.slice(dosPuntos + 1).trim(),
           enMovimientoPermitido: pilaMovimiento.at(-1) ?? false,
@@ -55,6 +59,7 @@ function recorrerDeclaraciones(css: string): DeclaracionConContexto[] {
       }
       if (ch === '}') {
         pilaMovimiento.pop();
+        pilaPreludios.pop();
       }
       inicioSegmento = i + 1;
     }
@@ -121,5 +126,35 @@ describe('radios, estados y movimiento en tema.css (T-015)', () => {
       expect(valor).not.toMatch(/\b\d+(?:\.\d+)?\s*m?s\b/i);
       expect(valor).not.toMatch(/(?:^|[\s,])\.\d+\s*m?s\b/i);
     }
+  });
+});
+
+describe('avisos breves en tema.css (T-023)', () => {
+  it('limita el desplazamiento del aviso a @media (prefers-reduced-motion: no-preference)', () => {
+    const deAviso = declaraciones.filter((d) =>
+      (d.preludios.at(-1) ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .includes('.aviso'),
+    );
+    const desplazamientos = deAviso.filter(
+      (d) =>
+        d.propiedad === 'translate' ||
+        (d.propiedad === 'transform' && /translate/i.test(d.valor)) ||
+        (d.propiedad === 'transition' && /\btranslate\b/i.test(d.valor)),
+    );
+    expect(desplazamientos.some((d) => d.propiedad === 'translate')).toBe(true);
+    expect(desplazamientos.some((d) => d.preludios.includes('@starting-style') && d.propiedad === 'translate')).toBe(
+      true,
+    );
+    for (const declaracion of desplazamientos) {
+      expect(declaracion.enMovimientoPermitido).toBe(true);
+    }
+
+    const base = deAviso.filter((d) => !d.enMovimientoPermitido);
+    expect(base.some((d) => d.propiedad === 'transition' && /\bopacity\b/i.test(d.valor))).toBe(true);
+    expect(
+      base.some((d) => d.preludios.includes('@starting-style') && d.propiedad === 'opacity' && d.valor === '0'),
+    ).toBe(true);
   });
 });

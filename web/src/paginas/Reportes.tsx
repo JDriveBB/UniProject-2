@@ -7,6 +7,7 @@ import { tableroHito } from '../api/tareas';
 import type { ProyectoDetalle, ProyectoVista } from '../api/tipos';
 import { historialEquipo, reporteEquipo } from '../api/trazabilidad';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
@@ -66,6 +67,7 @@ interface Contenido {
 
 export function Reportes() {
   const usuario = useUsuario();
+  const avisar = useAvisos();
   const navigate = useNavigate();
   const { search } = useLocation();
 
@@ -203,15 +205,16 @@ export function Reportes() {
     const nombre = nombreArchivoReporte(equipo.nombreEquipo, equipo.idEquipo, fechaIsoBogota(new Date()));
     descargarReporte({ reporteEquipo }, equipo.idEquipo, nombre, guardarEnDescargas)
       .then(() => {
-        setMensaje({ tipo: 'exito', texto: textoDescargado(nombre) });
+        setMensaje(null);
+        avisar(textoDescargado(nombre));
         setVueltaEquipo((v) => v + 1);
       })
       .catch((e: unknown) => {
         setMensaje({ tipo: 'error', texto: mensajeErrorDescarga(e) });
+        setFoco(idAviso);
       })
       .finally(() => {
         setDescargando(false);
-        setFoco(idAviso);
       });
   }
 

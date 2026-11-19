@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { agregarMiembro, cambiarLider, habilitarCorreos, quitarMiembro } from '../api/proyectos';
 import type { EquipoVista, MiembroVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { CampoArea } from '../componentes/CampoArea';
 import { ConfirmarQuitar } from '../componentes/ConfirmarQuitar';
@@ -28,13 +29,20 @@ const API_QUITAR: Pick<ApiQuitar, 'quitarMiembro'> = { quitarMiembro };
  * Una tarjeta de equipo de P03: integrantes, "Líder" o "Designar líder" y "Quitar" (Aclaración 2), y
  * "+ Agregar estudiante" (26b-7).
  */
-export function TarjetaEquipo({ idProyecto, equipo, editable, alActualizar, alHabilitarCorreo }: {
+export function TarjetaEquipo({
+  idProyecto,
+  equipo,
+  editable,
+  alActualizar,
+  alHabilitarCorreo,
+}: {
   idProyecto: number;
   equipo: EquipoVista;
   editable: boolean;
   alActualizar: (equipo: EquipoVista) => void;
   alHabilitarCorreo?: () => void;
 }) {
+  const avisar = useAvisos();
   const base = useId();
   const [abierto, setAbierto] = useState(false);
   const [textoCorreos, setTextoCorreos] = useState('');
@@ -145,7 +153,7 @@ export function TarjetaEquipo({ idProyecto, equipo, editable, alActualizar, alHa
     if (r.tipo === 'quitado') {
       alActualizar(r.equipo);
       volverA.current = idAgregar;
-      setMensaje({ tipo: 'exito', texto: textoIntegranteQuitado(m.nombre) });
+      avisar(textoIntegranteQuitado(m.nombre));
     } else {
       volverA.current = idQuitar(m.idUsuario);
       setMensaje({ tipo: 'error', texto: r.mensaje });

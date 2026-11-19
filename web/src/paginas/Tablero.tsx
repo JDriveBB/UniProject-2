@@ -4,6 +4,7 @@ import { detalleProyecto, listarProyectos } from '../api/proyectos';
 import { enviarHito, tableroHito } from '../api/tareas';
 import type { TableroHito } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
@@ -62,6 +63,7 @@ export function TableroDeRuta() {
  */
 function TableroEquipo({ idRuta }: { idRuta: string }) {
   const usuario = useUsuario();
+  const avisar = useAvisos();
   const navigate = useNavigate();
   const { search } = useLocation();
   const idEquipo = idDeRuta(idRuta);
@@ -289,8 +291,14 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
           }}
           alCrear={(m) => {
             setModalAbierto(false);
-            setMensaje(m);
             setVuelta((v) => v + 1);
+            if (m.tipo === 'exito') {
+              setMensaje(null);
+              avisar(m.texto);
+              setFoco(idNueva);
+              return;
+            }
+            setMensaje(m);
             setFoco(idMensaje);
           }}
         />

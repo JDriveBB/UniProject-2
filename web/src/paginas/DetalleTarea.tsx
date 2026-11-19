@@ -1,14 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { detalleProyecto, listarProyectos } from '../api/proyectos';
-import {
-  detalleTarea,
-  listarComentarios,
-  listarCorrecciones,
-  listarEvidencias,
-  tableroHito,
-} from '../api/tareas';
+import { detalleTarea, listarComentarios, listarCorrecciones, listarEvidencias, tableroHito } from '../api/tareas';
 import { Alerta } from '../componentes/Alerta';
+import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
@@ -54,9 +49,7 @@ const API_CARGA: ApiCargaTarea = {
 type TipoModal = 'dependencias' | 'evidencia' | 'version' | AccionTarea;
 
 type EstadoCarga =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; datos: DatosTarea };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; datos: DatosTarea };
 
 export function DetalleTareaDeRuta() {
   const { idTarea } = useParams();
@@ -65,10 +58,11 @@ export function DetalleTareaDeRuta() {
 
 export function DetalleTarea({ idRuta }: { idRuta: string }) {
   const usuario = useUsuario();
+  const avisar = useAvisos();
   const idTarea = idDeRuta(idRuta);
 
   const [carga, setCarga] = useState<EstadoCarga>(() =>
-    idTarea === null ? { estado: 'error', mensaje: SIN_ACCESO_TAREA } : { estado: 'cargando' }
+    idTarea === null ? { estado: 'error', mensaje: SIN_ACCESO_TAREA } : { estado: 'cargando' },
   );
   const [vuelta, setVuelta] = useState(0);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
@@ -162,23 +156,32 @@ export function DetalleTarea({ idRuta }: { idRuta: string }) {
   function cerrar() {
     setModal(null);
     setFoco(botonModal);
+    setBotonModal(null);
   }
 
   function hecho(m: Mensaje) {
+    const veniaDeModal = modal !== null;
     setModal(null);
-    setMensaje(m);
     setVuelta((v) => v + 1);
+    if (m.tipo === 'exito') {
+      setMensaje(null);
+      avisar(m.texto);
+      if (veniaDeModal) {
+        setFoco(botonModal);
+      }
+      setBotonModal(null);
+      return;
+    }
+    setMensaje(m);
     setFoco(idAviso);
+    setBotonModal(null);
   }
 
   return (
     <div className="pagina">
       <EncabezadoPagina titulo={nombre} descripcion={`${etiqueta} · ${tablero.nombreEquipo}`}>
         <div className="pagina__acciones">
-          <Link
-            className="boton boton--secundario"
-            to={rutas.tableroEnHito(tablero.idEquipo, tablero.idHitoEquipo)}
-          >
+          <Link className="boton boton--secundario" to={rutas.tableroEnHito(tablero.idEquipo, tablero.idHitoEquipo)}>
             Volver al tablero
           </Link>
         </div>
@@ -218,10 +221,7 @@ export function DetalleTarea({ idRuta }: { idRuta: string }) {
             idAdjuntar={idBotonAdjuntar}
             idVersion={idBotonVersion}
             alAdjuntar={(nuevaVersion) =>
-              abrir(
-                nuevaVersion ? 'version' : 'evidencia',
-                nuevaVersion ? idBotonVersion : idBotonAdjuntar
-              )
+              abrir(nuevaVersion ? 'version' : 'evidencia', nuevaVersion ? idBotonVersion : idBotonAdjuntar)
             }
           />
           <TarjetaHistorial avances={detalle.avances} />
@@ -266,33 +266,14 @@ export function DetalleTarea({ idRuta }: { idRuta: string }) {
       )}
 
       {modal === 'correccion' && (
-        <ModalCorreccion
-          tarea={tarea}
-          nombre={nombre}
-          evidencias={evidencias}
-          alCerrar={cerrar}
-          alGuardar={hecho}
-        />
+        <ModalCorreccion tarea={tarea} nombre={nombre} evidencias={evidencias} alCerrar={cerrar} alGuardar={hecho} />
       )}
 
       {modal === 'reasignar' && (
-        <ModalReasignar
-          tarea={tarea}
-          nombre={nombre}
-          miembros={miembros}
-          alCerrar={cerrar}
-          alGuardar={hecho}
-        />
+        <ModalReasignar tarea={tarea} nombre={nombre} miembros={miembros} alCerrar={cerrar} alGuardar={hecho} />
       )}
 
-      {modal === 'apoyo' && (
-        <ModalApoyo
-          idTarea={tarea.idTarea}
-          nombre={nombre}
-          alCerrar={cerrar}
-          alGuardar={hecho}
-        />
-      )}
+      {modal === 'apoyo' && <ModalApoyo idTarea={tarea.idTarea} nombre={nombre} alCerrar={cerrar} alGuardar={hecho} />}
     </div>
   );
 }
