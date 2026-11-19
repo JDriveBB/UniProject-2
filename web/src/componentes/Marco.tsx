@@ -9,6 +9,7 @@ import { avisoSesionVisible, BOTON_SESION_EXPIRADA, TEXTO_SESION_EXPIRADA } from
 import { Alerta } from './Alerta';
 import { Boton } from './Boton';
 import { equiposDelUsuario } from '../tablero/ubicacion';
+import { LimiteError } from './LimiteError';
 
 /**
  * Barra superior azul marino de Figma (P02/P03/P04, decisión 26b-1) y el contenido de la ruta. El contador sale de
@@ -60,7 +61,10 @@ export function Marco() {
         if (vigente) {
           setLiderazgo({
             idUsuario: idEstudiante,
-            lider: esLiderDeAlgunEquipo(lista.map((u) => u.equipo), idEstudiante),
+            lider: esLiderDeAlgunEquipo(
+              lista.map((u) => u.equipo),
+              idEstudiante,
+            ),
           });
         }
       })
@@ -125,7 +129,10 @@ export function Marco() {
           <Link to={rutas.perfil()} className="barra__usuario">
             <span className="barra__nombre">{usuario.nombre}</span>
             <span className="barra__rol">
-              {etiquetaRol(usuario.rol, liderazgo !== null && liderazgo.idUsuario === usuario.idUsuario && liderazgo.lider)}
+              {etiquetaRol(
+                usuario.rol,
+                liderazgo !== null && liderazgo.idUsuario === usuario.idUsuario && liderazgo.lider,
+              )}
             </span>
           </Link>
           <button type="button" className="barra__salir" onClick={() => void alSalir()}>
@@ -144,7 +151,9 @@ export function Marco() {
             </Alerta>
           </div>
         )}
-        <Outlet />
+        <LimiteError key={pathname}>
+          <Outlet />
+        </LimiteError>
       </main>
     </div>
   );
