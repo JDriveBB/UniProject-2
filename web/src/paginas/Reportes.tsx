@@ -46,17 +46,10 @@ import {
   SIN_PROYECTOS,
 } from '../reportes/vista';
 import { useUsuario } from '../sesion/ContextoSesion';
-import {
-  etiquetaHito,
-  hitosDelEquipo,
-  mensajeErrorAbrir,
-  SIN_ACCESO_EQUIPO,
-} from '../tablero/ubicacion';
+import { etiquetaHito, hitosDelEquipo, mensajeErrorAbrir, SIN_ACCESO_EQUIPO } from '../tablero/ubicacion';
 
 type EstadoProyectos =
-  | { estado: 'cargando' }
-  | { estado: 'error'; mensaje: string }
-  | { estado: 'listo'; lista: ProyectoVista[] };
+  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; lista: ProyectoVista[] };
 
 interface Detalle {
   idProyecto: number;
@@ -90,19 +83,13 @@ export function Reportes() {
   const idTitulo = useId();
 
   const params = new URLSearchParams(search);
-  const proyecto =
-    proyectos.estado === 'listo'
-      ? elegirProyecto(proyectos.lista, params.get('proyecto'))
-      : null;
+  const proyecto = proyectos.estado === 'listo' ? elegirProyecto(proyectos.lista, params.get('proyecto')) : null;
   const idProyecto = proyecto?.idProyecto ?? null;
 
   const datosProyecto =
-    detalle !== null && idProyecto !== null && detalle.idProyecto === idProyecto
-      ? detalle.datos
-      : null;
+    detalle !== null && idProyecto !== null && detalle.idProyecto === idProyecto ? detalle.datos : null;
 
-  const equipo =
-    datosProyecto !== null ? elegirEquipo(datosProyecto.equipos, params.get('equipo')) : null;
+  const equipo = datosProyecto !== null ? elegirEquipo(datosProyecto.equipos, params.get('equipo')) : null;
   const idEquipo = equipo?.idEquipo ?? null;
 
   const hitos =
@@ -167,11 +154,7 @@ export function Reportes() {
       return;
     }
     let vigente = true;
-    cargarTrazabilidad(
-      { historialEquipo, tableroHito, consultarEvaluacion },
-      idEquipo,
-      idHitoEquipo
-    )
+    cargarTrazabilidad({ historialEquipo, tableroHito, consultarEvaluacion }, idEquipo, idHitoEquipo)
       .then((datos) => {
         if (vigente) {
           setContenido({ idEquipo, idHitoEquipo, datos, error: null });
@@ -217,11 +200,7 @@ export function Reportes() {
       return;
     }
     setDescargando(true);
-    const nombre = nombreArchivoReporte(
-      equipo.nombreEquipo,
-      equipo.idEquipo,
-      fechaIsoBogota(new Date())
-    );
+    const nombre = nombreArchivoReporte(equipo.nombreEquipo, equipo.idEquipo, fechaIsoBogota(new Date()));
     descargarReporte({ reporteEquipo }, equipo.idEquipo, nombre, guardarEnDescargas)
       .then(() => {
         setMensaje({ tipo: 'exito', texto: textoDescargado(nombre) });
@@ -295,10 +274,7 @@ export function Reportes() {
           )}
 
           {datosProyecto === null ? (
-            detalle !== null &&
-            idProyecto !== null &&
-            detalle.idProyecto === idProyecto &&
-            detalle.error !== null ? (
+            detalle !== null && idProyecto !== null && detalle.idProyecto === idProyecto && detalle.error !== null ? (
               <>
                 <Alerta tipo="error">{detalle.error}</Alerta>
                 <div>
@@ -340,7 +316,7 @@ export function Reportes() {
                         ? resumenHito(
                             contenidoVigente.datos.tablero,
                             contenidoVigente.datos.tablero.tareas,
-                            contenidoVigente.datos.evaluacion
+                            contenidoVigente.datos.evaluacion,
                           )
                         : resumenEquipo(equipo, hitos, contenidoVigente.datos.historial)
                     }
@@ -349,9 +325,7 @@ export function Reportes() {
 
                 <Tarjeta titulo="Historial de cambios">
                   <p className="texto-secundario">{EXPLICACION_HISTORIAL}</p>
-                  {hito !== null && (
-                    <p className="texto-secundario">{HISTORIAL_DEL_HITO}</p>
-                  )}
+                  {hito !== null && <p className="texto-secundario">{HISTORIAL_DEL_HITO}</p>}
                   {contenidoVigente.datos.historial.length === LIMITE_HISTORIAL && (
                     <p className="texto-ayuda">{HISTORIAL_RECORTADO}</p>
                   )}
@@ -361,10 +335,12 @@ export function Reportes() {
                         ? filtrarPorHito(
                             contenidoVigente.datos.historial,
                             hito.idHitoEquipo,
-                            contenidoVigente.datos.tablero.tareas
+                            contenidoVigente.datos.tablero.tareas,
                           )
                         : contenidoVigente.datos.historial
                     }
+                    nombres={new Map(equipo.miembros.map((m) => [m.idUsuario, m.nombre] as const))}
+                    visor={{ idUsuario: usuario.idUsuario, esDocente: true }}
                     vacio={hito !== null ? SIN_CAMBIOS_HITO : SIN_CAMBIOS_EQUIPO}
                   />
                 </Tarjeta>

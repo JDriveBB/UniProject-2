@@ -2,13 +2,14 @@ import type { EntradaHistorial, EquipoVista, TableroHito, TareaVista } from '../
 import { fechaDia, fechaHora } from '../formato';
 import { textoEntidad } from '../reportes/vista';
 import { rutas } from '../rutas';
-import { codigosDeTareas } from '../tablero/marcas';
+import { codigosDeTareas, estadoHito, estadoTarea } from '../tablero/marcas';
 import { etiquetaHito, rolEnEquipo } from '../tablero/ubicacion';
 import type { EquipoUbicado, HitoDelEquipo } from '../tablero/ubicacion';
 import { diaBogota } from './filtros';
 
 export const TITULO_HISTORIAL = 'Historial del equipo';
-export const SOLO_EQUIPO_Y_DOCENTE = 'Solo el docente del proyecto y los integrantes del equipo pueden ver este historial.';
+export const SOLO_EQUIPO_Y_DOCENTE =
+  'Solo el docente del proyecto y los integrantes del equipo pueden ver este historial.';
 export const NOTAS_RESERVADAS = 'Las notas individuales de tus compañeros no se muestran aquí: solo ves la tuya.';
 export const TODAS_LAS_ACCIONES = 'Todas las acciones';
 export const SIN_COINCIDENCIAS = 'Ningún cambio coincide con los filtros.';
@@ -56,7 +57,10 @@ export function puedeVerHistorial(u: Pick<EquipoUbicado, 'proyecto' | 'equipo'>,
 }
 
 // Segunda capa: el núcleo ya filtra estas filas para los integrantes (bloque 34); aquí se repite por defensa en profundidad.
-export function entradasVisibles<T extends Pick<EntradaHistorial, 'accion' | 'campo'>>(entradas: T[], visor: Visor): T[] {
+export function entradasVisibles<T extends Pick<EntradaHistorial, 'accion' | 'campo'>>(
+  entradas: T[],
+  visor: Visor,
+): T[] {
   if (visor.esDocente) {
     return [...entradas];
   }
@@ -71,7 +75,7 @@ export function entradasVisibles<T extends Pick<EntradaHistorial, 'accion' | 'ca
 export function indiceEquipo(
   equipo: Pick<EquipoVista, 'idEquipo' | 'miembros'>,
   hitos: HitoDelEquipo[],
-  tableros: Pick<TableroHito, 'idHitoEquipo' | 'tareas'>[]
+  tableros: Pick<TableroHito, 'idHitoEquipo' | 'tareas'>[],
 ): IndiceEquipo {
   const hitosMap = new Map<number, HitoDelEquipo>();
   for (const h of hitos) {
@@ -108,10 +112,7 @@ export function indiceEquipo(
   };
 }
 
-export function referenciaDe(
-  e: Pick<EntradaHistorial, 'entidad' | 'idRegistro'>,
-  indice: IndiceEquipo
-): Referencia {
+export function referenciaDe(e: Pick<EntradaHistorial, 'entidad' | 'idRegistro'>, indice: IndiceEquipo): Referencia {
   if (e.entidad === 'tarea') {
     const t = e.idRegistro !== null ? indice.tareas.get(e.idRegistro) : undefined;
     if (t !== undefined) {
@@ -147,10 +148,27 @@ export function referenciaDe(
   };
 }
 
+const ETIQUETAS_EVIDENCIA: ReadonlyMap<string, string> = new Map([
+  ['PDF', 'PDF'],
+  ['IMAGEN', 'imagen'],
+  ['ENLACE', 'enlace'],
+]);
+
+function textoEstado(valor: string): string {
+  if (valor === 'PENDIENTE' || valor === 'EN_PROGRESO' || valor === 'COMPLETADA') {
+    return estadoTarea(valor).texto;
+  }
+  if (valor === 'EN_CURSO' || valor === 'ENVIADO' || valor === 'EVALUADO') {
+    return estadoHito(valor).texto;
+  }
+  return valor;
+}
+
 export function detalleLegible(
   e: Pick<EntradaHistorial, 'campo' | 'valorAnterior' | 'valorNuevo' | 'detalle'>,
   nombres: ReadonlyMap<number, string>,
-  visor: Visor
+  visor: Visor,
+  tareas?: ReadonlyMap<number, Pick<TareaIndexada, 'codigo' | 'titulo'>>,
 ): string | null {
   const { campo, valorAnterior: a, valorNuevo: b, detalle } = e;
 
@@ -164,6 +182,21 @@ export function detalleLegible(
   };
 
   const nota = (v: string): string => v.replace('.', ',');
+
+  const cambioDesde = (etiqueta: string, formatear: (v: string) => string): string | null => {
+    if (b === null) {
+      return ultimaRegla();
+    }
+    if (a !== null) {
+      return `${etiqueta}: ${formatear(a)} → ${formatear(b)}`;
+    }
+    return `${etiqueta}: ${formatear(b)}`;
+  };
+
+  const nombreTarea = (v: string): string => {
+    const t = /^\d+$/.test(v) ? tareas?.get(Number(v)) : undefined;
+    return t !== undefined ? `${t.codigo} · ${t.titulo}` : TAREA_ELIMINADA;
+  };
 
   if (campo === 'id_encargado' || campo === 'id_usuario' || campo === 'lider') {
     const etiqueta = campo === 'id_encargado' ? 'Encargado' : campo === 'id_usuario' ? 'Integrante' : 'Líder';
@@ -203,6 +236,28 @@ export function detalleLegible(
 
   if (campo === 'solicitud_apoyo' || campo === 'solicitud_correccion' || campo === 'tarea_parcial') {
     return null;
+  }
+
+  if (campo === 'estado') {
+    return cambioDesde('Estado', textoEstado);
+  }
+
+  if (campo === 'porcentaje_avance') {
+    return cambioDesde('Avance', (v) => `${v} %`);
+  }
+
+  if (campo === 'prerrequisito') {
+    const accion = b !== null ? 'Prerrequisito agregado' : a !== null ? 'Prerrequisito quitado' : null;
+    const id = b ?? a;
+    if (accion === null || id === null) {
+      return ultimaRegla();
+    }
+    return tareas !== undefined ? `${accion}: ${nombreTarea(id)}` : accion;
+  }
+
+  if (campo === 'evidencia') {
+    const tipo = b !== null ? ETIQUETAS_EVIDENCIA.get(b.trim().split(/\s+/)[0]) : undefined;
+    return tipo !== undefined ? `Evidencia: ${tipo}` : ultimaRegla();
   }
 
   return ultimaRegla();

@@ -142,10 +142,7 @@ describe('vista del historial', () => {
     const tableros = [
       {
         idHitoEquipo: 12,
-        tareas: [
-          tarea({ idTarea: 41, titulo: 'Casos de uso' }),
-          tarea({ idTarea: 40, titulo: 'Requisitos' }),
-        ],
+        tareas: [tarea({ idTarea: 41, titulo: 'Casos de uso' }), tarea({ idTarea: 40, titulo: 'Requisitos' })],
       },
       {
         idHitoEquipo: 13,
@@ -204,150 +201,203 @@ describe('vista del historial', () => {
     const visorLuis: Visor = { idUsuario: 11, esDocente: false };
 
     expect(
-      detalleLegible(
-        entrada({ campo: 'id_encargado', valorAnterior: '10', valorNuevo: '11' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'id_encargado', valorAnterior: '10', valorNuevo: '11' }), nombres, docente),
     ).toBe('Encargado: Ana → Luis');
     expect(
-      detalleLegible(
-        entrada({ campo: 'id_encargado', valorAnterior: 'null', valorNuevo: '11' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'id_encargado', valorAnterior: 'null', valorNuevo: '11' }), nombres, docente),
     ).toBe('Encargado: Sin asignar → Luis');
     expect(
-      detalleLegible(
-        entrada({ campo: 'id_encargado', valorAnterior: '10', valorNuevo: '99' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'id_encargado', valorAnterior: '10', valorNuevo: '99' }), nombres, docente),
     ).toBe('Encargado: Ana → Exintegrante');
 
     expect(
-      detalleLegible(
-        entrada({ campo: 'id_usuario', valorAnterior: null, valorNuevo: '11' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'id_usuario', valorAnterior: null, valorNuevo: '11' }), nombres, docente),
     ).toBe('Integrante: Luis');
     expect(
-      detalleLegible(
-        entrada({ campo: 'id_usuario', valorAnterior: '11', valorNuevo: null }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'id_usuario', valorAnterior: '11', valorNuevo: null }), nombres, docente),
     ).toBe('Integrante: Luis');
-    expect(
-      detalleLegible(
-        entrada({ campo: 'lider', valorAnterior: null, valorNuevo: '10' }),
-        nombres,
-        docente
-      )
-    ).toBe('Líder: Ana');
+    expect(detalleLegible(entrada({ campo: 'lider', valorAnterior: null, valorNuevo: '10' }), nombres, docente)).toBe(
+      'Líder: Ana',
+    );
 
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_final:11', valorAnterior: null, valorNuevo: '4.50' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'nota_final:11', valorAnterior: null, valorNuevo: '4.50' }), nombres, docente),
     ).toBe('Nota final de Luis: 4,50');
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_final:11', valorAnterior: null, valorNuevo: '4.50' }),
-        nombres,
-        visorLuis
-      )
+      detalleLegible(entrada({ campo: 'nota_final:11', valorAnterior: null, valorNuevo: '4.50' }), nombres, visorLuis),
     ).toBe('Tu nota final: 4,50');
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_final:11', valorAnterior: '4.50', valorNuevo: '3.80' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'nota_final:11', valorAnterior: '4.50', valorNuevo: '3.80' }), nombres, docente),
     ).toBe('Nota final de Luis: 4,50 → 3,80');
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_final:99', valorAnterior: null, valorNuevo: '4.00' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'nota_final:99', valorAnterior: null, valorNuevo: '4.00' }), nombres, docente),
     ).toBe('Nota final de Exintegrante: 4,00');
 
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_grupal', valorAnterior: '4.15', valorNuevo: '4.30' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'nota_grupal', valorAnterior: '4.15', valorNuevo: '4.30' }), nombres, docente),
     ).toBe('Nota grupal: 4,15 → 4,30');
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_grupal', valorAnterior: '4.15', valorNuevo: '4.30' }),
-        nombres,
-        visorAna
-      )
+      detalleLegible(entrada({ campo: 'nota_grupal', valorAnterior: '4.15', valorNuevo: '4.30' }), nombres, visorAna),
     ).toBe('Nota grupal: 4,30');
     expect(
-      detalleLegible(
-        entrada({ campo: 'nota_grupal', valorAnterior: null, valorNuevo: '4.15' }),
-        nombres,
-        visorAna
-      )
+      detalleLegible(entrada({ campo: 'nota_grupal', valorAnterior: null, valorNuevo: '4.15' }), nombres, visorAna),
     ).toBe('Nota grupal: 4,15');
 
     expect(
-      detalleLegible(
-        entrada({ campo: 'solicitud_apoyo', valorAnterior: null, valorNuevo: '33' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'solicitud_apoyo', valorAnterior: null, valorNuevo: '33' }), nombres, docente),
     ).toBeNull();
     expect(
       detalleLegible(
         entrada({ campo: 'solicitud_correccion', valorAnterior: null, valorNuevo: '33' }),
         nombres,
-        docente
-      )
+        docente,
+      ),
     ).toBeNull();
     expect(
-      detalleLegible(
-        entrada({ campo: 'tarea_parcial', valorAnterior: null, valorNuevo: '33' }),
-        nombres,
-        docente
-      )
+      detalleLegible(entrada({ campo: 'tarea_parcial', valorAnterior: null, valorNuevo: '33' }), nombres, docente),
     ).toBeNull();
 
-    expect(
-      detalleLegible(
-        entrada({ campo: null, detalle: 'Diseño de BD' }),
-        nombres,
-        docente
-      )
-    ).toBe('Diseño de BD');
-    expect(
-      detalleLegible(
-        entrada({ campo: null, detalle: '' }),
-        nombres,
-        docente
-      )
-    ).toBeNull();
-    expect(
-      detalleLegible(
-        entrada({ campo: 'estado', detalle: 'estado: EN_CURSO -> ENVIADO' }),
-        nombres,
-        docente
-      )
-    ).toBe('estado: EN_CURSO -> ENVIADO');
+    expect(detalleLegible(entrada({ campo: null, detalle: 'Diseño de BD' }), nombres, docente)).toBe('Diseño de BD');
+    expect(detalleLegible(entrada({ campo: null, detalle: '' }), nombres, docente)).toBeNull();
+    expect(detalleLegible(entrada({ campo: 'estado', detalle: 'estado: EN_CURSO -> ENVIADO' }), nombres, docente)).toBe(
+      'estado: EN_CURSO -> ENVIADO',
+    );
     expect(
       detalleLegible(
         entrada({ campo: 'id_encargado', valorAnterior: null, valorNuevo: null, detalle: '' }),
         nombres,
-        docente
-      )
+        docente,
+      ),
     ).toBeNull();
+  });
+
+  it('detalle legible para estado, avance, prerrequisito y evidencia', () => {
+    const nombres = new Map<number, string>([
+      [10, 'Ana'],
+      [11, 'Luis'],
+    ]);
+    const docente: Visor = { idUsuario: 7, esDocente: true };
+    const tareas = new Map<number, { codigo: string; titulo: string }>([
+      [40, { codigo: 'T1', titulo: 'Levantar requisitos' }],
+    ]);
+
+    expect(
+      detalleLegible(
+        entrada({ campo: 'estado', valorAnterior: 'PENDIENTE', valorNuevo: 'COMPLETADA' }),
+        nombres,
+        docente,
+      ),
+    ).toBe('Estado: Pendiente → Completada');
+    expect(
+      detalleLegible(entrada({ campo: 'estado', valorAnterior: 'EN_CURSO', valorNuevo: 'ENVIADO' }), nombres, docente),
+    ).toBe('Estado: En progreso → En Revisión');
+    expect(
+      detalleLegible(entrada({ campo: 'estado', valorAnterior: null, valorNuevo: 'EN_PROGRESO' }), nombres, docente),
+    ).toBe('Estado: En progreso');
+    expect(
+      detalleLegible(entrada({ campo: 'estado', valorAnterior: null, valorNuevo: 'OTRO' }), nombres, docente),
+    ).toBe('Estado: OTRO');
+    expect(
+      detalleLegible(
+        entrada({
+          campo: 'estado',
+          valorAnterior: 'PENDIENTE',
+          valorNuevo: null,
+          detalle: 'estado: PENDIENTE -> -',
+        }),
+        nombres,
+        docente,
+      ),
+    ).toBe('estado: PENDIENTE -> -');
+
+    expect(
+      detalleLegible(entrada({ campo: 'porcentaje_avance', valorAnterior: '0', valorNuevo: '100' }), nombres, docente),
+    ).toBe('Avance: 0 % → 100 %');
+    expect(
+      detalleLegible(entrada({ campo: 'porcentaje_avance', valorAnterior: null, valorNuevo: '60' }), nombres, docente),
+    ).toBe('Avance: 60 %');
+    expect(
+      detalleLegible(
+        entrada({
+          campo: 'porcentaje_avance',
+          valorAnterior: '60',
+          valorNuevo: null,
+          detalle: 'porcentaje_avance: 60 -> -',
+        }),
+        nombres,
+        docente,
+      ),
+    ).toBe('porcentaje_avance: 60 -> -');
+
+    expect(
+      detalleLegible(
+        entrada({ campo: 'prerrequisito', valorAnterior: null, valorNuevo: '40' }),
+        nombres,
+        docente,
+        tareas,
+      ),
+    ).toBe('Prerrequisito agregado: T1 · Levantar requisitos');
+    expect(
+      detalleLegible(
+        entrada({ campo: 'prerrequisito', valorAnterior: '99', valorNuevo: null }),
+        nombres,
+        docente,
+        tareas,
+      ),
+    ).toBe('Prerrequisito quitado: Tarea eliminada');
+    expect(
+      detalleLegible(entrada({ campo: 'prerrequisito', valorAnterior: null, valorNuevo: '40' }), nombres, docente),
+    ).toBe('Prerrequisito agregado');
+    expect(
+      detalleLegible(entrada({ campo: 'prerrequisito', valorAnterior: '40', valorNuevo: null }), nombres, docente),
+    ).toBe('Prerrequisito quitado');
+    expect(
+      detalleLegible(
+        entrada({
+          campo: 'prerrequisito',
+          valorAnterior: null,
+          valorNuevo: null,
+          detalle: 'prerrequisito: - -> -',
+        }),
+        nombres,
+        docente,
+        tareas,
+      ),
+    ).toBe('prerrequisito: - -> -');
+
+    expect(
+      detalleLegible(entrada({ campo: 'evidencia', valorAnterior: null, valorNuevo: 'ENLACE 1' }), nombres, docente),
+    ).toBe('Evidencia: enlace');
+    expect(
+      detalleLegible(entrada({ campo: 'evidencia', valorAnterior: null, valorNuevo: 'PDF 3' }), nombres, docente),
+    ).toBe('Evidencia: PDF');
+    expect(
+      detalleLegible(entrada({ campo: 'evidencia', valorAnterior: null, valorNuevo: 'IMAGEN 5' }), nombres, docente),
+    ).toBe('Evidencia: imagen');
+    expect(
+      detalleLegible(
+        entrada({
+          campo: 'evidencia',
+          valorAnterior: null,
+          valorNuevo: 'OTRO 1',
+          detalle: 'evidencia: - -> OTRO 1',
+        }),
+        nombres,
+        docente,
+      ),
+    ).toBe('evidencia: - -> OTRO 1');
+    expect(
+      detalleLegible(
+        entrada({
+          campo: 'evidencia',
+          valorAnterior: null,
+          valorNuevo: null,
+          detalle: 'evidencia: - -> -',
+        }),
+        nombres,
+        docente,
+      ),
+    ).toBe('evidencia: - -> -');
   });
 
   it('días, horas, conteo y «más»', () => {

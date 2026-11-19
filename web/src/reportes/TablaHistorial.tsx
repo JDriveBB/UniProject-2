@@ -1,14 +1,17 @@
 import type { EntradaHistorial } from '../api/tipos';
 import { Tabla, type ColumnaTabla } from '../componentes/Tabla';
 import { fechaHora } from '../formato';
+import { detalleLegible, type Visor } from '../historial/vista';
 import { accionConEntidad } from './vista';
 
 export interface PropsTablaHistorial {
   entradas: EntradaHistorial[];
+  nombres: ReadonlyMap<number, string>;
+  visor: Visor;
   vacio: string;
 }
 
-export function TablaHistorial({ entradas, vacio }: PropsTablaHistorial) {
+export function TablaHistorial({ entradas, nombres, visor, vacio }: PropsTablaHistorial) {
   const columnas: ColumnaTabla<EntradaHistorial>[] = [
     {
       titulo: 'Fecha y hora',
@@ -27,8 +30,10 @@ export function TablaHistorial({ entradas, vacio }: PropsTablaHistorial) {
     },
     {
       titulo: 'Detalle',
-      celda: (f) =>
-        f.detalle !== '' ? <p className="texto-largo">{f.detalle}</p> : <span className="texto-secundario">—</span>,
+      celda: (f) => {
+        const texto = detalleLegible(f, nombres, visor) ?? (f.detalle !== '' ? f.detalle : null);
+        return texto !== null ? <p className="texto-largo">{texto}</p> : <span className="texto-secundario">—</span>;
+      },
     },
   ];
 

@@ -19,13 +19,7 @@ export interface PropsLineaTiempoHistorial {
   prefijoId: string;
 }
 
-export function LineaTiempoHistorial({
-  grupos,
-  hoy,
-  indice,
-  visor,
-  prefijoId,
-}: PropsLineaTiempoHistorial) {
+export function LineaTiempoHistorial({ grupos, hoy, indice, visor, prefijoId }: PropsLineaTiempoHistorial) {
   return (
     <ol className="linea-tiempo">
       {grupos.map((grupo) => {
@@ -37,15 +31,10 @@ export function LineaTiempoHistorial({
               {grupo.entradas.map((entrada) => {
                 const { idLog, fechaHora, autor, accion } = entrada;
                 const ref = referenciaDe(entrada, indice);
-                const detalle = detalleLegible(entrada, indice.nombres, visor);
+                const detalle = detalleLegible(entrada, indice.nombres, visor, indice.tareas);
 
                 return (
-                  <li
-                    key={idLog}
-                    className="evento-historial"
-                    id={`${prefijoId}-${idLog}`}
-                    tabIndex={-1}
-                  >
+                  <li key={idLog} className="evento-historial" id={`${prefijoId}-${idLog}`} tabIndex={-1}>
                     <time className="evento-historial__hora" dateTime={fechaHora}>
                       {horaBogota(fechaHora)}
                     </time>
@@ -63,13 +52,9 @@ export function LineaTiempoHistorial({
                         ) : (
                           <span>{ref.texto}</span>
                         )}
-                        {ref.contexto !== null && (
-                          <span className="texto-secundario">{ref.contexto}</span>
-                        )}
+                        {ref.contexto !== null && <span className="texto-secundario">{ref.contexto}</span>}
                       </p>
-                      {detalle !== null && (
-                        <p className="texto-largo texto-secundario">{detalle}</p>
-                      )}
+                      {detalle !== null && <p className="texto-largo texto-secundario">{detalle}</p>}
                     </div>
                   </li>
                 );
