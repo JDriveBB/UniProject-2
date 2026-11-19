@@ -1,20 +1,9 @@
 import { ErrorApi, mensajeDeError } from '../api/cliente';
-import type {
-  CorreccionVista,
-  EstadoHitoEquipo,
-  EvidenciaVista,
-  TareaVista,
-  TipoEvidencia,
-} from '../api/tipos';
+import type { CorreccionVista, EstadoHitoEquipo, EvidenciaVista, TareaVista, TipoEvidencia } from '../api/tipos';
 import type { TonoInsignia } from '../componentes/Insignia';
-import { fechaCorta } from '../formato';
+import { decimalEsCo, fechaCorta } from '../formato';
 import { mensajeErrorApi, type Campos } from '../proyectos/errores';
-import {
-  estadoTarea,
-  marcasDe,
-  nombreConCodigo,
-  type Marca,
-} from '../tablero/marcas';
+import { estadoTarea, nombreConCodigo, RIESGO, type Marca } from '../tablero/marcas';
 
 export const SIN_ACCESO_TAREA = 'No tienes acceso a esta tarea o no existe.';
 export const SIN_PERMISO_AVANCE = 'Solo el encargado de la tarea o el líder del equipo pueden registrar avance.';
@@ -37,11 +26,27 @@ export interface Prerrequisito {
 }
 
 export function insigniasDeTarea(t: TareaVista, conCorreccion: boolean): Marca[] {
-  const lista: Marca[] = [estadoTarea(t.estado), ...marcasDe(t)];
+  const lista: Marca[] = [estadoTarea(t.estado)];
   if (conCorreccion) {
     lista.push(CORRECCION_SOLICITADA);
   }
   return lista;
+}
+
+export function textoRiesgo(
+  t: Pick<TareaVista, 'estado' | 'nivelRiesgo' | 'holguraHoras'>,
+): { marca: Marca; detalle: string } | null {
+  if (t.estado === 'COMPLETADA' || t.nivelRiesgo === null) {
+    return null;
+  }
+  const marca = RIESGO[t.nivelRiesgo];
+  if (t.holguraHoras === null) {
+    return { marca, detalle: '' };
+  }
+  const horas = decimalEsCo(t.holguraHoras === 0 ? 0 : Math.abs(t.holguraHoras));
+  const detalle =
+    t.holguraHoras >= 0 ? `Margen de ${horas} h de trabajo` : `Faltan ${horas} h de trabajo para llegar a tiempo`;
+  return { marca, detalle };
 }
 
 export function correccionPendiente(cs: CorreccionVista[]): CorreccionVista | null {
@@ -52,11 +57,7 @@ export function correccionPendiente(cs: CorreccionVista[]): CorreccionVista | nu
   return pendientes.reduce((max, c) => (c.idSolicitud > max.idSolicitud ? c : max));
 }
 
-export function prerrequisitosDe(
-  t: TareaVista,
-  tareas: TareaVista[],
-  codigos: Map<number, string>
-): Prerrequisito[] {
+export function prerrequisitosDe(t: TareaVista, tareas: TareaVista[], codigos: Map<number, string>): Prerrequisito[] {
   const ids = [...t.prerrequisitos].sort((a, b) => a - b);
   const mapaTareas = new Map(tareas.map((tarea) => [tarea.idTarea, tarea] as const));
 
@@ -120,7 +121,7 @@ export function primerNombre(nombre: string): string {
 export function textoCorreccion(
   c: CorreccionVista,
   evidencia: string,
-  esElEncargado: boolean
+  esElEncargado: boolean,
 ): { titulo: string; texto: string } {
   const titulo = `Corrección solicitada por ${c.lider} (líder) · ${fechaCorta(c.fechaSolicitud)}`;
   const remate = esElEncargado
@@ -133,7 +134,7 @@ export function textoCorreccion(
 export function bloqueoCorreccion(
   t: TareaVista,
   evidencias: EvidenciaVista[],
-  pendiente: CorreccionVista | null
+  pendiente: CorreccionVista | null,
 ): string | null {
   if (t.idEncargado === null) {
     return 'La tarea no tiene encargado.';

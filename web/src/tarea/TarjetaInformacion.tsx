@@ -4,7 +4,8 @@ import { Boton } from '../componentes/Boton';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { decimalEsCo, fechaDia } from '../formato';
-import type { Prerrequisito } from './vista';
+import { BLOQUEADA, PRERREQUISITO } from '../tablero/marcas';
+import { textoRiesgo, type Prerrequisito } from './vista';
 
 export interface PropsTarjetaInformacion {
   tarea: TareaVista;
@@ -21,6 +22,8 @@ export function TarjetaInformacion({
   idBoton,
   alEstablecer,
 }: PropsTarjetaInformacion) {
+  const riesgo = textoRiesgo(tarea);
+
   return (
     <Tarjeta titulo="Información">
       <dl className="datos-tarea">
@@ -42,6 +45,21 @@ export function TarjetaInformacion({
           <dt className="dato-tarea__etiqueta">Fecha límite</dt>
           <dd className="dato-tarea__valor">{fechaDia(tarea.fechaLimiteEfectiva)}</dd>
         </div>
+        {riesgo !== null && (
+          <div className="dato-tarea">
+            <dt className="dato-tarea__etiqueta">Riesgo de retraso</dt>
+            <dd className="dato-tarea__valor dato-tarea__riesgo">
+              <Insignia tono={riesgo.marca.tono}>{riesgo.marca.texto}</Insignia>
+              {riesgo.detalle !== '' && <span className="texto-secundario">{riesgo.detalle}</span>}
+            </dd>
+          </div>
+        )}
+        {tarea.enRutaCritica && (
+          <div className="dato-tarea">
+            <dt className="dato-tarea__etiqueta">Ruta crítica</dt>
+            <dd className="dato-tarea__valor">Sí · si se atrasa, se atrasa el hito</dd>
+          </div>
+        )}
       </dl>
       {tarea.descripcion !== null && tarea.descripcion !== '' && (
         <p className="dato-tarea__descripcion">{tarea.descripcion}</p>
@@ -49,6 +67,7 @@ export function TarjetaInformacion({
       <div className="caja-dependencias">
         <div className="caja-dependencias__lista">
           <span className="caja-dependencias__titulo">Bloqueada por:</span>
+          {tarea.bloqueada && <Insignia tono={BLOQUEADA.tono}>{BLOQUEADA.texto}</Insignia>}
           {prerrequisitos.length > 0 ? (
             prerrequisitos.map((p) => (
               <Insignia key={p.idTarea} tono={p.tono}>
@@ -58,6 +77,7 @@ export function TarjetaInformacion({
           ) : (
             <span className="texto-secundario">Ninguna tarea.</span>
           )}
+          {tarea.esPrerrequisitoCritico && <Insignia tono={PRERREQUISITO.tono}>{PRERREQUISITO.texto}</Insignia>}
         </div>
         {puedeGestionar && (
           <Boton id={idBoton} variante="suave" onClick={alEstablecer}>

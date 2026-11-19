@@ -6,7 +6,7 @@ import { Tabla } from '../componentes/Tabla';
 import type { ColumnaTabla } from '../componentes/Tabla';
 import { fechaDia } from '../formato';
 import { rutas } from '../rutas';
-import { estadoTarea, marcasDe } from './marcas';
+import { estadoTarea, marcaPrincipal } from './marcas';
 
 /** Tabla de P04 (decisión 26c-10): columnas y anchos de Figma. El título abre el detalle de la tarea (P07, 26d). */
 export function TablaTareas({
@@ -34,9 +34,12 @@ export function TablaTareas({
       titulo: 'Tarea',
       clase: 'tabla__col-tarea',
       celda: (t) => (
-        <Link className="enlace-tarea" to={rutas.tarea(t.idTarea)}>
-          {t.titulo}
-        </Link>
+        <>
+          <Link className="enlace-tarea" to={rutas.tarea(t.idTarea)}>
+            {t.titulo}
+          </Link>
+          {t.enRutaCritica && <span className="solo-lectores"> (ruta crítica)</span>}
+        </>
       ),
     },
     {
@@ -56,15 +59,10 @@ export function TablaTareas({
     { titulo: 'Fecha límite', clase: 'tabla__col-fecha', celda: (t) => fechaDia(t.fechaLimiteEfectiva) },
     {
       titulo: 'Marcas',
-      celda: (t) => (
-        <span className="marcas">
-          {marcasDe(t).map((m) => (
-            <Insignia key={m.texto} tono={m.tono}>
-              {m.texto}
-            </Insignia>
-          ))}
-        </span>
-      ),
+      celda: (t) => {
+        const marca = marcaPrincipal(t);
+        return marca === null ? null : <Insignia tono={marca.tono}>{marca.texto}</Insignia>;
+      },
     },
   ];
   return (
@@ -74,6 +72,7 @@ export function TablaTareas({
       columnas={columnas}
       filas={tareas}
       claveFila={(t) => t.idTarea}
+      claseFila={(t) => (t.enRutaCritica ? 'fila--ruta-critica' : undefined)}
       vacio={mensaje}
     />
   );

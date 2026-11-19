@@ -20,17 +20,44 @@ const ESTADO_HITO: Record<EstadoHitoEquipo, Marca> = {
   EVALUADO: { texto: 'Evaluado', tono: 'exito' },
 };
 
-const BLOQUEADA: Marca = { texto: 'Bloqueada por dependencia', tono: 'neutro' };
-const RUTA_CRITICA: Marca = { texto: 'Ruta crítica', tono: 'info' };
-const PRERREQUISITO: Marca = { texto: 'Prerrequisito crítico', tono: 'critico' };
-const RIESGO: Record<NivelRiesgo, Marca> = {
+export const BLOQUEADA: Marca = { texto: 'Bloqueada por dependencia', tono: 'neutro' };
+export const PRERREQUISITO: Marca = { texto: 'Prerrequisito crítico', tono: 'critico' };
+export const RIESGO: Record<NivelRiesgo, Marca> = {
   ALTO: { texto: 'Riesgo alto', tono: 'peligro' },
   MEDIO: { texto: 'Riesgo medio', tono: 'aviso' },
   BAJO: { texto: 'Riesgo bajo', tono: 'exito' },
 };
 
-/** Leyenda «Marcas:» de P04, en el orden de Figma. */
-export const LEYENDA: readonly Marca[] = [RUTA_CRITICA, PRERREQUISITO, BLOQUEADA, RIESGO.ALTO, RIESGO.MEDIO, RIESGO.BAJO];
+/** Elemento de la leyenda plegable del tablero. */
+export interface ElementoLeyenda {
+  marca: Marca | null;
+  titulo: string;
+  explicacion: string;
+}
+
+/** Leyenda del tablero: franja de ruta crítica y las marcas posibles en filas. */
+export const LEYENDA: readonly ElementoLeyenda[] = [
+  {
+    marca: null,
+    titulo: 'Franja violeta · Ruta crítica',
+    explicacion: 'Si esta tarea se atrasa, se atrasa la entrega del hito.',
+  },
+  {
+    marca: BLOQUEADA,
+    titulo: BLOQUEADA.texto,
+    explicacion: 'Espera a que termine otra tarea antes de poder avanzar.',
+  },
+  {
+    marca: RIESGO.ALTO,
+    titulo: RIESGO.ALTO.texto,
+    explicacion: 'Con el trabajo que falta no alcanza a terminar antes de su fecha límite (4 h de trabajo por día).',
+  },
+  {
+    marca: RIESGO.MEDIO,
+    titulo: RIESGO.MEDIO.texto,
+    explicacion: 'Alcanza, pero con poco margen.',
+  },
+];
 
 export function estadoTarea(estado: EstadoTarea): Marca {
   return ESTADO_TAREA[estado];
@@ -40,22 +67,18 @@ export function estadoHito(estado: EstadoHitoEquipo): Marca {
   return ESTADO_HITO[estado];
 }
 
-/** Marcas de una fila, en el orden de Figma: bloqueada, ruta crítica, prerrequisito crítico, riesgo. */
-export function marcasDe(t: Pick<TareaVista, 'bloqueada' | 'enRutaCritica' | 'esPrerrequisitoCritico' | 'nivelRiesgo'>): Marca[] {
-  const marcas: Marca[] = [];
+/** Marca única de una fila en tablas: prioridad Bloqueada > Riesgo alto > Riesgo medio (null si completada o riesgo bajo). */
+export function marcaPrincipal(t: Pick<TareaVista, 'estado' | 'bloqueada' | 'nivelRiesgo'>): Marca | null {
+  if (t.estado === 'COMPLETADA') {
+    return null;
+  }
   if (t.bloqueada) {
-    marcas.push(BLOQUEADA);
+    return BLOQUEADA;
   }
-  if (t.enRutaCritica) {
-    marcas.push(RUTA_CRITICA);
+  if (t.nivelRiesgo === 'ALTO' || t.nivelRiesgo === 'MEDIO') {
+    return RIESGO[t.nivelRiesgo];
   }
-  if (t.esPrerrequisitoCritico) {
-    marcas.push(PRERREQUISITO);
-  }
-  if (t.nivelRiesgo !== null) {
-    marcas.push(RIESGO[t.nivelRiesgo]);
-  }
-  return marcas;
+  return null;
 }
 
 /** Decisión 26c-9: «T1», «T2»… por idTarea dentro del hito. Solo para mostrar; no es un id del sistema. */

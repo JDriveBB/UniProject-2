@@ -147,8 +147,11 @@
   --relleno-modal: 28px;
   --tamano-titulo-modal: 1.375rem;
   --alto-descripcion-tarea: 70px;
-  --relleno-selector: 8px 10px;
+  --relleno-selector: 8px 12px;
   --alto-lista-selector: 220px;
+  --tamano-chevron: 12px;
+  /* #5f6673 coincide con --color-texto-secundario */
+  --icono-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%235f6673' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --separacion-pestanas: 28px;
   --tamano-pestana: 0.9375rem;
   --relleno-pestana: 10px 0;
@@ -161,6 +164,7 @@
   --ancho-col-estado: 150px;
   --ancho-col-avance: 170px;
   --ancho-col-fecha: 130px;
+  --ancho-franja-critica: 4px;
   --separacion-marcas: 6px;
   --tamano-valor-resumen: 1.625rem;
   --borde-nodo-critico: 2px;
@@ -361,6 +365,17 @@ a {
 
 .campo__entrada[aria-invalid='true'] {
   border-color: var(--color-peligro);
+}
+
+select.campo__entrada {
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  padding-right: var(--espacio-8);
+  background-image: var(--icono-chevron);
+  background-repeat: no-repeat;
+  background-position: right var(--espacio-3) center;
+  background-size: var(--tamano-chevron);
 }
 
 .campo__error {
@@ -1100,6 +1115,10 @@ a {
   border-color: var(--color-peligro);
 }
 
+.marco__contenido select.campo__entrada {
+  padding-right: var(--espacio-8);
+}
+
 .marco__contenido .casilla__etiqueta {
   font-size: var(--tamano-base);
 }
@@ -1621,24 +1640,68 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-/* Leyenda «Marcas:» y marcas de cada fila (P04). */
-.leyenda-marcas {
+/* Leyenda plegable de marcas y franja de ruta crítica (P04). */
+.leyenda-marcas__resumen {
+  width: fit-content;
+  align-content: center;
+  padding: var(--espacio-1) 0;
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-primario);
+  border-radius: var(--radio-casilla);
+  cursor: pointer;
+}
+
+.leyenda-marcas__resumen:hover {
+  text-decoration: underline;
+}
+
+.leyenda-marcas__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: var(--espacio-3) 0 0;
+  padding: var(--espacio-3) var(--espacio-4);
+  list-style: none;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+}
+
+.leyenda-marcas__item {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2) var(--espacio-3);
+}
+
+.leyenda-marcas__ruta {
+  display: inline-flex;
   align-items: center;
   gap: var(--espacio-2);
 }
 
+.leyenda-marcas__franja {
+  flex-shrink: 0;
+  width: var(--ancho-franja-critica);
+  height: var(--espacio-4);
+  border-radius: var(--radio-muestra);
+  background: var(--color-critico);
+}
+
 .leyenda-marcas__titulo {
+  font-size: var(--tamano-insignia);
+  font-weight: var(--peso-seminegrita);
+  color: var(--color-critico);
+}
+
+.leyenda-marcas__explicacion {
   font-size: var(--tamano-pequeno);
-  font-weight: var(--peso-medio);
   color: var(--color-texto-secundario);
 }
 
-.marcas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--separacion-marcas);
+.fila--ruta-critica > td:first-child {
+  box-shadow: inset var(--ancho-franja-critica) 0 0 var(--color-critico);
 }
 
 /* Tabla de tareas (P04): anchos de Figma; Marcas toma el resto, con un mínimo de 18rem (dos insignias por línea).
@@ -1842,6 +1905,7 @@ a {
 .selector__abrir {
   display: flex;
   flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: var(--espacio-2);
   padding: 0;
@@ -1858,7 +1922,14 @@ a {
 }
 
 .selector__flecha {
+  flex-shrink: 0;
+  width: var(--tamano-chevron);
+  height: var(--tamano-chevron);
   margin-left: auto;
+  background-image: var(--icono-chevron);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: var(--tamano-chevron);
 }
 
 .selector__lista {
@@ -2141,6 +2212,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--espacio-1);
+  min-width: 0;
 }
 
 .dato-tarea__etiqueta,
@@ -2158,6 +2230,17 @@ a {
   font-size: var(--tamano-valor-dato);
   font-weight: var(--peso-seminegrita);
   color: var(--color-texto);
+}
+
+.dato-tarea__riesgo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.dato-tarea__riesgo .texto-secundario {
+  font-weight: var(--peso-regular);
 }
 
 .dato-tarea__descripcion {
@@ -3355,7 +3438,8 @@ a {
 .enlace-tarea,
 .enlace-insignia,
 .casilla,
-.evidencia__descargar {
+.evidencia__descargar,
+.leyenda-marcas__resumen {
   min-block-size: 24px;
 }
 
@@ -3369,6 +3453,7 @@ a {
   .enlace-insignia,
   .casilla,
   .evidencia__descargar,
+  .leyenda-marcas__resumen,
   .boton,
   .campo__entrada {
     min-block-size: 44px;

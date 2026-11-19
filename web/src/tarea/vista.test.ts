@@ -13,6 +13,7 @@ import {
   prerrequisitosDe,
   textoCorreccion,
   textoEnlace,
+  textoRiesgo,
   textoSoloLectura,
 } from './vista';
 
@@ -58,13 +59,7 @@ describe('vista de tarea', () => {
     });
 
     const insignias = insigniasDeTarea(t, true);
-    expect(insignias.map((m) => m.texto)).toEqual([
-      'En progreso',
-      'Ruta crítica',
-      'Prerrequisito crítico',
-      'Riesgo alto',
-      'Corrección solicitada',
-    ]);
+    expect(insignias.map((m) => m.texto)).toEqual(['En progreso', 'Corrección solicitada']);
 
     const tarea1 = tarea({
       idTarea: 1,
@@ -140,12 +135,12 @@ describe('vista de tarea', () => {
     const textoEncargado = textoCorreccion(corr, 'modelo_relacional.png', true);
     expect(textoEncargado.titulo).toBe('Corrección solicitada por Juan Benavides (líder) · 23/09/2026');
     expect(textoEncargado.texto).toBe(
-      '«Faltan las llaves foráneas.» Evidencia: modelo_relacional.png. La tarea volvió a En progreso hasta que adjuntes la nueva versión.'
+      '«Faltan las llaves foráneas.» Evidencia: modelo_relacional.png. La tarea volvió a En progreso hasta que adjuntes la nueva versión.',
     );
 
     const textoOtro = textoCorreccion(corr, 'modelo_relacional.png', false);
     expect(textoOtro.texto).toBe(
-      '«Faltan las llaves foráneas.» Evidencia: modelo_relacional.png. La tarea volvió a En progreso hasta que Santy adjunte la nueva versión.'
+      '«Faltan las llaves foráneas.» Evidencia: modelo_relacional.png. La tarea volvió a En progreso hasta que Santy adjunte la nueva versión.',
     );
 
     const ev: EvidenciaVista = {
@@ -172,17 +167,43 @@ describe('vista de tarea', () => {
 
     const err409 = new ErrorApi(409, 'TAREA_BLOQUEADA', 'La tarea está bloqueada', ['Diagrama de casos de uso']);
     expect(mensajeErrorTarea(err409, CAMPOS_AVANCE, 'Sin permiso avance')).toBe(
-      'La tarea está bloqueada: Diagrama de casos de uso'
+      'La tarea está bloqueada: Diagrama de casos de uso',
     );
 
     const err400 = new ErrorApi(400, 'VALIDACION', 'Error de validación', [
       'porcentajeAvance: debe ser menor o igual a 100',
     ]);
     expect(mensajeErrorTarea(err400, CAMPOS_AVANCE, 'Sin permiso avance')).toBe(
-      'Revisa estos campos: Porcentaje de avance'
+      'Revisa estos campos: Porcentaje de avance',
     );
 
     expect(textoSoloLectura('ENVIADO')).toBe('El hito está en revisión: esta tarea no se puede cambiar.');
     expect(textoSoloLectura('EVALUADO')).toBe('El hito ya cerró: esta tarea no se puede cambiar.');
+  });
+
+  it('textoRiesgo muestra nivel (incluido bajo) y margen o faltante en horas de trabajo', () => {
+    expect(textoRiesgo({ estado: 'COMPLETADA', nivelRiesgo: 'ALTO', holguraHoras: -4 })).toBeNull();
+    expect(textoRiesgo({ estado: 'PENDIENTE', nivelRiesgo: null, holguraHoras: 8 })).toBeNull();
+
+    expect(textoRiesgo({ estado: 'EN_PROGRESO', nivelRiesgo: 'BAJO', holguraHoras: 12 })).toEqual({
+      marca: { texto: 'Riesgo bajo', tono: 'exito' },
+      detalle: 'Margen de 12 h de trabajo',
+    });
+    expect(textoRiesgo({ estado: 'PENDIENTE', nivelRiesgo: 'MEDIO', holguraHoras: 0 })).toEqual({
+      marca: { texto: 'Riesgo medio', tono: 'aviso' },
+      detalle: 'Margen de 0 h de trabajo',
+    });
+    expect(textoRiesgo({ estado: 'EN_PROGRESO', nivelRiesgo: 'MEDIO', holguraHoras: 2.5 })).toEqual({
+      marca: { texto: 'Riesgo medio', tono: 'aviso' },
+      detalle: 'Margen de 2,5 h de trabajo',
+    });
+    expect(textoRiesgo({ estado: 'EN_PROGRESO', nivelRiesgo: 'ALTO', holguraHoras: -3.5 })).toEqual({
+      marca: { texto: 'Riesgo alto', tono: 'peligro' },
+      detalle: 'Faltan 3,5 h de trabajo para llegar a tiempo',
+    });
+    expect(textoRiesgo({ estado: 'PENDIENTE', nivelRiesgo: 'ALTO', holguraHoras: -4 })).toEqual({
+      marca: { texto: 'Riesgo alto', tono: 'peligro' },
+      detalle: 'Faltan 4 h de trabajo para llegar a tiempo',
+    });
   });
 });

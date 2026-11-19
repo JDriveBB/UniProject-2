@@ -84,9 +84,11 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
   const ubicar = useCallback(async (id: number) => {
     try {
       const u = await ubicarEquipo(API_UBICACION, id);
-      setUbicacion(u === null
-        ? { estado: 'error', mensaje: SIN_ACCESO_EQUIPO }
-        : { estado: 'listo', equipo: u, hitos: hitosDelEquipo(u) });
+      setUbicacion(
+        u === null
+          ? { estado: 'error', mensaje: SIN_ACCESO_EQUIPO }
+          : { estado: 'listo', equipo: u, hitos: hitosDelEquipo(u) },
+      );
     } catch (e) {
       setUbicacion({ estado: 'error', mensaje: mensajeErrorAbrir(e, SIN_ACCESO_EQUIPO) });
     }
@@ -98,9 +100,8 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
     }
   }, [ubicar, idEquipo]);
 
-  const hito = ubicacion.estado === 'listo'
-    ? hitoElegido(ubicacion.hitos, new URLSearchParams(search).get('hito'))
-    : null;
+  const hito =
+    ubicacion.estado === 'listo' ? hitoElegido(ubicacion.hitos, new URLSearchParams(search).get('hito')) : null;
   const idHitoEquipo = hito === null ? null : hito.idHitoEquipo;
 
   useEffect(() => {
@@ -162,13 +163,13 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
     );
   }
   const rol = rolEnEquipo(ubicado.equipo, usuario.idUsuario);
+  const esDocente = ubicado.proyecto.idDocente === usuario.idUsuario;
   const actual = contenido !== null && contenido.idHitoEquipo === hito.idHitoEquipo ? contenido : null;
   const tablero = actual === null ? null : actual.tablero;
   const editable = tablero !== null && tablero.editable;
-  const verRuta = rol !== null;
+  const verRuta = rol !== null || esDocente;
   const puedeCrear = rol === 'LIDER' && editable;
   const puedeEnviar = rol !== null && editable;
-  const esDocente = ubicado.proyecto.idDocente === usuario.idUsuario;
   const estadoActual = tablero !== null ? tablero.estado : hito.estado;
   const puedeEvaluar = esDocente && estadoActual === 'ENVIADO';
   const verEvaluacion = estadoActual === 'EVALUADO';
@@ -188,12 +189,7 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
     setMensaje(null);
     setEnviando(true);
     try {
-      const res = await enviarConResultado(
-        { enviarHito },
-        h.idHitoEquipo,
-        t.tareas,
-        codigosDeTareas(t.tareas)
-      );
+      const res = await enviarConResultado({ enviarHito }, h.idHitoEquipo, t.tareas, codigosDeTareas(t.tareas));
       setConfirmando(false);
       if (res.tipo === 'error') {
         setMensaje({ tipo: 'error', texto: res.texto });
@@ -235,29 +231,17 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
               </Link>
             )}
             {puedeCrear && (
-              <Boton
-                id={idNueva}
-                variante="secundario"
-                disabled={enviando}
-                onClick={() => setModalAbierto(true)}
-              >
+              <Boton id={idNueva} variante="secundario" disabled={enviando} onClick={() => setModalAbierto(true)}>
                 Nueva tarea
               </Boton>
             )}
             {puedeEnviar && (
-              <Boton
-                id={idEnviar}
-                disabled={enviando}
-                onClick={() => setConfirmando(true)}
-              >
+              <Boton id={idEnviar} disabled={enviando} onClick={() => setConfirmando(true)}>
                 Enviar a revisión
               </Boton>
             )}
             {puedeEvaluar && (
-              <Link
-                className="boton boton--primario"
-                to={rutas.evaluarHito(hito.idHitoEquipo)}
-              >
+              <Link className="boton boton--primario" to={rutas.evaluarHito(hito.idHitoEquipo)}>
                 Evaluar hito
               </Link>
             )}
@@ -269,7 +253,12 @@ function TableroEquipo({ idRuta }: { idRuta: string }) {
           <Alerta tipo={mensaje.tipo}>{mensaje.texto}</Alerta>
         </div>
       )}
-      <PestanasHitos idEquipo={ubicado.equipo.idEquipo} hitos={hitos} activo={hito.idHitoEquipo} alElegir={elegirHito} />
+      <PestanasHitos
+        idEquipo={ubicado.equipo.idEquipo}
+        hitos={hitos}
+        activo={hito.idHitoEquipo}
+        alElegir={elegirHito}
+      />
       {actual === null && <Cargando />}
       {actual !== null && actual.error !== null && (
         <div className="pila">

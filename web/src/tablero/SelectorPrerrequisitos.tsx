@@ -9,8 +9,17 @@ import { nombreConCodigo } from './marcas';
  * lista (un clic) y cada casilla elige una tarea (un clic); la lista sigue abierta para elegir más. Las elegidas
  * quedan como chips con ×. Quien lo usa controla si la lista está abierta (Escape la cierra desde el modal).
  */
-export function SelectorPrerrequisitos({ id, tareas, codigos, elegidas, abierto, error, deshabilitado, alAbrir,
-                                         alCambiar }: {
+export function SelectorPrerrequisitos({
+  id,
+  tareas,
+  codigos,
+  elegidas,
+  abierto,
+  error,
+  deshabilitado,
+  alAbrir,
+  alCambiar,
+}: {
   id: string;
   tareas: TareaVista[];
   codigos: Map<number, string>;
@@ -67,9 +76,7 @@ export function SelectorPrerrequisitos({ id, tareas, codigos, elegidas, abierto,
           onClick={() => alAbrir(!abierto)}
         >
           {chips.length === 0 && <span>{sinTareas ? 'No hay otras tareas en este hito' : 'Ninguna'}</span>}
-          <span className="selector__flecha" aria-hidden="true">
-            ▾
-          </span>
+          <span className="selector__flecha" aria-hidden="true" />
         </button>
       </div>
       {abierto && (

@@ -11,7 +11,7 @@ import { Insignia } from '../componentes/Insignia';
 import { Tabla, type ColumnaTabla } from '../componentes/Tabla';
 import { fechaDia } from '../formato';
 import { rutas } from '../rutas';
-import { estadoTarea, marcasDe } from '../tablero/marcas';
+import { estadoTarea, marcaPrincipal } from '../tablero/marcas';
 
 type EstadoCarga =
   { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; tareas: MiTareaVista[] };
@@ -81,21 +81,8 @@ export function MisTareas() {
     {
       titulo: 'Marcas',
       celda: (t) => {
-        const marcas = marcasDe({
-          bloqueada: t.bloqueada,
-          enRutaCritica: false,
-          esPrerrequisitoCritico: false,
-          nivelRiesgo: t.nivelRiesgo,
-        });
-        return (
-          <span className="marcas">
-            {marcas.map((m) => (
-              <Insignia key={m.texto} tono={m.tono}>
-                {m.texto}
-              </Insignia>
-            ))}
-          </span>
-        );
+        const marca = marcaPrincipal(t);
+        return marca === null ? null : <Insignia tono={marca.tono}>{marca.texto}</Insignia>;
       },
     },
   ];

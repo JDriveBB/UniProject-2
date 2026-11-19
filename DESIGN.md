@@ -427,6 +427,7 @@ Firmes y compactos, con texto en seminegrita.
 ### Chips (Insignias)
 - **Style:** píldora (`radio-insignia`), relleno 4 × 10 px, texto de 12 px en peso medio, sin borde, sin cortes de línea. Texto del estado sobre su fondo pálido: neutro, éxito, aviso, peligro, información, crítico.
 - **State:** el texto siempre dice el estado («Riesgo alto», «Prerrequisito crítico»). Cuando la insignia es un enlace, al pasar el mouse muestra un borde interior de su propio color. En el selector de dependencias la insignia lleva un botón «×» para quitarla.
+- **Marcas en tablas:** como máximo una marca por fila, en orden de prioridad: «Bloqueada por dependencia» > «Riesgo alto» > «Riesgo medio» (ninguna si la tarea está completada). «Riesgo bajo» no aparece en tablas: solo se muestra en el detalle de la tarea junto al margen en horas de trabajo.
 
 ### Cards / Containers
 - **Corner Style:** 14 px (`radio-tarjeta`).
@@ -445,11 +446,13 @@ Firmes y compactos, con texto en seminegrita.
 - **Hover / Focus:** transición de `duracion-rapida` en borde y sombra; al pasar el mouse sin foco ni deshabilitado, el borde pasa a `texto-secundario`. Al enfocar usa el anillo de foco. Los campos con sufijo («%») muestran el anillo en todo el grupo.
 - **Error / Disabled:** `aria-invalid` pone el borde en `peligro` y el mensaje va debajo en texto pequeño `peligro`. Solo lectura: fondo `fondo`.
 - **Casilla:** cuadro de 18 px dibujado (el `input` real sigue accesible), marcada en `primario` con visto blanco.
+- **Selectores:** tanto `<select class="campo__entrada">` (`appearance: none`) como el selector múltiple («Bloqueada por») usan el mismo chevron SVG de 12 px en `texto-secundario` (`--icono-chevron`), separado 12 px del borde derecho y con relleno derecho de 32 px para que el texto no lo tape.
 
 ### Tables
 - Recuadro `.tabla-contenedor`: borde `borde-tabla`, esquinas de 12 px, fondo blanco, `position: relative` y desplazamiento horizontal propio.
 - Encabezado: fondo `tabla-encabezado-fondo`, texto de 12 px en seminegrita `tabla-encabezado-texto`, relleno 12 × 16 px.
 - Filas: texto base, relleno 12 × 16 px, separador de 1 px `borde-tabla`, la última sin borde; cifras tabulares.
+- **Ruta crítica en el tablero:** las filas de la ruta crítica llevan una franja interior violeta (`critico`) de 4 px en el borde izquierdo de la primera celda (y «(ruta crítica)» oculto a la vista para lectores de pantalla). La leyenda de franja y marcas va en un `<details>` cerrado por defecto («¿Qué significan las marcas?»).
 - Cada tabla tiene un `<caption>` solo para lectores de pantalla y un texto para cuando no hay filas.
 - Ancho y corte de palabras según **The Tabla Que Se Desplaza Rule**.
 

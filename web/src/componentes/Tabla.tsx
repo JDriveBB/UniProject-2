@@ -13,6 +13,8 @@ interface PropsTabla<T> {
   columnas: ColumnaTabla<T>[];
   filas: T[];
   claveFila: (fila: T) => string | number;
+  /** Clase CSS opcional por fila (<tr>). */
+  claseFila?: (fila: T) => string | undefined;
   /** Texto cuando no hay filas. */
   vacio: string;
   /** Clase extra de la tabla (p. ej. tabla--tareas). */
@@ -20,7 +22,7 @@ interface PropsTabla<T> {
 }
 
 /** Tabla del sistema de diseño (P04): encabezado gris de 12 px, filas de 14 px, borde y radio de tabla. */
-export function Tabla<T>({ titulo, columnas, filas, claveFila, vacio, clase }: PropsTabla<T>) {
+export function Tabla<T>({ titulo, columnas, filas, claveFila, claseFila, vacio, clase }: PropsTabla<T>) {
   return (
     <div className="tabla-contenedor">
       <table className={['tabla', clase].filter(Boolean).join(' ')}>
@@ -42,13 +44,16 @@ export function Tabla<T>({ titulo, columnas, filas, claveFila, vacio, clase }: P
               </td>
             </tr>
           ) : (
-            filas.map((f) => (
-              <tr key={claveFila(f)}>
-                {columnas.map((c) => (
-                  <td key={c.titulo}>{c.celda(f)}</td>
-                ))}
-              </tr>
-            ))
+            filas.map((f) => {
+              const extra = claseFila?.(f);
+              return (
+                <tr key={claveFila(f)} className={extra || undefined}>
+                  {columnas.map((c) => (
+                    <td key={c.titulo}>{c.celda(f)}</td>
+                  ))}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
