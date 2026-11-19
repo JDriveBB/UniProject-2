@@ -22,6 +22,12 @@ import java.util.TreeSet;
  */
 public final class MotorDependencias {
 
+    /**
+     * Horas de trabajo disponibles por día de calendario (decisión de Santy 2026-11-19, D-10; el estudiante no
+     * trabaja 24 h al día).
+     */
+    public static final int HORAS_TRABAJO_POR_DIA = 4;
+
     private MotorDependencias() {}
 
     /** Orden topológico determinista (Kahn; entre las tareas disponibles va primero el id menor). */
@@ -75,8 +81,14 @@ public final class MotorDependencias {
         for (long id : orden) {
             Duration d = duracion.get(id);
             Duration holgura = finTardio.get(id).minus(finTemprano.get(id));
-            tiempos.put(id, new Tiempos(finTemprano.get(id).minus(d), finTemprano.get(id),
-                    finTardio.get(id).minus(d), finTardio.get(id), holgura));
+            tiempos.put(
+                    id,
+                    new Tiempos(
+                            finTemprano.get(id).minus(d),
+                            finTemprano.get(id),
+                            finTardio.get(id).minus(d),
+                            finTardio.get(id),
+                            holgura));
             if (holgura.isZero()) {
                 criticas.add(id);
             }
@@ -85,12 +97,31 @@ public final class MotorDependencias {
     }
 
     /**
-     * RF9: misma pasada CPM, pero desde 'ahora' y con lo que le falta a cada tarea (duración × (100 - avance) / 100).
-     * El fin tardío de cada tarea es el menor entre su propia fecha límite y el inicio tardío de sus sucesoras.
-     * Devuelve una entrada por tarea, ordenada por id.
+     * RF9: evalúa el riesgo usando {@link #HORAS_TRABAJO_POR_DIA} horas de trabajo por cada día de calendario.
+     *
+     * @see #evaluarRiesgo(Collection, Instant, Map, int)
      */
-    public static List<RiesgoTarea> evaluarRiesgo(Collection<TareaPlan> tareas, Instant ahora,
-                                                  Map<Long, Instant> fechaLimitePorTarea) {
+    public static List<RiesgoTarea> evaluarRiesgo(
+            Collection<TareaPlan> tareas, Instant ahora, Map<Long, Instant> fechaLimitePorTarea) {
+        return evaluarRiesgo(tareas, ahora, fechaLimitePorTarea, HORAS_TRABAJO_POR_DIA);
+    }
+
+    /**
+     * RF9: misma pasada CPM, pero desde 'ahora' y con lo que le falta a cada tarea (duración × (100 - avance) / 100).
+     * Las fechas límite se convierten a tiempo de trabajo disponible ({@code horasTrabajoPorDia} por cada 24 h de
+     * calendario), el CPM, la holgura y el umbral de {@link NivelRiesgo#MEDIO} ({@code < duración / 4}) se calculan
+     * en tiempo de trabajo, y {@code finProyectado} vuelve a tiempo de calendario. El fin tardío de cada tarea es el
+     * menor entre su propia fecha límite y el inicio tardío de sus sucesoras. Devuelve una entrada por tarea,
+     * ordenada por id.
+     */
+    public static List<RiesgoTarea> evaluarRiesgo(
+            Collection<TareaPlan> tareas,
+            Instant ahora,
+            Map<Long, Instant> fechaLimitePorTarea,
+            int horasTrabajoPorDia) {
+        if (horasTrabajoPorDia < 1 || horasTrabajoPorDia > 24) {
+            throw new IllegalArgumentException("horasTrabajoPorDia fuera de 1..24: " + horasTrabajoPorDia);
+        }
         Map<Long, TareaPlan> porId = indexar(tareas);
         if (!fechaLimitePorTarea.keySet().containsAll(porId.keySet())) {
             throw new IllegalArgumentException("Falta la fecha límite de alguna tarea");
@@ -99,8 +130,13 @@ public final class MotorDependencias {
         Map<Long, Duration> restante = new HashMap<>();
         Map<Long, Duration> limite = new HashMap<>();
         for (TareaPlan t : porId.values()) {
-            restante.put(t.id(), t.duracionEstimada().multipliedBy(100 - t.avance()).dividedBy(100));
-            limite.put(t.id(), Duration.between(ahora, fechaLimitePorTarea.get(t.id())));
+            restante.put(
+                    t.id(), t.duracionEstimada().multipliedBy(100 - t.avance()).dividedBy(100));
+            limite.put(
+                    t.id(),
+                    Duration.between(ahora, fechaLimitePorTarea.get(t.id()))
+                            .multipliedBy(horasTrabajoPorDia)
+                            .dividedBy(24));
         }
         Map<Long, Duration> finTemprano = adelante(porId, orden, restante);
         Map<Long, Duration> finTardio = atras(porId, orden, restante, limite);
@@ -118,7 +154,9 @@ public final class MotorDependencias {
             } else {
                 nivel = NivelRiesgo.BAJO;
             }
-            resultado.add(new RiesgoTarea(id, nivel, ahora.plus(finTemprano.get(id)), holgura));
+            Instant finProyectado =
+                    ahora.plus(finTemprano.get(id).multipliedBy(24).dividedBy(horasTrabajoPorDia));
+            resultado.add(new RiesgoTarea(id, nivel, finProyectado, holgura));
         }
         return List.copyOf(resultado);
     }
@@ -142,8 +180,8 @@ public final class MotorDependencias {
      * Caso de uso "Establecer dependencias" (entrega1 §2.7): un candidato es cíclico si es la propia tarea o si
      * depende, directa o recursivamente, de ella. Los demás se aceptan (no se influyen entre sí).
      */
-    public static ResultadoDependencias agregarPrerrequisitos(Collection<TareaPlan> tareas, long tareaId,
-                                                              Set<Long> candidatos) {
+    public static ResultadoDependencias agregarPrerrequisitos(
+            Collection<TareaPlan> tareas, long tareaId, Set<Long> candidatos) {
         Map<Long, TareaPlan> porId = indexar(tareas);
         if (!porId.containsKey(tareaId)) {
             throw new IllegalArgumentException("Tarea inexistente: " + tareaId);
@@ -191,8 +229,8 @@ public final class MotorDependencias {
     }
 
     /** Pasada hacia adelante: fin temprano = máximo fin temprano de los prerrequisitos (o cero) + duración. */
-    private static Map<Long, Duration> adelante(Map<Long, TareaPlan> porId, List<Long> orden,
-                                                Map<Long, Duration> duracion) {
+    private static Map<Long, Duration> adelante(
+            Map<Long, TareaPlan> porId, List<Long> orden, Map<Long, Duration> duracion) {
         Map<Long, Duration> fin = new HashMap<>();
         for (long id : orden) {
             Duration inicio = Duration.ZERO;
@@ -205,8 +243,8 @@ public final class MotorDependencias {
     }
 
     /** Pasada hacia atrás: fin tardío = mínimo entre el límite propio y el inicio tardío de cada sucesora. */
-    private static Map<Long, Duration> atras(Map<Long, TareaPlan> porId, List<Long> orden,
-                                             Map<Long, Duration> duracion, Map<Long, Duration> limite) {
+    private static Map<Long, Duration> atras(
+            Map<Long, TareaPlan> porId, List<Long> orden, Map<Long, Duration> duracion, Map<Long, Duration> limite) {
         Map<Long, List<Long>> sucesores = sucesores(porId);
         Map<Long, Duration> finTardio = new HashMap<>();
         for (int i = orden.size() - 1; i >= 0; i--) {

@@ -1,5 +1,9 @@
 package co.uniproject.nucleo.ejecucion.dependencias;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -11,17 +15,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
-
 class MotorDependenciasTest {
 
     private static final Instant AHORA = Instant.parse("2026-11-02T08:00:00Z");
 
-    private static Duration h(long horas) { return Duration.ofHours(horas); }
+    private static Duration h(long horas) {
+        return Duration.ofHours(horas);
+    }
 
-    private static Duration m(long minutos) { return Duration.ofMinutes(minutos); }
+    private static Duration m(long minutos) {
+        return Duration.ofMinutes(minutos);
+    }
 
     private static TareaPlan t(long id, long horas, int avance, Long... prerrequisitos) {
         return new TareaPlan(id, h(horas), avance, Set.of(prerrequisitos));
@@ -69,7 +73,8 @@ class MotorDependenciasTest {
 
     @Test
     void riesgoSinRetraso() {
-        List<RiesgoTarea> lista = MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limite(AHORA.plus(h(10))));
+        List<RiesgoTarea> lista =
+                MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limite(AHORA.plus(h(10))), 24);
         assertThat(lista).extracting(RiesgoTarea::tareaId).containsExactly(1L, 2L, 3L, 4L, 5L);
         assertThat(lista).extracting(RiesgoTarea::nivel).containsOnly(NivelRiesgo.BAJO);
         Map<Long, RiesgoTarea> r = porId(lista);
@@ -79,7 +84,8 @@ class MotorDependenciasTest {
 
     @Test
     void riesgoAltoCuandoSeComprometeLaFecha() {
-        Map<Long, RiesgoTarea> r = porId(MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limite(AHORA.plus(m(210)))));
+        Map<Long, RiesgoTarea> r = porId(
+                MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limite(AHORA.plus(m(210))), 24));
         assertThat(r.get(1L)).isEqualTo(new RiesgoTarea(1L, NivelRiesgo.BAJO, AHORA, m(-30)));
         assertThat(r.get(2L)).isEqualTo(new RiesgoTarea(2L, NivelRiesgo.BAJO, AHORA.plus(h(1)), m(90)));
         assertThat(r.get(3L)).isEqualTo(new RiesgoTarea(3L, NivelRiesgo.ALTO, AHORA.plus(h(3)), m(-30)));
@@ -89,7 +95,8 @@ class MotorDependenciasTest {
 
     @Test
     void riesgoMedioConPocaHolgura() {
-        Map<Long, RiesgoTarea> r = porId(MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limite(AHORA.plus(m(250)))));
+        Map<Long, RiesgoTarea> r = porId(
+                MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limite(AHORA.plus(m(250))), 24));
         assertThat(r.get(2L).nivel()).isEqualTo(NivelRiesgo.BAJO);
         assertThat(r.get(2L).holgura()).isEqualTo(m(130));
         assertThat(r.get(3L)).isEqualTo(new RiesgoTarea(3L, NivelRiesgo.MEDIO, AHORA.plus(h(3)), m(10)));
@@ -101,9 +108,26 @@ class MotorDependenciasTest {
     void limitePropioDeLaTarea() {
         Map<Long, Instant> limites = new HashMap<>(limite(AHORA.plus(h(10))));
         limites.put(5L, AHORA.plus(m(90)));
-        Map<Long, RiesgoTarea> r = porId(MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limites));
+        Map<Long, RiesgoTarea> r =
+                porId(MotorDependencias.evaluarRiesgo(ejemplo(100, 50, 25, 0, 0), AHORA, limites, 24));
         assertThat(r.get(5L)).isEqualTo(new RiesgoTarea(5L, NivelRiesgo.ALTO, AHORA.plus(h(2)), m(-30)));
         assertThat(r.get(4L).nivel()).isEqualTo(NivelRiesgo.BAJO);
+    }
+
+    @Test
+    void riesgoConHorasDeTrabajoPorDia() {
+        List<TareaPlan> cadena = List.of(t(1, 6, 0), t(2, 5, 0, 1L), t(3, 8, 0, 2L));
+
+        Instant limiteTresDias = AHORA.plus(h(72));
+        Map<Long, RiesgoTarea> alto = porId(MotorDependencias.evaluarRiesgo(
+                cadena, AHORA, Map.of(1L, limiteTresDias, 2L, limiteTresDias, 3L, limiteTresDias)));
+        assertThat(alto.get(3L)).isEqualTo(new RiesgoTarea(3L, NivelRiesgo.ALTO, AHORA.plus(h(114)), h(-7)));
+
+        Instant limiteSeisDias = AHORA.plus(h(144));
+        Map<Long, RiesgoTarea> bajo = porId(MotorDependencias.evaluarRiesgo(
+                cadena, AHORA, Map.of(1L, limiteSeisDias, 2L, limiteSeisDias, 3L, limiteSeisDias)));
+        assertThat(bajo.values()).extracting(RiesgoTarea::nivel).containsOnly(NivelRiesgo.BAJO);
+        assertThat(bajo.get(3L)).isEqualTo(new RiesgoTarea(3L, NivelRiesgo.BAJO, AHORA.plus(h(114)), h(5)));
     }
 
     @Test
@@ -115,7 +139,8 @@ class MotorDependenciasTest {
 
     @Test
     void agregarPrerrequisitosExcluyeLosCiclicos() {
-        ResultadoDependencias r1 = MotorDependencias.agregarPrerrequisitos(ejemplo(0, 0, 0, 0, 0), 1L, Set.of(4L, 5L, 1L));
+        ResultadoDependencias r1 =
+                MotorDependencias.agregarPrerrequisitos(ejemplo(0, 0, 0, 0, 0), 1L, Set.of(4L, 5L, 1L));
         assertThat(r1.aceptados()).containsExactly(5L);
         assertThat(r1.ciclicos()).containsExactly(1L, 4L);
 
@@ -146,7 +171,11 @@ class MotorDependenciasTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> MotorDependencias.ordenTopologico(List.of(t(1, 1, 0, 99L))))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> MotorDependencias.evaluarRiesgo(ejemplo(0, 0, 0, 0, 0), AHORA, Map.of(1L, AHORA)))
+        assertThatThrownBy(() -> MotorDependencias.evaluarRiesgo(ejemplo(0, 0, 0, 0, 0), AHORA, Map.of(1L, AHORA), 24))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MotorDependencias.evaluarRiesgo(ejemplo(0, 0, 0, 0, 0), AHORA, limite(AHORA), 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MotorDependencias.evaluarRiesgo(ejemplo(0, 0, 0, 0, 0), AHORA, limite(AHORA), 25))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -162,8 +191,9 @@ class MotorDependenciasTest {
             RutaCritica r = MotorDependencias.rutaCritica(cadena);
             assertThat(r.duracionTotal()).isEqualTo(h(150));
             assertThat(r.criticas()).hasSize(150);
-            assertThat(MotorDependencias.evaluarRiesgo(cadena, AHORA, limites))
-                    .extracting(RiesgoTarea::nivel).containsOnly(NivelRiesgo.BAJO);
+            assertThat(MotorDependencias.evaluarRiesgo(cadena, AHORA, limites, 24))
+                    .extracting(RiesgoTarea::nivel)
+                    .containsOnly(NivelRiesgo.BAJO);
         });
     }
 }
