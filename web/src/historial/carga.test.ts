@@ -125,7 +125,7 @@ function equipo(parcial: Partial<EquipoVista> = {}): EquipoVista {
     idProyecto: 3,
     nombreEquipo: 'Equipo 7',
     miembros: [Ana, Luis],
-    hitos: [{ idHitoEquipo: 12, idHito: 1, estado: 'EN_CURSO' }],
+    hitos: [{ idHitoEquipo: 12, idHito: 1, estado: 'EN_CURSO', fechaEnvio: null }],
     ...parcial,
   };
 }
@@ -144,7 +144,12 @@ function crearApiFalsa(opciones: { errorHistorial?: ErrorApi } = {}) {
         proyecto: proyecto({ idProyecto }),
         hitos: [hitoVista({ idHito: 1, orden: 1, nombreHito: 'Análisis' })],
         equipos: [
-          equipo({ idEquipo: 7, idProyecto, miembros: [Ana, Luis], hitos: [{ idHitoEquipo: 12, idHito: 1, estado: 'EN_CURSO' }] }),
+          equipo({
+            idEquipo: 7,
+            idProyecto,
+            miembros: [Ana, Luis],
+            hitos: [{ idHitoEquipo: 12, idHito: 1, estado: 'EN_CURSO', fechaEnvio: null }],
+          }),
           equipo({ idEquipo: 8, idProyecto, miembros: [Eva], hitos: [] }),
         ],
       };

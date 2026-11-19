@@ -27,7 +27,6 @@ export const TEXTO_HABILITADO_SIN_CUENTA = {
   monitorPlural: 'habilitados sin cuenta (aparecerán cuando creen su cuenta)',
 } as const;
 
-const MOTIVO_YA_HABILITADO_ESTUDIANTE = 'Ya estaba habilitado; aún no tiene cuenta';
 const MOTIVO_YA_HABILITADO_MONITOR = 'Ya estaba habilitado';
 const MOTIVO_OTRO_ROL_ESTUDIANTE = 'Tiene otro rol: no es estudiante';
 const MOTIVO_OTRO_ROL_MONITOR = 'Tiene otro rol: no es monitor';
@@ -91,7 +90,7 @@ export function validas(fichas: Ficha[]): Ficha[] {
 }
 
 interface TextosResultado {
-  yaHabilitado: string;
+  yaHabilitado?: string;
   otroRol: string;
   habilitadoSingular: string;
   habilitadoPlural: string;
@@ -108,8 +107,10 @@ function aplicarResultado(
 ): { fichas: Ficha[]; resumen: string } {
   const resueltos = new Set([...exitos, ...habilitados].map((c) => c.toLowerCase()));
   const motivos = new Map<string, string>();
-  for (const correo of yaHabilitados) {
-    motivos.set(correo.toLowerCase(), textos.yaHabilitado);
+  if (textos.yaHabilitado !== undefined) {
+    for (const correo of yaHabilitados) {
+      motivos.set(correo.toLowerCase(), textos.yaHabilitado);
+    }
   }
   for (const correo of conOtroRol) {
     motivos.set(correo.toLowerCase(), textos.otroRol);
@@ -153,20 +154,11 @@ export function aplicarResultadoEstudiantes(
   fichas: Ficha[],
   resumen: ResumenEstudiantes,
 ): { fichas: Ficha[]; resumen: string } {
-  return aplicarResultado(
-    fichas,
-    resumen.agregados,
-    [...(resumen.invitados ?? []), ...resumen.habilitados],
-    resumen.yaHabilitados,
-    resumen.conOtroRol,
-    resumen.errores,
-    {
-      yaHabilitado: MOTIVO_YA_HABILITADO_ESTUDIANTE,
-      otroRol: MOTIVO_OTRO_ROL_ESTUDIANTE,
-      habilitadoSingular: TEXTO_HABILITADO_SIN_CUENTA.estudianteSingular,
-      habilitadoPlural: TEXTO_HABILITADO_SIN_CUENTA.estudiantePlural,
-    },
-  );
+  return aplicarResultado(fichas, resumen.agregados, resumen.invitados, [], resumen.conOtroRol, resumen.errores, {
+    otroRol: MOTIVO_OTRO_ROL_ESTUDIANTE,
+    habilitadoSingular: TEXTO_HABILITADO_SIN_CUENTA.estudianteSingular,
+    habilitadoPlural: TEXTO_HABILITADO_SIN_CUENTA.estudiantePlural,
+  });
 }
 
 /** Igual que aplicarResultadoEstudiantes, para monitores del proyecto. */

@@ -7,9 +7,11 @@ import { Boton } from '../componentes/Boton';
 import { Cargando } from '../componentes/Cargando';
 import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
 import { EstadoVacio } from '../componentes/EstadoVacio';
+import { Insignia } from '../componentes/Insignia';
+import { Tarjeta } from '../componentes/Tarjeta';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
-import { equiposDelUsuario, hitoActual, hitosDelEquipo } from '../tablero/ubicacion';
+import { equiposDelUsuario, hitoActual, hitosDelEquipo, rolEnEquipo } from '../tablero/ubicacion';
 import type { ApiUbicacion, EquipoUbicado } from '../tablero/ubicacion';
 
 const API_UBICACION: ApiUbicacion = { listarProyectos, detalleProyecto };
@@ -88,23 +90,39 @@ function MiEquipo({ destino }: { destino: Destino }) {
         </EstadoVacio>
       )}
       {busqueda.estado === 'listo' && busqueda.equipos.length > 1 && (
-        <ul className="lista-simple">
+        <div className="rejilla-proyectos">
           {busqueda.equipos.map((u) => {
             const a = enlaceDe(destino, u);
-            const texto = `${u.equipo.nombreEquipo} · ${u.proyecto.nombre}`;
+            const esLider = rolEnEquipo(u.equipo, usuario.idUsuario) === 'LIDER';
+            const textoBoton = destino === 'tablero' ? 'Abrir tablero' : 'Abrir ruta crítica';
             return (
-              <li key={u.equipo.idEquipo}>
-                {a === null ? (
-                  <span className="texto-secundario">{`${texto} (sin hitos)`}</span>
-                ) : (
-                  <Link className="enlace-fuerte" to={a}>
-                    {texto}
-                  </Link>
-                )}
-              </li>
+              <div key={u.equipo.idEquipo} className="tarjeta-proyecto">
+                <Tarjeta>
+                  <header className="tarjeta-proyecto__cabecera">
+                    <div className="tarjeta-proyecto__encabezado">
+                      <h2 className="tarjeta__titulo tarjeta-proyecto__titulo">{u.equipo.nombreEquipo}</h2>
+                      <p className="texto-secundario tarjeta-proyecto__dato">{u.proyecto.nombre}</p>
+                    </div>
+                    {esLider && <Insignia tono="info">Líder</Insignia>}
+                  </header>
+                  {a === null ? (
+                    <p className="texto-secundario">El proyecto aún no tiene hitos.</p>
+                  ) : (
+                    <div className="pagina__acciones tarjeta-proyecto__acciones">
+                      <Link
+                        className="boton boton--primario"
+                        to={a}
+                        aria-label={`${textoBoton} de ${u.equipo.nombreEquipo}, ${u.proyecto.nombre}`}
+                      >
+                        {textoBoton}
+                      </Link>
+                    </div>
+                  )}
+                </Tarjeta>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

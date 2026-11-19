@@ -1,6 +1,6 @@
 import { validarCorreo } from '../cuentas/validacion';
 import type { Mensaje } from './errores';
-import type { ResumenEstudiantes, ResumenMonitores } from './equipos';
+import type { ResumenMonitores } from './equipos';
 
 export const MAXIMO_CORREOS_LOTE = 50;
 
@@ -52,57 +52,6 @@ export function validarLoteCorreos(texto: string): string | null {
     return `Correos inválidos: ${lista}`;
   }
   return null;
-}
-
-/**
- * Mensaje de resultado para estudiantes (bloque 31): aviso único con el resumen en líneas cortas.
- * Tipo de alerta: éxito si no hubo problemas, aviso si hubo "ya habilitado"/"otro rol",
- * error si algún agregado falló.
- */
-export function mensajeResultadoEstudiantes(resumen: ResumenEstudiantes): Mensaje {
-  const partes: string[] = [];
-
-  if (resumen.agregados.length > 0) {
-    const n = resumen.agregados.length;
-    partes.push(n === 1 ? '1 agregado al equipo' : `${n} agregados al equipo`);
-  }
-  if (resumen.habilitados.length > 0) {
-    const n = resumen.habilitados.length;
-    partes.push(
-      n === 1
-        ? '1 habilitado (aparecerá cuando cree su cuenta)'
-        : `${n} habilitados (aparecerán cuando creen su cuenta)`,
-    );
-  }
-  if (resumen.yaHabilitados.length > 0) {
-    const n = resumen.yaHabilitados.length;
-    partes.push(n === 1 ? '1 ya estaba habilitado' : `${n} ya estaban habilitados`);
-  }
-  if (resumen.conOtroRol.length > 0) {
-    const n = resumen.conOtroRol.length;
-    partes.push(`${n} con otro rol: ${resumen.conOtroRol.join(', ')}`);
-  }
-  if (resumen.errores.length > 0) {
-    const n = resumen.errores.length;
-    const detalles = resumen.errores.map((e) => `${e.email} (${e.motivo})`).join(', ');
-    partes.push(
-      n === 1
-        ? `1 no se pudo agregar al equipo: ${detalles}`
-        : `${n} no se pudieron agregar al equipo: ${detalles}`,
-    );
-  }
-
-  let tipo: Mensaje['tipo'] = 'exito';
-  if (resumen.errores.length > 0) {
-    tipo = 'error';
-  } else if (resumen.yaHabilitados.length > 0 || resumen.conOtroRol.length > 0) {
-    tipo = 'aviso';
-  }
-
-  return {
-    tipo,
-    texto: partes.join(' · '),
-  };
 }
 
 /**

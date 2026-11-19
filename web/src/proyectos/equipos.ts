@@ -17,17 +17,8 @@ export interface ErrorAlAgregar {
 
 export interface ResumenEstudiantes {
   agregados: string[];
-  /**
-   * Sin cuenta: quedaron invitados y entran al equipo cuando se registran (D-12). Opcional solo para resúmenes
-   * armados a mano en pruebas.
-   */
-  invitados?: string[];
-  /**
-   * agregarEstudiante ya no los llena (D-12: los sin cuenta quedan invitados); se conservan porque
-   * mensajeResultadoEstudiantes (correos.ts) los usa.
-   */
-  habilitados: string[];
-  yaHabilitados: string[];
+  /** Sin cuenta: quedaron invitados y entran al equipo cuando se registran (D-12). */
+  invitados: string[];
   conOtroRol: string[];
   errores: ErrorAlAgregar[];
   equipo?: EquipoVista;
@@ -64,8 +55,6 @@ export async function agregarEstudiante(
     return {
       agregados: [],
       invitados: [],
-      habilitados: [],
-      yaHabilitados: [],
       conOtroRol: [],
       errores: [],
     };
@@ -105,8 +94,6 @@ export async function agregarEstudiante(
   return {
     agregados,
     invitados,
-    habilitados: [],
-    yaHabilitados: [],
     conOtroRol: hab.conOtroRol,
     errores,
     equipo: ultimoEquipo,

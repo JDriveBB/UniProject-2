@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  mensajeResultadoEstudiantes,
-  mensajeResultadoMonitores,
-  separarCorreos,
-  validarLoteCorreos,
-} from './correos';
-import type { ResumenEstudiantes, ResumenMonitores } from './equipos';
+import { mensajeResultadoMonitores, separarCorreos, validarLoteCorreos } from './correos';
+import type { ResumenMonitores } from './equipos';
 
 describe('separarCorreos', () => {
   it('separa por espacios, tabulaciones y saltos de línea (\\n y \\r\\n)', () => {
@@ -70,33 +65,6 @@ describe('validarLoteCorreos', () => {
 });
 
 describe('mensajes de resultado', () => {
-  it('resumen de estudiantes genera formato con líneas cortas y tipo adecuado', () => {
-    const mixto: ResumenEstudiantes = {
-      agregados: ['a@u.edu.co', 'b@u.edu.co', 'c@u.edu.co'],
-      habilitados: ['d@u.edu.co', 'e@u.edu.co'],
-      yaHabilitados: ['f@u.edu.co'],
-      conOtroRol: ['a@b.edu.co'],
-      errores: [],
-    };
-    expect(mensajeResultadoEstudiantes(mixto)).toEqual({
-      tipo: 'aviso',
-      texto:
-        '3 agregados al equipo · 2 habilitados (aparecerán cuando creen su cuenta) · 1 ya estaba habilitado · 1 con otro rol: a@b.edu.co',
-    });
-
-    const conError: ResumenEstudiantes = {
-      agregados: ['a@u.edu.co'],
-      habilitados: [],
-      yaHabilitados: [],
-      conOtroRol: [],
-      errores: [{ email: 'err@u.edu.co', motivo: 'Ya pertenece a otro equipo' }],
-    };
-    expect(mensajeResultadoEstudiantes(conError)).toEqual({
-      tipo: 'error',
-      texto: '1 agregado al equipo · 1 no se pudo agregar al equipo: err@u.edu.co (Ya pertenece a otro equipo)',
-    });
-  });
-
   it('resumen de monitores genera formato con asignados y habilitados', () => {
     const mixto: ResumenMonitores = {
       asignados: ['mon1@u.edu.co', 'mon2@u.edu.co'],

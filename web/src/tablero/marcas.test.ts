@@ -63,8 +63,10 @@ describe('marcas del tablero', () => {
     expect(avance([])).toBe(0);
   });
 
-  it('avance del hito: sin horas en los datos cada tarea pesa igual (Figma: 100, 60, 80, 0, 0 → 48 %)', () => {
-    expect(avanceDelHito([100, 60, 80, 0, 0].map((porcentajeAvance) => ({ porcentajeAvance })))).toBe(48);
+  it('con las mismas horas cada tarea pesa igual (Figma: 100, 60, 80, 0, 0 → 48 %)', () => {
+    expect(
+      avanceDelHito([100, 60, 80, 0, 0].map((porcentajeAvance) => ({ porcentajeAvance, horasEstimadas: 1 }))),
+    ).toBe(48);
   });
 
   it('estados de tarea y de hito, y leyenda plegable con franja y marcas', () => {

@@ -96,12 +96,16 @@ describe('ubicación del equipo', () => {
     const u: EquipoUbicado = {
       proyecto: proyecto(1, []).proyecto,
       hitos: [hito(3, 3, 'Implementación'), hito(1, 1, 'Análisis'), hito(2, 2, 'Diseño')],
-      equipo: equipo(10, [5], [
-        { idHitoEquipo: 103, idHito: 3, estado: 'EN_CURSO' },
-        { idHitoEquipo: 101, idHito: 1, estado: 'EVALUADO' },
-        { idHitoEquipo: 102, idHito: 2, estado: 'EN_CURSO' },
-        { idHitoEquipo: 199, idHito: 9, estado: 'EN_CURSO' },
-      ]),
+      equipo: equipo(
+        10,
+        [5],
+        [
+          { idHitoEquipo: 103, idHito: 3, estado: 'EN_CURSO', fechaEnvio: null },
+          { idHitoEquipo: 101, idHito: 1, estado: 'EVALUADO', fechaEnvio: null },
+          { idHitoEquipo: 102, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
+          { idHitoEquipo: 199, idHito: 9, estado: 'EN_CURSO', fechaEnvio: null },
+        ],
+      ),
     };
     const hitos = hitosDelEquipo(u);
     expect(hitos.map((h) => [h.idHitoEquipo, h.orden, h.nombreHito])).toEqual([
@@ -142,10 +146,14 @@ describe('ubicación del equipo', () => {
     const e = equipo(10, [5, 7]);
     expect([rolEnEquipo(e, 5), rolEnEquipo(e, 7), rolEnEquipo(e, 9)]).toEqual(['LIDER', 'INTEGRANTE', null]);
     expect(etiquetaHito(2, 'Diseño')).toBe('Hito 2 · Diseño');
-    expect(mensajeErrorAbrir(new ErrorApi(403, 'ACCESO_DENEGADO', 'No tienes permiso para esta acción'),
-      SIN_ACCESO_EQUIPO)).toBe('No tienes acceso a este equipo o no existe.');
-    expect(mensajeErrorAbrir(new ErrorApi(0, 'SIN_CONEXION',
-      'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo'), SIN_ACCESO_EQUIPO))
-      .toBe('No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo');
+    expect(
+      mensajeErrorAbrir(new ErrorApi(403, 'ACCESO_DENEGADO', 'No tienes permiso para esta acción'), SIN_ACCESO_EQUIPO),
+    ).toBe('No tienes acceso a este equipo o no existe.');
+    expect(
+      mensajeErrorAbrir(
+        new ErrorApi(0, 'SIN_CONEXION', 'No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo'),
+        SIN_ACCESO_EQUIPO,
+      ),
+    ).toBe('No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo');
   });
 });

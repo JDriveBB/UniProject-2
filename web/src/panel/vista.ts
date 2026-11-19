@@ -397,21 +397,11 @@ export interface ResumenDelPanel {
   proxima: { etiqueta: string; plazo: string } | null;
 }
 
-/**
- * D-12: avance del hito en curso (ponderado por horas). Si el dato no trae avanceHitoActual (solo datos armados a mano
- * antes de D-12), usa avancePromedio de los equipos con tareas, como antes.
- */
-function avanceDelEquipo(e: PanelEquipo): number | null {
-  if (e.avanceHitoActual !== undefined) {
-    return e.avanceHitoActual;
-  }
-  return e.tareasTotales > 0 ? e.avancePromedio : null;
-}
-
+/** D-12: avance del hito en curso (ponderado por horas), o null si ningún equipo tiene tareas en curso. */
 export function resumenPanel(panel: PanelProyecto, porEvaluar: number, entregas: Entrega[]): ResumenDelPanel {
   const enRojo = panel.equipos.filter((e) => e.enRojo).length;
   const equipos = panel.equipos.length;
-  const avances = panel.equipos.map(avanceDelEquipo).filter((a): a is number => a !== null);
+  const avances = panel.equipos.map((e) => e.avanceHitoActual).filter((a): a is number => a !== null);
   const avance = avances.length === 0 ? null : Math.round(avances.reduce((suma, a) => suma + a, 0) / avances.length);
   const entregaProxima = entregas.find((e) => e.proxima);
   const proxima =

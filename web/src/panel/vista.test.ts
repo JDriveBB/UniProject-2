@@ -99,8 +99,8 @@ describe('vista', () => {
       nombreEquipo: 'Beta',
       miembros: [],
       hitos: [
-        { idHitoEquipo: 81, idHito: 2, estado: 'ENVIADO' },
-        { idHitoEquipo: 82, idHito: 1, estado: 'ENVIADO' },
+        { idHitoEquipo: 81, idHito: 2, estado: 'ENVIADO', fechaEnvio: null },
+        { idHitoEquipo: 82, idHito: 1, estado: 'ENVIADO', fechaEnvio: null },
       ],
     },
     {
@@ -109,8 +109,8 @@ describe('vista', () => {
       nombreEquipo: 'Alfa',
       miembros: [],
       hitos: [
-        { idHitoEquipo: 71, idHito: 2, estado: 'ENVIADO' },
-        { idHitoEquipo: 72, idHito: 1, estado: 'EN_CURSO' },
+        { idHitoEquipo: 71, idHito: 2, estado: 'ENVIADO', fechaEnvio: null },
+        { idHitoEquipo: 72, idHito: 1, estado: 'EN_CURSO', fechaEnvio: null },
       ],
     },
     {
@@ -118,7 +118,7 @@ describe('vista', () => {
       idProyecto: 3,
       nombreEquipo: 'Gamma',
       miembros: [],
-      hitos: [{ idHitoEquipo: 91, idHito: 99, estado: 'ENVIADO' }],
+      hitos: [{ idHitoEquipo: 91, idHito: 99, estado: 'ENVIADO', fechaEnvio: null }],
     },
   ];
 
@@ -227,10 +227,6 @@ describe('vista', () => {
     expect(resumenSinEntregas.avance).toBeNull();
     expect(resumenSinEntregas.proxima).toBeNull();
 
-    const antesDeD12 = equipoPanel({ tareasTotales: 2, avancePromedio: 30 });
-    delete antesDeD12.avanceHitoActual;
-    expect(resumenPanel({ ...panelC, equipos: [antesDeD12] }, 0, []).avance).toBe(30);
-
     expect(textoDias(1)).toBe('1 día');
     expect(textoDias(3)).toBe('3 días');
 
@@ -325,8 +321,8 @@ describe('vista', () => {
         nombreEquipo: 'Equipo Beta',
         miembros: [],
         hitos: [
-          { idHitoEquipo: 201, idHito: 10, estado: 'EN_CURSO' },
-          { idHitoEquipo: 202, idHito: 20, estado: 'EN_CURSO' },
+          { idHitoEquipo: 201, idHito: 10, estado: 'EN_CURSO', fechaEnvio: null },
+          { idHitoEquipo: 202, idHito: 20, estado: 'EN_CURSO', fechaEnvio: null },
         ],
       },
       {
@@ -430,7 +426,7 @@ describe('vista', () => {
           idProyecto: 3,
           nombreEquipo: 'Equipo Alfa',
           miembros: [],
-          hitos: [{ idHitoEquipo: 103, idHito: 30, estado: 'EN_CURSO' }],
+          hitos: [{ idHitoEquipo: 103, idHito: 30, estado: 'EN_CURSO', fechaEnvio: null }],
         },
       ],
     });
@@ -451,9 +447,9 @@ describe('vista', () => {
         nombreEquipo: 'Equipo Beta',
         miembros: [],
         hitos: [
-          { idHitoEquipo: 21, idHito: 1, estado: 'EVALUADO' },
-          { idHitoEquipo: 22, idHito: 2, estado: 'EN_CURSO' },
-          { idHitoEquipo: 23, idHito: 3, estado: 'EN_CURSO' },
+          { idHitoEquipo: 21, idHito: 1, estado: 'EVALUADO', fechaEnvio: null },
+          { idHitoEquipo: 22, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
+          { idHitoEquipo: 23, idHito: 3, estado: 'EN_CURSO', fechaEnvio: null },
         ],
       },
       {
@@ -465,7 +461,7 @@ describe('vista', () => {
           { idHitoEquipo: 11, idHito: 1, estado: 'EVALUADO', fechaEnvio: '2026-11-08T15:00:00Z' },
           { idHitoEquipo: 12, idHito: 2, estado: 'EVALUADO', fechaEnvio: '2026-11-19T03:00:00Z' },
           { idHitoEquipo: 13, idHito: 3, estado: 'ENVIADO', fechaEnvio: '2026-11-21T20:00:00Z' },
-          { idHitoEquipo: 14, idHito: 4, estado: 'EN_CURSO' },
+          { idHitoEquipo: 14, idHito: 4, estado: 'EN_CURSO', fechaEnvio: null },
         ],
       },
     ];

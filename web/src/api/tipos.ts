@@ -113,8 +113,8 @@ export interface HitoEquipoVista {
   idHitoEquipo: number;
   idHito: number;
   estado: EstadoHitoEquipo;
-  /** Último envío de este hito del equipo (date-time); null si no se ha enviado. Opcional solo para datos armados a mano en pruebas. */
-  fechaEnvio?: string | null;
+  /** Último envío de este hito del equipo (date-time); null si no se ha enviado. */
+  fechaEnvio: string | null;
 }
 
 export interface EquipoVista {
@@ -499,13 +499,12 @@ export interface PanelEquipo {
   avancePromedio: number;
   integrantesInactivos: IntegranteInactivo[];
   tareasBloqueadas: TareaBloqueada[];
-  /* D-12: opcionales solo para los datos armados a mano en pruebas; el núcleo siempre los manda. */
   /** Primer hito del equipo, por orden, en EN_CURSO; null si no hay. */
-  hitoActual?: HitoActualPanel | null;
+  hitoActual: HitoActualPanel | null;
   /** Avance del hito en curso ponderado por horas estimadas (0..100); null sin hito en curso o sin tareas. */
-  avanceHitoActual?: number | null;
+  avanceHitoActual: number | null;
   /** El equipo tiene hitos y ninguno está EN_CURSO. */
-  todoEnviado?: boolean;
+  todoEnviado: boolean;
 }
 
 export interface HitoActualPanel {

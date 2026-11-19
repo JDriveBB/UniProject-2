@@ -61,8 +61,8 @@ describe('carga de tarea', () => {
           nombreEquipo: 'Equipo 7',
           miembros: [],
           hitos: [
-            { idHitoEquipo: 100, idHito: 1, estado: 'EVALUADO' },
-            { idHitoEquipo: 200, idHito: 2, estado: 'EN_CURSO' },
+            { idHitoEquipo: 100, idHito: 1, estado: 'EVALUADO', fechaEnvio: null },
+            { idHitoEquipo: 200, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
           ],
         },
       ],
@@ -109,19 +109,76 @@ describe('carga de tarea', () => {
     };
 
     const avancesOriginales: AvanceVista[] = [
-      { idRegistro: 1, idUsuario: 1, usuario: 'U1', porcentajeAvance: 10, observacion: null, fechaHora: '2026-09-01T00:00:00Z' },
-      { idRegistro: 3, idUsuario: 1, usuario: 'U1', porcentajeAvance: 50, observacion: null, fechaHora: '2026-09-03T00:00:00Z' },
-      { idRegistro: 2, idUsuario: 1, usuario: 'U1', porcentajeAvance: 30, observacion: null, fechaHora: '2026-09-02T00:00:00Z' },
+      {
+        idRegistro: 1,
+        idUsuario: 1,
+        usuario: 'U1',
+        porcentajeAvance: 10,
+        observacion: null,
+        fechaHora: '2026-09-01T00:00:00Z',
+      },
+      {
+        idRegistro: 3,
+        idUsuario: 1,
+        usuario: 'U1',
+        porcentajeAvance: 50,
+        observacion: null,
+        fechaHora: '2026-09-03T00:00:00Z',
+      },
+      {
+        idRegistro: 2,
+        idUsuario: 1,
+        usuario: 'U1',
+        porcentajeAvance: 30,
+        observacion: null,
+        fechaHora: '2026-09-02T00:00:00Z',
+      },
     ];
 
     const evidenciasOriginales: EvidenciaVista[] = [
-      { idEvidencia: 5, idTarea: 10, idUsuario: 1, autor: 'U1', tipoEvidencia: 'ENLACE', enlace: 'https:' + '//a', nombreArchivo: null, descarga: null, fechaSubida: '2026-09-01T00:00:00Z' },
-      { idEvidencia: 9, idTarea: 10, idUsuario: 1, autor: 'U1', tipoEvidencia: 'PDF', enlace: null, nombreArchivo: 'doc.pdf', descarga: '/d/9', fechaSubida: '2026-09-02T00:00:00Z' },
+      {
+        idEvidencia: 5,
+        idTarea: 10,
+        idUsuario: 1,
+        autor: 'U1',
+        tipoEvidencia: 'ENLACE',
+        enlace: 'https:' + '//a',
+        nombreArchivo: null,
+        descarga: null,
+        fechaSubida: '2026-09-01T00:00:00Z',
+      },
+      {
+        idEvidencia: 9,
+        idTarea: 10,
+        idUsuario: 1,
+        autor: 'U1',
+        tipoEvidencia: 'PDF',
+        enlace: null,
+        nombreArchivo: 'doc.pdf',
+        descarga: '/d/9',
+        fechaSubida: '2026-09-02T00:00:00Z',
+      },
     ];
 
     const comentariosOriginales: ComentarioVista[] = [
-      { idComentario: 4, idTarea: 10, idAutor: 2, autor: 'Docente', rolAutor: 'DOCENTE', contenido: 'Revisar', fechaHora: '2026-09-02T00:00:00Z' },
-      { idComentario: 1, idTarea: 10, idAutor: 1, autor: 'Estudiante', rolAutor: 'ESTUDIANTE', contenido: 'Listo', fechaHora: '2026-09-01T00:00:00Z' },
+      {
+        idComentario: 4,
+        idTarea: 10,
+        idAutor: 2,
+        autor: 'Docente',
+        rolAutor: 'DOCENTE',
+        contenido: 'Revisar',
+        fechaHora: '2026-09-02T00:00:00Z',
+      },
+      {
+        idComentario: 1,
+        idTarea: 10,
+        idAutor: 1,
+        autor: 'Estudiante',
+        rolAutor: 'ESTUDIANTE',
+        contenido: 'Listo',
+        fechaHora: '2026-09-01T00:00:00Z',
+      },
     ];
 
     const correccionesOriginales: CorreccionVista[] = [];

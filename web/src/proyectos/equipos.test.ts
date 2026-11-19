@@ -127,8 +127,6 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
     expect(resumen).toEqual({
       agregados: ['ok@uninorte.edu.co'],
       invitados: ['nuevo@uninorte.edu.co', 'ya@uninorte.edu.co'],
-      habilitados: [],
-      yaHabilitados: [],
       conOtroRol: ['docente@uninorte.edu.co'],
       errores: [
         {
@@ -204,7 +202,6 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
 
     expect(llamadosMiembro).toEqual(['ana@uninorte.edu.co']);
     expect(resumen.agregados).toEqual(['ana@uninorte.edu.co']);
-    expect(resumen.yaHabilitados).toEqual([]);
     expect(resumen.equipo).toEqual(equipoActualizado);
   });
 
@@ -230,7 +227,6 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
     expect(llamadosInvitar).toEqual(['sin-cuenta@uninorte.edu.co']);
     expect(resumen.agregados).toEqual([]);
     expect(resumen.invitados).toEqual(['sin-cuenta@uninorte.edu.co']);
-    expect(resumen.yaHabilitados).toEqual([]);
     expect(resumen.errores).toEqual([]);
   });
 

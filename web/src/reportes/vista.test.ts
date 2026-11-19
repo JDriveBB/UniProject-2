@@ -37,9 +37,7 @@ describe('vista de reportes', () => {
     expect(textoEntidad('miembro_equipo')).toBe('Integrantes');
     expect(textoEntidad('evaluacion_hito')).toBe('evaluacion_hito');
 
-    expect(
-      accionConEntidad({ accion: 'ENVIAR_HITO', entidad: 'hito_equipo' })
-    ).toBe('Envió el hito a revisión · Hito');
+    expect(accionConEntidad({ accion: 'ENVIAR_HITO', entidad: 'hito_equipo' })).toBe('Envió el hito a revisión · Hito');
   });
 
   it('filtra entradas del historial por hito y tareas actuales', () => {
@@ -66,15 +64,8 @@ describe('vista de reportes', () => {
       { idUsuario: 2, nombre: 'Ana', rolEquipo: 'LIDER' as const },
       { idUsuario: 3, nombre: 'Eva', rolEquipo: 'INTEGRANTE' as const },
     ];
-    const hitos = [
-      { estado: 'EVALUADO' as const },
-      { estado: 'ENVIADO' as const },
-      { estado: 'EN_CURSO' as const },
-    ];
-    const historial = [
-      { fechaHora: '2026-09-23T15:00:00Z' },
-      { fechaHora: '2026-09-20T15:00:00Z' },
-    ];
+    const hitos = [{ estado: 'EVALUADO' as const }, { estado: 'ENVIADO' as const }, { estado: 'EN_CURSO' as const }];
+    const historial = [{ fechaHora: '2026-09-23T15:00:00Z' }, { fechaHora: '2026-09-20T15:00:00Z' }];
 
     expect(resumenEquipo({ miembros }, hitos, historial)).toEqual([
       {
@@ -100,9 +91,7 @@ describe('vista de reportes', () => {
       },
     ]);
 
-    expect(
-      resumenEquipo({ miembros: [] }, [], [])
-    ).toEqual([
+    expect(resumenEquipo({ miembros: [] }, [], [])).toEqual([
       {
         etiqueta: 'Integrantes',
         valor: '0',
@@ -129,15 +118,13 @@ describe('vista de reportes', () => {
     const milEntradas = Array.from({ length: 1000 }, () => ({
       fechaHora: '2026-09-23T15:00:00Z',
     }));
-    expect(resumenEquipo({ miembros: [] }, [], milEntradas)[2].valor).toBe(
-      '1000 o más'
-    );
+    expect(resumenEquipo({ miembros: [] }, [], milEntradas)[2].valor).toBe('1000 o más');
 
     const tablero = { estado: 'ENVIADO' as const, fechaLimite: '2026-09-22' };
     const tareas = [
-      { estado: 'COMPLETADA' as const, porcentajeAvance: 100, bloqueada: false },
-      { estado: 'EN_PROGRESO' as const, porcentajeAvance: 50, bloqueada: true },
-      { estado: 'PENDIENTE' as const, porcentajeAvance: 0, bloqueada: false },
+      { estado: 'COMPLETADA' as const, porcentajeAvance: 100, horasEstimadas: 1, bloqueada: false },
+      { estado: 'EN_PROGRESO' as const, porcentajeAvance: 50, horasEstimadas: 1, bloqueada: true },
+      { estado: 'PENDIENTE' as const, porcentajeAvance: 0, horasEstimadas: 1, bloqueada: false },
     ];
 
     expect(resumenHito(tablero, tareas, null)).toEqual([
@@ -165,13 +152,11 @@ describe('vista de reportes', () => {
     ]);
 
     const tareasDosBloqueadas = [
-      { estado: 'COMPLETADA' as const, porcentajeAvance: 100, bloqueada: false },
-      { estado: 'EN_PROGRESO' as const, porcentajeAvance: 50, bloqueada: true },
-      { estado: 'PENDIENTE' as const, porcentajeAvance: 0, bloqueada: true },
+      { estado: 'COMPLETADA' as const, porcentajeAvance: 100, horasEstimadas: 1, bloqueada: false },
+      { estado: 'EN_PROGRESO' as const, porcentajeAvance: 50, horasEstimadas: 1, bloqueada: true },
+      { estado: 'PENDIENTE' as const, porcentajeAvance: 0, horasEstimadas: 1, bloqueada: true },
     ];
-    expect(resumenHito(tablero, tareasDosBloqueadas, null)[1].detalle).toBe(
-      '1 de 3 tareas completadas · 2 bloqueadas'
-    );
+    expect(resumenHito(tablero, tareasDosBloqueadas, null)[1].detalle).toBe('1 de 3 tareas completadas · 2 bloqueadas');
 
     expect(resumenHito(tablero, [], null)[1]).toEqual({
       etiqueta: 'Avance',

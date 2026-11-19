@@ -1,10 +1,4 @@
-import type {
-  EntradaHistorial,
-  EquipoVista,
-  EvaluacionVista,
-  TableroHito,
-  TareaVista,
-} from '../api/tipos';
+import type { EntradaHistorial, EquipoVista, EvaluacionVista, TableroHito, TareaVista } from '../api/tipos';
 import { textoNota } from '../evaluacion/calculo';
 import { CARACTER } from '../evaluacion/vista';
 import { fechaCorta, fechaDia, fechaHora } from '../formato';
@@ -12,23 +6,18 @@ import { avanceDelHito, estadoHito, type Marca } from '../tablero/marcas';
 import type { HitoDelEquipo } from '../tablero/ubicacion';
 import { LIMITE_HISTORIAL } from './carga';
 
-export const DESCRIPCION_REPORTES =
-  'Trazabilidad de cada equipo: resumen, historial de cambios y reporte en PDF.';
+export const DESCRIPCION_REPORTES = 'Trazabilidad de cada equipo: resumen, historial de cambios y reporte en PDF.';
 export const AYUDA_PDF =
   'El PDF reúne todo el semestre del equipo: integrantes, historial de cambios, entregas y calificaciones. El hito solo filtra lo que ves en esta página.';
-export const SIN_PROYECTOS =
-  'Aún no tienes proyectos. Cuando crees uno con equipos, aquí verás su trazabilidad.';
+export const SIN_PROYECTOS = 'Aún no tienes proyectos. Cuando crees uno con equipos, aquí verás su trazabilidad.';
 export const SIN_EQUIPOS = 'Este proyecto aún no tiene equipos.';
 export const EXPLICACION_HISTORIAL =
   'Registro de auditoría del equipo, de solo lectura: nadie puede editarlo ni borrarlo. Del más reciente al más antiguo.';
-export const HISTORIAL_DEL_HITO =
-  'Solo los cambios de este hito y de sus tareas actuales.';
+export const HISTORIAL_DEL_HITO = 'Solo los cambios de este hito y de sus tareas actuales.';
 export const HISTORIAL_RECORTADO =
   'Se muestran los 1000 cambios más recientes; descarga el PDF para ver los anteriores.';
-export const SIN_CAMBIOS_EQUIPO =
-  'Aún no hay cambios registrados para este equipo.';
-export const SIN_CAMBIOS_HITO =
-  'Aún no hay cambios registrados en este hito.';
+export const SIN_CAMBIOS_EQUIPO = 'Aún no hay cambios registrados para este equipo.';
+export const SIN_CAMBIOS_HITO = 'Aún no hay cambios registrados en este hito.';
 export const TODOS_LOS_HITOS = 'Todos los hitos';
 
 /** Valores de AccionAuditoria.java del núcleo; uno nuevo sin traducir se muestra tal cual */
@@ -92,7 +81,7 @@ export function accionConEntidad(e: Pick<EntradaHistorial, 'accion' | 'entidad'>
 export function filtrarPorHito<T extends Pick<EntradaHistorial, 'entidad' | 'idRegistro'>>(
   entradas: T[],
   idHitoEquipo: number,
-  tareas: Pick<TareaVista, 'idTarea'>[]
+  tareas: Pick<TareaVista, 'idTarea'>[],
 ): T[] {
   // shortcut: las tareas ya borradas no están en el tablero y sus cambios no salen en este filtro; si se necesita, filtrar en el núcleo (§15).
   const idsTareas = new Set(tareas.map((t) => t.idTarea));
@@ -110,7 +99,7 @@ export function filtrarPorHito<T extends Pick<EntradaHistorial, 'entidad' | 'idR
 export function resumenEquipo(
   equipo: Pick<EquipoVista, 'miembros'>,
   hitos: Pick<HitoDelEquipo, 'estado'>[],
-  historial: Pick<EntradaHistorial, 'fechaHora'>[]
+  historial: Pick<EntradaHistorial, 'fechaHora'>[],
 ): DatoResumen[] {
   const lider = equipo.miembros.find((m) => m.rolEquipo === 'LIDER');
   const detalleLider = lider !== undefined ? `Líder: ${lider.nombre}` : 'Sin líder';
@@ -121,8 +110,7 @@ export function resumenEquipo(
 
   const total = historial.length;
   const valorHistorial = total === LIMITE_HISTORIAL ? `${LIMITE_HISTORIAL} o más` : String(total);
-  const detalleHistorial =
-    total > 0 ? `Último: ${fechaHora(historial[0].fechaHora)}` : 'Sin cambios';
+  const detalleHistorial = total > 0 ? `Último: ${fechaHora(historial[0].fechaHora)}` : 'Sin cambios';
 
   return [
     {
@@ -151,8 +139,8 @@ export function resumenEquipo(
 
 export function resumenHito(
   tablero: Pick<TableroHito, 'estado' | 'fechaLimite'>,
-  tareas: Pick<TareaVista, 'estado' | 'porcentajeAvance' | 'bloqueada'>[],
-  evaluacion: Pick<EvaluacionVista, 'notaGrupal' | 'caracter' | 'fechaEvaluacion'> | null
+  tareas: Pick<TareaVista, 'estado' | 'porcentajeAvance' | 'horasEstimadas' | 'bloqueada'>[],
+  evaluacion: Pick<EvaluacionVista, 'notaGrupal' | 'caracter' | 'fechaEvaluacion'> | null,
 ): DatoResumen[] {
   let detalleAvance: string;
   if (tareas.length === 0) {
@@ -160,12 +148,7 @@ export function resumenHito(
   } else {
     const completadas = tareas.filter((t) => t.estado === 'COMPLETADA').length;
     const bloqueadas = tareas.filter((t) => t.bloqueada).length;
-    const parteBloqueadas =
-      bloqueadas === 0
-        ? ''
-        : bloqueadas === 1
-          ? ' · 1 bloqueada'
-          : ` · ${bloqueadas} bloqueadas`;
+    const parteBloqueadas = bloqueadas === 0 ? '' : bloqueadas === 1 ? ' · 1 bloqueada' : ` · ${bloqueadas} bloqueadas`;
     detalleAvance = `${completadas} de ${tareas.length} tareas completadas${parteBloqueadas}`;
   }
 

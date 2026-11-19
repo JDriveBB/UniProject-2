@@ -99,25 +99,22 @@ describe('aplicarResultadoEstudiantes y aplicarResultadoMonitores', () => {
   it('estudiantes: quita agregados e invitados, deja los demás con motivo y arma resumen corto', () => {
     const { fichas } = agregarTexto(
       [],
-      'Ok1@uninorte.edu.co ok2@uninorte.edu.co inv@uninorte.edu.co ya@uninorte.edu.co doc@uninorte.edu.co err@uninorte.edu.co',
+      'Ok1@uninorte.edu.co ok2@uninorte.edu.co inv@uninorte.edu.co doc@uninorte.edu.co err@uninorte.edu.co',
     );
     const resumen: ResumenEstudiantes = {
       agregados: ['ok1@uninorte.edu.co', 'ok2@uninorte.edu.co'],
       invitados: ['inv@uninorte.edu.co'],
-      habilitados: [],
-      yaHabilitados: ['ya@uninorte.edu.co'],
       conOtroRol: ['doc@uninorte.edu.co'],
       errores: [{ email: 'err@uninorte.edu.co', motivo: 'Ya pertenece a otro equipo' }],
     };
 
     const resultado = aplicarResultadoEstudiantes(fichas, resumen);
     expect(resultado.fichas).toEqual([
-      { correo: 'ya@uninorte.edu.co', error: null, resultado: 'Ya estaba habilitado; aún no tiene cuenta' },
       { correo: 'doc@uninorte.edu.co', error: null, resultado: 'Tiene otro rol: no es estudiante' },
       { correo: 'err@uninorte.edu.co', error: null, resultado: 'Ya pertenece a otro equipo' },
     ]);
     expect(resultado.resumen).toBe(
-      '2 agregados · 1 invitado: entrará al equipo cuando cree su cuenta · 3 con problemas',
+      '2 agregados · 1 invitado: entrará al equipo cuando cree su cuenta · 2 con problemas',
     );
   });
 
@@ -126,8 +123,6 @@ describe('aplicarResultadoEstudiantes y aplicarResultadoMonitores', () => {
     const resultado = aplicarResultadoEstudiantes(fichas, {
       agregados: ['a@u.co'],
       invitados: ['b@u.co', 'c@u.co'],
-      habilitados: [],
-      yaHabilitados: [],
       conOtroRol: [],
       errores: [],
     });

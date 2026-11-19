@@ -94,18 +94,14 @@ export function nombreConCodigo(codigos: Map<number, string>, t: Pick<TareaVista
 
 /**
  * D-12 (antes 26c-8, promedio simple): avance ponderado por horas estimadas, redondeado, igual que el panel
- * (avanceHitoActual). 0 sin tareas o sin horas. Una tarea sin horasEstimadas pesa 1 h: solo pasa con datos que no
- * traen las horas (p. ej. el tipo de reportes/vista.ts#resumenHito), donde queda el promedio simple.
+ * (avanceHitoActual). 0 sin tareas o sin horas.
  */
-export function avanceDelHito(
-  tareas: (Pick<TareaVista, 'porcentajeAvance'> & Partial<Pick<TareaVista, 'horasEstimadas'>>)[],
-): number {
+export function avanceDelHito(tareas: Pick<TareaVista, 'porcentajeAvance' | 'horasEstimadas'>[]): number {
   let totalHoras = 0;
   let sumaPonderada = 0;
   for (const t of tareas) {
-    const horas = t.horasEstimadas ?? 1;
-    totalHoras += horas;
-    sumaPonderada += t.porcentajeAvance * horas;
+    totalHoras += t.horasEstimadas;
+    sumaPonderada += t.porcentajeAvance * t.horasEstimadas;
   }
   if (totalHoras <= 0) {
     return 0;

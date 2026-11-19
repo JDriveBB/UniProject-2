@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ErrorApi, mensajeDeError } from '../api/cliente';
 import { avisarCambioBandeja, bandeja, marcarLeida, marcarTodasLeidas } from '../api/notificaciones';
@@ -29,6 +29,7 @@ import {
 import type { Mensaje } from '../proyectos/errores';
 
 type EstadoCarga = { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; datos: Bandeja };
+type DestinoFoco = { tipo: 'titulo' } | { tipo: 'id'; id: string };
 
 export function Notificaciones() {
   const avisar = useAvisos();
@@ -36,9 +37,10 @@ export function Notificaciones() {
   const [carga, setCarga] = useState<EstadoCarga>({ estado: 'cargando' });
   const [vuelta, setVuelta] = useState(0);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
-  const [foco, setFoco] = useState<string | null>(null);
+  const [foco, setFoco] = useState<DestinoFoco | null>(null);
   const [ocupado, setOcupado] = useState<number | 'todas' | null>(null);
 
+  const paginaRef = useRef<HTMLDivElement>(null);
   const idAviso = useId();
   const prefijoFila = useId();
 
@@ -61,10 +63,19 @@ export function Notificaciones() {
   }, [vuelta]);
 
   useEffect(() => {
-    if (foco !== null) {
-      (document.getElementById(foco) ?? document.getElementById(idAviso))?.focus();
-      setFoco(null);
+    if (foco === null) {
+      return;
     }
+    if (foco.tipo === 'titulo') {
+      const titulo = paginaRef.current?.querySelector('h1');
+      if (titulo instanceof HTMLElement) {
+        titulo.tabIndex = -1;
+        titulo.focus();
+      }
+    } else {
+      (document.getElementById(foco.id) ?? document.getElementById(idAviso))?.focus();
+    }
+    setFoco(null);
   }, [foco, idAviso]);
 
   async function abrir(n: NotificacionVista, destino: string) {
@@ -91,7 +102,7 @@ export function Notificaciones() {
         prev.estado === 'listo' ? { estado: 'listo', datos: marcarEnBandeja(prev.datos, n.idNotificacion) } : prev,
       );
       avisarCambioBandeja();
-      setFoco(`${prefijoFila}-${n.idNotificacion}`);
+      setFoco({ tipo: 'id', id: `${prefijoFila}-${n.idNotificacion}` });
     } catch (e: unknown) {
       if (e instanceof ErrorApi && e.estado === 403) {
         setMensaje({ tipo: 'error', texto: NO_DISPONIBLE });
@@ -99,7 +110,7 @@ export function Notificaciones() {
       } else {
         setMensaje({ tipo: 'error', texto: mensajeDeError(e) });
       }
-      setFoco(idAviso);
+      setFoco({ tipo: 'id', id: idAviso });
     } finally {
       setOcupado(null);
     }
@@ -115,9 +126,10 @@ export function Notificaciones() {
       avisarCambioBandeja();
       setMensaje(null);
       avisar(TODAS_LEIDAS);
+      setFoco({ tipo: 'titulo' });
     } catch (e: unknown) {
       setMensaje({ tipo: 'error', texto: mensajeDeError(e) });
-      setFoco(idAviso);
+      setFoco({ tipo: 'id', id: idAviso });
     } finally {
       setOcupado(null);
     }
@@ -150,7 +162,7 @@ export function Notificaciones() {
   const { datos } = carga;
 
   return (
-    <div className="pagina">
+    <div className="pagina" ref={paginaRef}>
       <EncabezadoPagina titulo="Notificaciones" descripcion={textoNoLeidas(datos.noLeidas)}>
         <div className="pagina__acciones">
           <Boton

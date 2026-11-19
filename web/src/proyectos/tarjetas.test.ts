@@ -68,6 +68,9 @@ function equipoPanel(parcial: Partial<PanelEquipo> = {}): PanelEquipo {
     avancePromedio: 0,
     integrantesInactivos: [],
     tareasBloqueadas: [],
+    hitoActual: null,
+    avanceHitoActual: null,
+    todoEnviado: false,
     ...parcial,
   };
 }
@@ -140,8 +143,8 @@ describe('tarjetas de proyectos', () => {
         nombreEquipo: 'Alfa',
         miembros: [],
         hitos: [
-          { idHitoEquipo: 101, idHito: 1, estado: 'ENVIADO' },
-          { idHitoEquipo: 102, idHito: 2, estado: 'EN_CURSO' },
+          { idHitoEquipo: 101, idHito: 1, estado: 'ENVIADO', fechaEnvio: '2026-09-12T12:00:00Z' },
+          { idHitoEquipo: 102, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
         ],
       },
       {
@@ -150,8 +153,8 @@ describe('tarjetas de proyectos', () => {
         nombreEquipo: 'Beta',
         miembros: [],
         hitos: [
-          { idHitoEquipo: 201, idHito: 1, estado: 'ENVIADO' },
-          { idHitoEquipo: 202, idHito: 2, estado: 'EN_CURSO' },
+          { idHitoEquipo: 201, idHito: 1, estado: 'ENVIADO', fechaEnvio: '2026-09-12T12:00:00Z' },
+          { idHitoEquipo: 202, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
         ],
       },
     ];
@@ -160,8 +163,22 @@ describe('tarjetas de proyectos', () => {
       nombre: 'Proyecto 1',
       generadoEn: '2026-09-20T12:00:00Z',
       equipos: [
-        equipoPanel({ idEquipo: 10, nombreEquipo: 'Alfa', enRojo: true, tareasTotales: 4, avancePromedio: 40 }),
-        equipoPanel({ idEquipo: 20, nombreEquipo: 'Beta', enRojo: false, tareasTotales: 2, avancePromedio: 70 }),
+        equipoPanel({
+          idEquipo: 10,
+          nombreEquipo: 'Alfa',
+          enRojo: true,
+          tareasTotales: 4,
+          avancePromedio: 40,
+          avanceHitoActual: 40,
+        }),
+        equipoPanel({
+          idEquipo: 20,
+          nombreEquipo: 'Beta',
+          enRojo: false,
+          tareasTotales: 2,
+          avancePromedio: 70,
+          avanceHitoActual: 70,
+        }),
       ],
     };
 
@@ -233,8 +250,8 @@ describe('tarjetas de proyectos', () => {
         { idUsuario: 12, nombre: 'Integrante', rolEquipo: 'INTEGRANTE' },
       ],
       hitos: [
-        { idHitoEquipo: 101, idHito: 10, estado: 'EN_CURSO' },
-        { idHitoEquipo: 102, idHito: 20, estado: 'EN_CURSO' },
+        { idHitoEquipo: 101, idHito: 10, estado: 'EN_CURSO', fechaEnvio: null },
+        { idHitoEquipo: 102, idHito: 20, estado: 'EN_CURSO', fechaEnvio: null },
       ],
     };
     const detalle = detalleBase({ hitos, equipos: [equipoBeta] });
@@ -263,7 +280,7 @@ describe('tarjetas de proyectos', () => {
       equipos: [
         {
           ...equipoBeta,
-          hitos: [{ idHitoEquipo: 101, idHito: 10, estado: 'ENVIADO' }],
+          hitos: [{ idHitoEquipo: 101, idHito: 10, estado: 'ENVIADO', fechaEnvio: '2026-09-19T12:00:00Z' }],
         },
       ],
     });
@@ -322,7 +339,7 @@ describe('tarjetas de proyectos', () => {
           idProyecto: 3,
           nombreEquipo: 'Gamma',
           miembros: [{ idUsuario: 22, nombre: 'Est', rolEquipo: 'INTEGRANTE' }],
-          hitos: [{ idHitoEquipo: 301, idHito: 10, estado: 'EN_CURSO' }],
+          hitos: [{ idHitoEquipo: 301, idHito: 10, estado: 'EN_CURSO', fechaEnvio: null }],
         },
       ],
     });
