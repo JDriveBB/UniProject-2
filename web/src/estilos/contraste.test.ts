@@ -51,6 +51,8 @@ const paresTexto: ReadonlyArray<readonly [string, string]> = [
   ['--color-texto-secundario', '--color-peligro-fondo'],
   ['--color-tabla-encabezado-texto', '--color-tabla-encabezado-fondo'],
   ['--color-texto', '--color-fondo'],
+  ['--color-texto-sobre-primario', '--color-peligro-hover'],
+  ['--color-texto', '--color-secundario-hover'],
 ];
 
 const paresFoco: ReadonlyArray<readonly [string, string]> = [

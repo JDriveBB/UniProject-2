@@ -10,6 +10,7 @@ colors:
   texto-sobre-marca-secundario: "#c7d6f7"
   fondo: "#f6f8fb"
   superficie: "#ffffff"
+  secundario-hover: "#f0f2f5"
   borde: "#d1d6de"
   borde-tabla: "#dbdee5"
   texto: "#161b26"
@@ -21,6 +22,7 @@ colors:
   aviso: "#9b6104"
   aviso-fondo: "#fff2d9"
   peligro: "#cc2626"
+  peligro-hover: "#a81f1f"
   peligro-fondo: "#fcebeb"
   info: "#285cdb"
   info-fondo: "#e8f0ff"
@@ -93,14 +95,15 @@ typography:
     fontSize: "0.875rem"
     fontWeight: 400
 rounded:
-  radio-avance: "3px"
   radio-muestra: "3px"
   radio-casilla: "4px"
-  radio: "8px"
-  radio-tabla: "10px"
-  radio-tarjeta: "12px"
+  radio: "10px"
+  radio-tabla: "12px"
+  radio-tarjeta: "14px"
+  radio-modal: "16px"
   radio-tarjeta-ingreso: "16px"
   radio-insignia: "999px"
+  radio-avance: "999px"
 spacing:
   espacio-1: "4px"
   espacio-campo: "6px"
@@ -132,12 +135,18 @@ components:
     typography: "{typography.boton}"
     rounded: "{rounded.radio}"
     padding: "10px 18px"
+  boton-secundario-hover:
+    backgroundColor: "{colors.secundario-hover}"
+    textColor: "{colors.texto}"
   boton-peligro:
     backgroundColor: "{colors.peligro}"
     textColor: "{colors.texto-sobre-primario}"
     typography: "{typography.boton}"
     rounded: "{rounded.radio}"
     padding: "10px 18px"
+  boton-peligro-hover:
+    backgroundColor: "{colors.peligro-hover}"
+    textColor: "{colors.texto-sobre-primario}"
   boton-suave:
     backgroundColor: "{colors.info-fondo}"
     textColor: "{colors.primario}"
@@ -254,7 +263,7 @@ components:
   modal:
     backgroundColor: "{colors.superficie}"
     textColor: "{colors.texto}"
-    rounded: "{rounded.radio-tarjeta}"
+    rounded: "{rounded.radio-modal}"
     padding: "28px"
     width: "560px"
   avance:
@@ -296,7 +305,8 @@ Paleta fría y sobria: un azul de acción, un azul marino de marca, grises neutr
 ### Neutral
 - **Gris papel** (`fondo`): fondo de toda la aplicación; también campos de solo lectura.
 - **Blanco hoja** (`superficie`): tarjetas, tablas, modales, campos.
-- **Borde de campo** (`borde`): borde de campos y casillas en ingreso y registro, y de la tarjeta de ingreso.
+- **Hover secundario** (`secundario-hover`): fondo del botón secundario al pasar el mouse.
+- **Borde de campo** (`borde`): borde de campos y casillas en ingreso y registro, y de la tarjeta de ingreso; también borde de botón secundario al pasar el mouse.
 - **Borde de tabla** (`borde-tabla`): borde de tarjetas, tablas, filas, modales, pestañas y campos dentro del marco. Es el borde más usado.
 - **Tinta** (`texto`): texto principal.
 - **Tinta secundaria** (`texto-secundario`): descripciones, ayudas, estados vacíos, pestañas inactivas. Oscurecida a 5:1 o más por accesibilidad.
@@ -307,7 +317,7 @@ Paleta fría y sobria: un azul de acción, un azul marino de marca, grises neutr
 Cada estado es un par texto + fondo. El texto se oscureció frente a Figma para pasar 4,5:1 sobre su fondo.
 - **Éxito** (`exito`, `exito-fondo`): terminado, a tiempo, riesgo bajo.
 - **Aviso** (`aviso`, `aviso-fondo`): atención, riesgo medio, pendiente.
-- **Peligro** (`peligro`, `peligro-fondo`): error, atrasado, riesgo alto, acciones de borrar o quitar.
+- **Peligro** (`peligro`, `peligro-fondo`): error, atrasado, riesgo alto, acciones de borrar o quitar. Al pasar el mouse el botón de peligro baja a `peligro-hover`.
 - **Información** (`info`, `info-fondo`): avisos neutros; `info-fondo` también es el fondo del botón suave, de la notificación no leída y de la selección de texto.
 - **Neutro** (`neutro`, `neutro-fondo`): sin estado, sin riesgo calculado.
 - **Crítico** (`critico`, `critico-fondo`): violeta reservado a «Prerrequisito crítico» y a la ruta crítica.
@@ -381,15 +391,33 @@ El sistema es plano. La profundidad se da por capas de tono (fondo gris, superfi
 
 ## Shapes
 
-Esquinas suaves y consistentes por tamaño: 8 px (`radio`) para botones, campos, alertas y selectores; 10 px (`radio-tabla`) para el recuadro de tablas; 12 px (`radio-tarjeta`) para tarjetas, resúmenes y modales; 16 px (`radio-tarjeta-ingreso`) solo para la tarjeta de ingreso. Insignias y contador son píldoras (`radio-insignia`). Barras de avance y muestras de leyenda van casi rectas (3 px); la casilla, 4 px. Los bordes son de 1 px; los más gruesos tienen un fin: 2 px en la pestaña activa y en nodos críticos de la ruta, 1,5 px en casillas.
+Esquinas suaves y consistentes por tamaño: 10 px (`radio`) para botones, campos, alertas y selectores; 12 px (`radio-tabla`) para el recuadro de tablas; 14 px (`radio-tarjeta`) para tarjetas y resúmenes; 16 px (`radio-modal` y `radio-tarjeta-ingreso`) para modales y la tarjeta de ingreso. Insignias, contador y barra de avance (`radio-avance`) son píldoras (`999px`). Las muestras de leyenda van casi rectas (3 px); la casilla, 4 px. Los bordes son de 1 px; los más gruesos tienen un fin: 2 px en la pestaña activa y en nodos críticos de la ruta, 1,5 px en casillas.
+
+## Movimiento
+
+Transiciones sobrias y rápidas para dar respuesta inmediata sin distraer de la lectura.
+
+### Tokens de movimiento (`:root`)
+- `--duracion-presion`: `80ms` — hundimiento de botones al presionar (`:active`).
+- `--duracion-rapida`: `120ms` — cambios de color, borde o sombra en botones, campos, enlaces, pestañas y tarjetas de resumen que son enlace.
+- `--duracion-media`: `180ms` — entrada de diálogos (`.modal[open]` y `::backdrop`) y cambio de estado de notificaciones (`.notificacion`).
+- `--curva-salida`: `cubic-bezier(0.2, 0, 0, 1)` — desaceleración suave para la entrada de diálogos.
+- `--desplazamiento-entrada`: `8px` — desplazamiento vertical inicial en la entrada del diálogo.
+- `--escala-presion`: `0.98` — leve reducción de escala al presionar un botón habilitado.
+
+### Reglas de movimiento
+- **Baseline sin polyfills:** se usan propiedades estándar actuales (`scale`, `translate`, `@starting-style`); si un navegador antiguo no soporta `@starting-style`, el diálogo se abre igual sin animación.
+- **Duraciones ≤ 200 ms por variable:** ninguna `transition` usa duraciones literales en `ms` o `s`; todas salen de `:root`.
+- **Movimiento reducido (`prefers-reduced-motion`):** todo lo que desplaza o cambia de tamaño (`translate`, `scale`) va solo dentro de `@media (prefers-reduced-motion: no-preference)`. Los cambios de color y opacidad permanecen siempre activos.
+- **CSS plano y orden de cascada:** no se usa anidamiento de CSS; `@starting-style` va como regla de primer nivel (incluso dentro de `@media (prefers-reduced-motion: no-preference)`), y cada `@media` va después de las reglas base que modifica.
 
 ## Components
 
 ### Buttons
 Firmes y compactos, con texto en seminegrita.
-- **Shape:** esquinas de 8 px (`radio`), borde de 1 px transparente para que todas las variantes midan igual.
+- **Shape:** esquinas de 10 px (`radio`), borde de 1 px transparente para que todas las variantes midan igual.
 - **Primario:** fondo `primario`, texto blanco, relleno 10 × 18 px. Una acción principal por bloque.
-- **Hover / Focus:** el primario pasa a `primario-hover`; el foco usa el anillo de foco. Deshabilitado: opacidad 0,6 y cursor «no permitido». Mientras carga dice «Procesando…» y queda deshabilitado.
+- **Hover / Focus / Active:** transición de `duracion-rapida` en color, borde y sombra. El primario pasa a `primario-hover`; el secundario a fondo `secundario-hover` y borde `borde`; el peligro a `peligro-hover`; el foco usa el anillo de foco. Al presionar (`:active:not(:disabled)`), `scale` baja a `escala-presion` en `duracion-presion` solo bajo `prefers-reduced-motion: no-preference`. Deshabilitado: opacidad 0,6 y cursor «no permitido». Mientras carga dice «Procesando…» y queda deshabilitado.
 - **Secundario:** fondo blanco, texto `texto`, borde `borde-tabla`.
 - **Peligro:** fondo `peligro`, texto blanco; solo para confirmar algo destructivo.
 - **Suave:** fondo `info-fondo`, texto `primario`; al pasar el mouse aparece el borde azul.
@@ -401,43 +429,44 @@ Firmes y compactos, con texto en seminegrita.
 - **State:** el texto siempre dice el estado («Riesgo alto», «Prerrequisito crítico»). Cuando la insignia es un enlace, al pasar el mouse muestra un borde interior de su propio color. En el selector de dependencias la insignia lleva un botón «×» para quitarla.
 
 ### Cards / Containers
-- **Corner Style:** 12 px (`radio-tarjeta`).
+- **Corner Style:** 14 px (`radio-tarjeta`).
 - **Background:** `superficie` sobre `fondo`.
 - **Shadow Strategy:** ninguna (ver Elevation & Depth).
 - **Border:** 1 px `borde-tabla`.
 - **Internal Padding:** 20 px; los hijos se separan con `gap` de 14 px y los párrafos no suman margen.
-- Las tarjetas de resumen (ruta crítica, panel) siguen la misma forma; cuando son enlace, al pasar el mouse el borde pasa a `primario`.
+- Las tarjetas de resumen (ruta crítica, panel) siguen la misma forma; cuando son enlace, al pasar el mouse el borde pasa a `primario` con transición de `duracion-rapida`.
 
 ### Inputs / Fields
-- **Style:** fondo blanco, borde de 1 px, esquinas de 8 px. En ingreso y registro: borde `borde`, relleno 12 × 14 px, etiqueta de 14 px. Dentro del marco: borde `borde-tabla`, relleno 10 × 12 px, etiqueta de 13 px. Etiqueta y campo separados 6 px.
-- **Focus:** anillo de foco. Los campos con sufijo («%») muestran el anillo en todo el grupo.
+- **Style:** fondo blanco, borde de 1 px, esquinas de 10 px. En ingreso y registro: borde `borde`, relleno 12 × 14 px, etiqueta de 14 px. Dentro del marco: borde `borde-tabla`, relleno 10 × 12 px, etiqueta de 13 px. Etiqueta y campo separados 6 px.
+- **Hover / Focus:** transición de `duracion-rapida` en borde y sombra; al pasar el mouse sin foco ni deshabilitado, el borde pasa a `texto-secundario`. Al enfocar usa el anillo de foco. Los campos con sufijo («%») muestran el anillo en todo el grupo.
 - **Error / Disabled:** `aria-invalid` pone el borde en `peligro` y el mensaje va debajo en texto pequeño `peligro`. Solo lectura: fondo `fondo`.
 - **Casilla:** cuadro de 18 px dibujado (el `input` real sigue accesible), marcada en `primario` con visto blanco.
 
 ### Tables
-- Recuadro `.tabla-contenedor`: borde `borde-tabla`, esquinas de 10 px, fondo blanco, `position: relative` y desplazamiento horizontal propio.
+- Recuadro `.tabla-contenedor`: borde `borde-tabla`, esquinas de 12 px, fondo blanco, `position: relative` y desplazamiento horizontal propio.
 - Encabezado: fondo `tabla-encabezado-fondo`, texto de 12 px en seminegrita `tabla-encabezado-texto`, relleno 12 × 16 px.
 - Filas: texto base, relleno 12 × 16 px, separador de 1 px `borde-tabla`, la última sin borde; cifras tabulares.
 - Cada tabla tiene un `<caption>` solo para lectores de pantalla y un texto para cuando no hay filas.
 - Ancho y corte de palabras según **The Tabla Que Se Desplaza Rule**.
 
 ### Alerts
-- Relleno 12 × 16 px, esquinas de 8 px, texto del estado sobre su fondo pálido (error, éxito, aviso, información). El aviso de sesión vencida queda pegado arriba al desplazarse.
+- Relleno 12 × 16 px, esquinas de 10 px, texto del estado sobre su fondo pálido (error, éxito, aviso, información). El aviso de sesión vencida queda pegado arriba al desplazarse.
 
 ### Navigation
-- **Barra superior:** fondo `marca-fondo`, relleno 14 × 32 px. Marca a la izquierda (20 px, negrita, blanca); enlaces en `texto-sobre-marca-secundario`, que pasan a blanco al pasar el mouse; el activo en blanco y seminegrita. A la derecha: notificaciones con contador rojo en píldora, nombre y rol del usuario, y «Salir». En celular, ver **The Barra En Dos Líneas Rule**.
-- **Pestañas de hitos:** sin fondo, línea inferior de 1 px `borde-tabla`; la activa en `primario`, seminegrita y borde inferior de 2 px. Si no caben, se desplazan en horizontal.
+- **Barra superior:** fondo `marca-fondo`, relleno 14 × 32 px. Marca a la izquierda (20 px, negrita, blanca); enlaces en `texto-sobre-marca-secundario`, que pasan a blanco al pasar el mouse (`duracion-rapida`); el activo en blanco y seminegrita. A la derecha: notificaciones con contador rojo en píldora, nombre y rol del usuario, y «Salir». En celular, ver **The Barra En Dos Líneas Rule**.
+- **Pestañas de hitos:** sin fondo, línea inferior de 1 px `borde-tabla`; la activa en `primario`, seminegrita y borde inferior de 2 px, con transición de `duracion-rapida`. Si no caben, se desplazan en horizontal.
 
 ### Modal
-- `<dialog>` de 560 px (580 px para tareas, 520 px para diálogos de confirmación), sin pasar del ancho de pantalla menos 16 px por lado; relleno 28 px, esquinas de 12 px, borde `borde-tabla`, capa `capa-modal` detrás. Acciones abajo a la derecha, separadas 10 px.
+- `<dialog>` de 560 px (580 px para tareas, 520 px para diálogos de confirmación), sin pasar del ancho de pantalla menos 16 px por lado; relleno 28 px, esquinas de 16 px (`radio-modal`), borde `borde-tabla`, capa `capa-modal` detrás. Acciones abajo a la derecha, separadas 10 px.
+- Entrada animada con `@starting-style` en `duracion-media`: fundido (`opacity`) y capa `::backdrop` (`background-color`), más desplazamiento vertical (`desplazamiento-entrada`) solo si `prefers-reduced-motion: no-preference`. Se desmonta al cerrar.
 
 ### Barra de avance
-- `<progress>` de 6 px de alto, esquinas de 3 px, pista `avance-pista`, relleno `avance`; verde (`avance-exito`) al 100 %. Siempre acompañada del porcentaje en texto pequeño con cifras tabulares.
+- `<progress>` de 6 px de alto, esquinas en píldora (`radio-avance`, `999px`), pista `avance-pista`, relleno `avance`; verde (`avance-exito`) al 100 %. Siempre acompañada del porcentaje en texto pequeño con cifras tabulares.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** usar solo variables de `:root` para colores, espacios, radios y tamaños; si falta una, agregarla allí primero.
+- **Do** usar solo variables de `:root` para colores, espacios, radios, tamaños y movimiento; si falta una, agregarla allí primero.
 - **Do** mantener el texto secundario en 5:1 o más y el texto de estado en 4,5:1 o más sobre su fondo.
 - **Do** dejar el foco visible con el anillo `--foco` (o `--foco-sobre-marca` en la barra superior).
 - **Do** dar objetivos táctiles de 24 px como mínimo a enlaces, botones de texto, casillas y elementos de la barra, y de 44 px con puntero táctil (`pointer: coarse`), incluidos botones y campos.
@@ -446,7 +475,7 @@ Firmes y compactos, con texto en seminegrita.
 - **Do** colocar cada `@media` después de las reglas base que cambia.
 - **Do** revisar cada pantalla a 1440 y 390 px y comprobar que nada desborda entre 320 y 1440 px.
 - **Do** usar en celular (600 px o menos) la barra superior en dos líneas, con la campana SVG y la palabra «Notificaciones» oculta solo a la vista.
-- **Do** respetar `prefers-reduced-motion`: el indicador de carga deja de girar.
+- **Do** respetar `prefers-reduced-motion`: el indicador de carga deja de girar, y los desplazamientos o cambios de tamaño (`translate`, `scale`) solo se aplican bajo `prefers-reduced-motion: no-preference`.
 
 ### Don't:
 - **Don't** escribir colores sueltos (hex, `rgb()`) fuera de `:root`.

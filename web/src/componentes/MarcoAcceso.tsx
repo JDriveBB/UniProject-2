@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { tituloDocumento } from './tituloDocumento';
 
 /** Textos del panel de marca (Figma P01a/P01b; Aclaración 1 de la spec 26a, F2). */
 const MARCA = {
@@ -17,6 +18,10 @@ interface PropsMarcoAcceso {
 
 /** Diseño común de ingreso (P01a) y crear cuenta (P01b): panel de marca de 620 px y tarjeta de 400 px. */
 export function MarcoAcceso({ titulo, subtitulo, variante, children }: PropsMarcoAcceso) {
+  useEffect(() => {
+    document.title = tituloDocumento(titulo);
+  }, [titulo]);
+
   return (
     <div className="acceso">
       <div className="acceso__marca">

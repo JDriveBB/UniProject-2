@@ -1,11 +1,20 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { tituloDocumento } from './tituloDocumento';
 
 /** Título de 28 px de una página dentro del marco, con descripción y acciones opcionales a la derecha. */
-export function EncabezadoPagina({ titulo, descripcion, children }: {
+export function EncabezadoPagina({
+  titulo,
+  descripcion,
+  children,
+}: {
   titulo: string;
   descripcion?: string;
   children?: ReactNode;
 }) {
+  useEffect(() => {
+    document.title = tituloDocumento(titulo);
+  }, [titulo]);
+
   return (
     <header className="pagina__cabecera">
       <div>
