@@ -2375,9 +2375,9 @@ a {
   width: 11rem;
 }
 
-/* La columna Equipo conserva al menos 12rem: si la tarjeta es angosta, la tabla se desplaza en vez de aplastar el nombre. */
+/* La columna Equipo conserva al menos 7rem (cabe completa a 1440 px): si la tarjeta es más angosta, la tabla se desplaza en vez de aplastar el nombre. */
 .tabla--panel-equipos {
-  min-width: calc(12rem + 11rem + var(--ancho-col-avance) + 2 * var(--ancho-col-numero) + var(--ancho-col-historial));
+  min-width: calc(7rem + 11rem + var(--ancho-col-avance) + 2 * var(--ancho-col-numero) + var(--ancho-col-historial));
 }
 
 .tabla__col-numero {
