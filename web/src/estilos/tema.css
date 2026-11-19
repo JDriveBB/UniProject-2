@@ -9,7 +9,7 @@
   --color-superficie: #ffffff;
   --color-borde: #d1d6de;
   --color-texto: #161b26;
-  --color-texto-secundario: #6b7380;
+  --color-texto-secundario: #5f6673; /* antes #6b7380 (4,2–4,5:1 sobre fondos claros). Oscurecido a ≥ 5:1 por accesibilidad; T-004 */
   /* Estados */
   --color-exito: #177d45; /* Figma: #1a8c4d (3,8:1). Oscurecido a 4,6:1 por accesibilidad; decision del usuario 2026-11-04 */
   --color-exito-fondo: #e5f7eb;
@@ -30,7 +30,7 @@
   /* Tablas, barra de avance y contador */
   --color-borde-tabla: #dbdee5;
   --color-tabla-encabezado-fondo: #f0f2f5;
-  --color-tabla-encabezado-texto: #6b7380;
+  --color-tabla-encabezado-texto: #5f6673; /* antes #6b7380 (4,2–4,5:1 sobre fondos claros). Oscurecido a ≥ 5:1 por accesibilidad; T-004 */
   --color-avance: #285cdb;
   --color-avance-exito: #1a8c4d;
   --color-avance-pista: #f0f2f5;
@@ -42,16 +42,16 @@
   --peso-medio: 500;
   --peso-seminegrita: 600;
   --peso-negrita: 700;
-  --tamano-base: 14px;
-  --tamano-pequeno: 13px;
-  --tamano-insignia: 12px;
-  --tamano-tabla-encabezado: 12px;
-  --tamano-etiqueta: 14px;
-  --tamano-boton: 14px;
-  --tamano-boton-ingreso: 15px;
-  --tamano-titulo: 20px;
-  --tamano-titulo-pagina: 28px;
-  --tamano-marca-ingreso: 44px;
+  --tamano-base: 0.875rem;
+  --tamano-pequeno: 0.8125rem;
+  --tamano-insignia: 0.75rem;
+  --tamano-tabla-encabezado: 0.75rem;
+  --tamano-etiqueta: 0.875rem;
+  --tamano-boton: 0.875rem;
+  --tamano-boton-ingreso: 0.9375rem;
+  --tamano-titulo: 1.25rem;
+  --tamano-titulo-pagina: 1.75rem;
+  --tamano-marca-ingreso: 2.75rem;
   /* Espacios */
   --espacio-1: 4px;
   --espacio-2: 8px;
@@ -74,7 +74,7 @@
   --relleno-boton-ingreso: 14px 18px;
   --relleno-insignia: 4px 10px;
   --sombra: 0 8px 24px rgba(0, 0, 0, 0.06);
-  --foco: 0 0 0 3px rgba(40, 92, 219, 0.35);
+  --foco: 0 0 0 2px var(--color-superficie), 0 0 0 4px var(--color-primario);
   /* Ingreso, registro y formularios (bloque 26a, Figma P01a/P01b) */
   --ancho-panel-marca: 620px;
   --ancho-tarjeta-acceso: 400px;
@@ -86,26 +86,26 @@
   --espacio-20: 80px;
   --espacio-campo: 6px;
   --ancho-columna-marca: 460px;
-  --tamano-descripcion-marca: 16px;
-  --tamano-subtitulo-acceso: 15px;
-  --tamano-nota-acceso: 12px;
+  --tamano-descripcion-marca: 1rem;
+  --tamano-subtitulo-acceso: 0.9375rem;
+  --tamano-nota-acceso: 0.75rem;
   /* Marco y configuración de proyecto (bloque 26b, Figma P02/P03/P04) */
   --relleno-barra: 14px 32px;
-  --tamano-contador: 11px;
+  --tamano-contador: 0.6875rem;
   --relleno-contador: 2px 7px;
   --separacion-contador: 6px;
-  --tamano-rol-barra: 12px;
+  --tamano-rol-barra: 0.75rem;
   --foco-sobre-marca: 0 0 0 2px #ffffff;
   --ancho-maximo-contenido: 1440px;
   --relleno-contenido: 28px 32px;
-  --tamano-titulo-encabezado: 26px;
+  --tamano-titulo-encabezado: 1.625rem;
   --separacion-botones: 10px;
   --ancho-columna-izquierda: 560px;
   --ancho-columna-derecha: 796px;
   --espacio-tarjeta: 14px;
-  --tamano-titulo-tarjeta: 16px;
-  --tamano-subtitulo-tarjeta: 15px;
-  --tamano-etiqueta-marco: 13px;
+  --tamano-titulo-tarjeta: 1rem;
+  --tamano-subtitulo-tarjeta: 0.9375rem;
+  --tamano-etiqueta-marco: 0.8125rem;
   --relleno-campo-marco: 10px 12px;
   --alto-descripcion: 80px;
   --ancho-campo-nombre-hito: 368px;
@@ -123,12 +123,12 @@
   --color-capa-modal: rgba(23, 28, 41, 0.55);
   --ancho-modal: 560px;
   --relleno-modal: 28px;
-  --tamano-titulo-modal: 22px;
+  --tamano-titulo-modal: 1.375rem;
   --alto-descripcion-tarea: 70px;
   --relleno-selector: 8px 10px;
   --alto-lista-selector: 220px;
   --separacion-pestanas: 28px;
-  --tamano-pestana: 15px;
+  --tamano-pestana: 0.9375rem;
   --relleno-pestana: 10px 0;
   --borde-pestana-activa: 2px;
   --ancho-avance-hito: 160px;
@@ -140,7 +140,7 @@
   --ancho-col-avance: 170px;
   --ancho-col-fecha: 130px;
   --separacion-marcas: 6px;
-  --tamano-valor-resumen: 26px;
+  --tamano-valor-resumen: 1.625rem;
   --borde-nodo-critico: 2px;
   --grosor-flecha: 1.5px;
   --grosor-flecha-critica: 2px;
@@ -154,14 +154,14 @@
   --ancho-columna-tarea: 880px;
   --ancho-columna-acciones: 476px;
   --separacion-datos-tarea: 48px;
-  --tamano-valor-dato: 15px;
+  --tamano-valor-dato: 0.9375rem;
   --ancho-avance-detalle: 120px;
   --ancho-campo-porcentaje: 200px;
   --ancho-campo-observacion: 400px;
   --relleno-evidencia: 10px 14px;
   --relleno-opcion: 12px 14px;
   --separacion-comentario: 6px;
-  --tamano-fecha-comentario: 12px;
+  --tamano-fecha-comentario: 0.75rem;
   --alto-comentario: 64px;
   --alto-correccion: 90px;
   --separacion-correccion: 10px;
@@ -206,12 +206,13 @@
 }
 
 html {
-  font-size: var(--tamano-base);
+  font-size: 100%;
 }
 
 body {
   margin: 0;
   font-family: var(--fuente);
+  font-size: var(--tamano-base);
   color: var(--color-texto);
   background: var(--color-fondo);
   line-height: 1.5;
@@ -222,12 +223,23 @@ a {
 }
 
 :focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: var(--foco);
 }
 
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+  .casilla__entrada:focus-visible + .casilla__marca {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
 .marco {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -241,7 +253,7 @@ a {
 }
 
 .pagina-centrada {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: var(--espacio-6);
@@ -423,8 +435,8 @@ a {
 }
 
 .cargando__indicador {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
   border: 2px solid var(--color-borde);
   border-top-color: var(--color-primario);
   border-radius: 50%;
@@ -474,7 +486,7 @@ a {
 
 /* Ingreso y registro: panel de marca a la izquierda y tarjeta centrada a la derecha. */
 .acceso {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: var(--ancho-panel-marca) 1fr;
   background: var(--color-fondo);
@@ -2521,7 +2533,8 @@ a {
 }
 
 .evento-historial:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: var(--foco);
   border-radius: var(--radio);
 }
@@ -2574,5 +2587,41 @@ a {
 @media (max-width: 960px) {
   .fila-campos--historial {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ===== Objetivos táctiles (WCAG 2.5.8) ===== */
+.barra__salir,
+.enlace-fuerte,
+.boton-texto,
+.enlace-tarea,
+.evidencia__descargar {
+  display: inline-flex;
+  align-items: center;
+}
+
+.barra__enlace,
+.barra__salir,
+.barra__usuario,
+.enlace-fuerte,
+.boton-texto,
+.enlace-tarea,
+.casilla,
+.evidencia__descargar {
+  min-block-size: 24px;
+}
+
+@media (pointer: coarse) {
+  .barra__enlace,
+  .barra__salir,
+  .barra__usuario,
+  .enlace-fuerte,
+  .boton-texto,
+  .enlace-tarea,
+  .casilla,
+  .evidencia__descargar,
+  .boton,
+  .campo__entrada {
+    min-block-size: 44px;
   }
 }

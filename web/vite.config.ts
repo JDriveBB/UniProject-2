@@ -10,5 +10,9 @@ export default defineConfig({
     proxy: { '/api': 'http://localhost:8080' },
   },
   build: { outDir: 'dist', sourcemap: false },
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+    css: { include: [/tema\.css/] },
+  },
 });

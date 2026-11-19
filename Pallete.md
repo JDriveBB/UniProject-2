@@ -28,7 +28,7 @@
 | `--color-superficie` | `#ffffff` | <span style="display:inline-block;width:1em;height:1em;background:#ffffff;border:1px solid #d1d6de"></span> | Fondo de tarjetas, modales, tablas, controles de formulario, casillas, botón secundario y nodos con holgura | — |
 | `--color-borde` | `#d1d6de` | <span style="display:inline-block;width:1em;height:1em;background:#d1d6de;border:1px solid #d1d6de"></span> | Borde de la tarjeta de acceso (P01a/P01b), campos base, casillas de verificación e indicador de carga | — |
 | `--color-texto` | `#161b26` | <span style="display:inline-block;width:1em;height:1em;background:#161b26;border:1px solid #d1d6de"></span> | Texto principal, títulos de página y tarjeta, etiquetas, celdas de tabla, entradas de formulario y botón secundario | — |
-| `--color-texto-secundario` | `#6b7380` | <span style="display:inline-block;width:1em;height:1em;background:#6b7380;border:1px solid #d1d6de"></span> | Subtítulos, textos de ayuda, fechas, pestañas inactivas, etiquetas de resumen, estado de carga y flechas no críticas del grafo | — |
+| `--color-texto-secundario` | `#5f6673` | <span style="display:inline-block;width:1em;height:1em;background:#5f6673;border:1px solid #d1d6de"></span> | Subtítulos, textos de ayuda, fechas, pestañas inactivas, etiquetas de resumen, estado de carga y flechas no críticas del grafo | Antes `#6b7380`; oscurecido en T-004 a ≥ 5:1 |
 
 ---
 
@@ -57,7 +57,7 @@
 | --- | --- | --- | --- | --- |
 | `--color-borde-tabla` | `#dbdee5` | <span style="display:inline-block;width:1em;height:1em;background:#dbdee5;border:1px solid #d1d6de"></span> | Bordes de tablas, tarjetas, modales, botón secundario, entradas dentro del marco, selectores y nodos con holgura | — |
 | `--color-tabla-encabezado-fondo` | `#f0f2f5` | <span style="display:inline-block;width:1em;height:1em;background:#f0f2f5;border:1px solid #d1d6de"></span> | Fondo de encabezados de tabla (`.tabla th`) | — |
-| `--color-tabla-encabezado-texto` | `#6b7380` | <span style="display:inline-block;width:1em;height:1em;background:#6b7380;border:1px solid #d1d6de"></span> | Texto de encabezados de tabla (`.tabla th`) | — |
+| `--color-tabla-encabezado-texto` | `#5f6673` | <span style="display:inline-block;width:1em;height:1em;background:#5f6673;border:1px solid #d1d6de"></span> | Texto de encabezados de tabla (`.tabla th`) | Antes `#6b7380`; oscurecido en T-004 a ≥ 5:1 |
 | `--color-avance` | `#285cdb` | <span style="display:inline-block;width:1em;height:1em;background:#285cdb;border:1px solid #d1d6de"></span> | Relleno de la barra de avance (`.avance__barra`) cuando el progreso es menor al 100 % | Mismo valor hex que el color primario |
 | `--color-avance-exito` | `#1a8c4d` | <span style="display:inline-block;width:1em;height:1em;background:#1a8c4d;border:1px solid #d1d6de"></span> | Relleno de la barra de avance al 100 % (`.avance--completo`) | Usa el verde original de Figma (`#1a8c4d`), no el oscurecido |
 | `--color-avance-pista` | `#f0f2f5` | <span style="display:inline-block;width:1em;height:1em;background:#f0f2f5;border:1px solid #d1d6de"></span> | Fondo de la pista de la barra de avance (`.avance__barra`) | — |
@@ -86,7 +86,7 @@ Variables de `:root` en `web/src/estilos/tema.css` que contienen colores (sombra
 | Token | Valor | Muestra | Uso | Notas |
 | --- | --- | --- | --- | --- |
 | `--sombra` | `0 8px 24px rgba(0, 0, 0, 0.06)` | <span style="display:inline-block;width:1em;height:1em;background:rgba(0, 0, 0, 0.06);border:1px solid #d1d6de"></span> | Sombra de la tarjeta de ingreso y registro (`.tarjeta-acceso`) | Negro al 6 % de opacidad |
-| `--foco` | `0 0 0 3px rgba(40, 92, 219, 0.35)` | <span style="display:inline-block;width:1em;height:1em;background:rgba(40, 92, 219, 0.35);border:1px solid #d1d6de"></span> | Anillo de foco (`:focus-visible`) general, en casillas y en `.campo-sufijo` | Basado en el RGB del color primario (`40, 92, 219`) al 35 % |
+| `--foco` | `0 0 0 2px var(--color-superficie), 0 0 0 4px var(--color-primario)` | <span style="display:inline-block;width:1em;height:1em;background:#285cdb;border:1px solid #d1d6de"></span> | Anillo de foco (`:focus-visible`) general, en casillas y en `.campo-sufijo` | Anillo azul sólido (`--color-primario`) con borde interior blanco (`--color-superficie`); T-004 |
 | `--foco-sobre-marca` | `0 0 0 2px #ffffff` | <span style="display:inline-block;width:1em;height:1em;background:#ffffff;border:1px solid #d1d6de"></span> | Anillo de foco (`:focus-visible`) para elementos dentro de la barra superior (`.barra`) | Blanco sólido sobre fondo de marca |
 | `--color-capa-modal` | `rgba(23, 28, 41, 0.55)` | <span style="display:inline-block;width:1em;height:1em;background:rgba(23, 28, 41, 0.55);border:1px solid #d1d6de"></span> | Fondo semitransparente (`.modal::backdrop`) de los diálogos modales (P05, P07b, P07c, P08a, P08b) | Declarada en la sección del bloque 26c de `:root` (línea 122) con `rgba` |
 
@@ -100,6 +100,6 @@ Variables de `:root` en `web/src/estilos/tema.css` que contienen colores (sombra
 - **Otros valores hexadecimales compartidos:**
   - `#ffffff` se repite en `--color-texto-sobre-primario`, `--color-superficie`, `--color-texto-sobre-marca` y `--color-texto-sobre-contador`.
   - `#f0f2f5` se repite en `--color-neutro-fondo`, `--color-tabla-encabezado-fondo` y `--color-avance-pista`.
-  - `#6b7380` se repite en `--color-texto-secundario` y `--color-tabla-encabezado-texto`.
+  - `#5f6673` se repite en `--color-texto-secundario` y `--color-tabla-encabezado-texto`.
   - `#cc2626` se repite en `--color-peligro` y `--color-contador-fondo`.
 - **Variable `--color-*` en el bloque 26c:** además de las 31 variables `--color-*` con valores hexadecimales de las líneas 5–38, en la línea 122 de `:root` está definida `--color-capa-modal: rgba(23, 28, 41, 0.55)` para la superposición de los modales.
