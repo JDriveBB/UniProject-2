@@ -174,6 +174,8 @@ export interface ItemAtencion {
   tipo: TipoAtencion;
   tono: TonoInsignia;
   etiqueta: string;
+  /** Solo en el panel general (T-030). */
+  proyecto?: string;
   texto: string;
   accion: string;
   ruta: string;

@@ -3,18 +3,18 @@ import type { ProyectoVista } from '../api/tipos';
 import { BarraAvance } from '../componentes/BarraAvance';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
-import { rangoFechas } from '../formato';
+import { fechaIsoBogota, rangoFechas } from '../formato';
 import type { UrgenciaEntrega } from '../panel/vista';
 import { rutas } from '../rutas';
 import type { Marca } from '../tablero/marcas';
-import { estadoProyecto, type ResumenDocente, type ResumenEstudiante, type ResumenProyecto } from './tarjetas';
+import { etapaProyecto, type ResumenDocente, type ResumenEstudiante, type ResumenProyecto } from './tarjetas';
 
-function marcaCabecera(resumen: ResumenProyecto | undefined): Marca | null {
+function marcaCabecera(proyecto: ProyectoVista, resumen: ResumenProyecto | undefined): Marca | null {
   if (resumen === undefined) {
     return null;
   }
   if (resumen.tipo === 'docente') {
-    return estadoProyecto(resumen.resumen);
+    return etapaProyecto(proyecto, fechaIsoBogota(new Date()));
   }
   if (resumen.tipo === 'estudiante') {
     return resumen.resumen.hito?.marca ?? null;
@@ -51,11 +51,10 @@ function CuerpoDocente({ resumen }: { resumen: ResumenDocente }) {
           <dd className="tarjeta-proyecto__valor">{resumen.hitos}</dd>
         </div>
         <div className="tarjeta-proyecto__cifra">
-          <dt className="tarjeta-proyecto__etiqueta">Por calificar</dt>
-          <dd className="tarjeta-proyecto__valor">{resumen.porCalificar}</dd>
+          <dt className="tarjeta-proyecto__etiqueta">Estudiantes</dt>
+          <dd className="tarjeta-proyecto__valor">{resumen.estudiantes}</dd>
         </div>
       </dl>
-      <FilaAvance etiqueta="Avance promedio" avance={resumen.avance} />
       <p className="tarjeta-proyecto__dato">
         <span className="tarjeta-proyecto__etiqueta">Próxima entrega:</span>{' '}
         {resumen.proxima !== null ? (
@@ -108,17 +107,17 @@ function AccionesTarjeta({
       <div className="pagina__acciones tarjeta-proyecto__acciones">
         <Link
           className="boton boton--primario"
-          to={rutas.panelProyecto(proyecto.idProyecto)}
-          aria-label={`Abrir panel de ${proyecto.nombre}`}
-        >
-          Abrir panel
-        </Link>
-        <Link
-          className="boton boton--secundario"
           to={rutas.proyecto(proyecto.idProyecto)}
           aria-label={`Configurar ${proyecto.nombre}`}
         >
           Configurar
+        </Link>
+        <Link
+          className="boton boton--secundario"
+          to={rutas.panelProyecto(proyecto.idProyecto)}
+          aria-label={`Abrir panel de ${proyecto.nombre}`}
+        >
+          Abrir panel
         </Link>
       </div>
     );
@@ -150,7 +149,7 @@ function AccionesTarjeta({
   );
 }
 
-/** Tarjeta de proyecto para /proyectos y el selector de /panel, sin envolver la tarjeta completa en enlace. */
+/** Tarjeta de proyecto para /proyectos, sin envolver la tarjeta completa en enlace. */
 export function TarjetaProyecto({
   proyecto,
   edita,
@@ -160,7 +159,7 @@ export function TarjetaProyecto({
   edita: boolean;
   resumen: ResumenProyecto | undefined;
 }) {
-  const insignia = marcaCabecera(resumen);
+  const insignia = marcaCabecera(proyecto, resumen);
 
   return (
     <div className="tarjeta-proyecto">

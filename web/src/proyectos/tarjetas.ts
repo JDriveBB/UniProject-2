@@ -16,7 +16,7 @@ import { modoDeVista } from './vista';
 export interface ResumenDocente {
   equipos: number;
   hitos: number;
-  avance: number | null;
+  estudiantes: number;
   proxima: { etiqueta: string; plazo: string; urgencia: UrgenciaEntrega } | null;
   porCalificar: number;
   enAtencion: number;
@@ -60,18 +60,19 @@ export function avancePonderado(tareas: Pick<TareaVista, 'porcentajeAvance' | 'h
   return Math.round(sumaPonderada / totalHoras);
 }
 
-/** Resumen del proyecto para la tarjeta del docente en /proyectos y /panel. */
+/** Resumen del proyecto para la tarjeta del docente en /proyectos. */
 export function resumenDocente(datos: DatosPanel, hoy: string): ResumenDocente {
   const { panel, detalle } = datos;
   const entregas = entregasDelProyecto(detalle, hoy);
   const pendientes = porEvaluar(detalle);
   const base = resumenPanel(panel, pendientes.length, entregas);
   const entregaProxima = entregas.find((e) => e.proxima) ?? null;
+  const estudiantes = detalle.equipos.reduce((total, eq) => total + eq.miembros.length, 0);
 
   return {
     equipos: base.equipos,
     hitos: detalle.hitos.length,
-    avance: base.avance,
+    estudiantes,
     proxima:
       entregaProxima === null
         ? null
@@ -83,6 +84,17 @@ export function resumenDocente(datos: DatosPanel, hoy: string): ResumenDocente {
     porCalificar: base.porEvaluar,
     enAtencion: base.enRojo,
   };
+}
+
+/** Etapa del proyecto según sus fechas de calendario (aaaa-mm-dd). */
+export function etapaProyecto(proyecto: Pick<ProyectoVista, 'fechaInicio' | 'fechaFin'>, hoy: string): Marca {
+  if (hoy < proyecto.fechaInicio) {
+    return { texto: 'Por empezar', tono: 'neutro' };
+  }
+  if (hoy > proyecto.fechaFin) {
+    return { texto: 'Terminado', tono: 'neutro' };
+  }
+  return { texto: 'En curso', tono: 'info' };
 }
 
 /** Insignia principal de la tarjeta del docente según atención, entregas por calificar o al día. */

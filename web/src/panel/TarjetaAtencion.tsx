@@ -13,7 +13,10 @@ export function TarjetaAtencion({ elementos }: { elementos: ItemAtencion[] }) {
           {elementos.map((item) => (
             <li key={item.clave} className="atencion__fila">
               <Insignia tono={item.tono}>{item.etiqueta}</Insignia>
-              <span className="atencion__texto">{item.texto}</span>
+              <span className="atencion__texto">
+                {item.proyecto !== undefined && <span className="atencion__proyecto">{item.proyecto}</span>}
+                {item.texto}
+              </span>
               <Link
                 className={
                   item.tipo === 'calificar'

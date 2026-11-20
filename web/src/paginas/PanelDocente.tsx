@@ -3,7 +3,6 @@ import { Link, Navigate, useParams } from 'react-router';
 import { mensajeDeError } from '../api/cliente';
 import { panelProyecto } from '../api/panel';
 import { detalleProyecto, listarProyectos } from '../api/proyectos';
-import { tableroHito } from '../api/tareas';
 import type { ProyectoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
@@ -12,11 +11,20 @@ import { EncabezadoPagina } from '../componentes/EncabezadoPagina';
 import { EstadoVacio } from '../componentes/EstadoVacio';
 import { fechaIsoBogota } from '../formato';
 import { cargarPanel, type DatosPanel } from '../panel/carga';
+import {
+  atencionGeneral,
+  cargarPanelesPropios,
+  proyectosDelPanel,
+  resumenGeneral,
+  ultimaActualizacion,
+  type PanelDeProyecto,
+} from '../panel/general';
 import { ResumenPanel } from '../panel/ResumenPanel';
 import { TarjetaAlertas } from '../panel/TarjetaAlertas';
 import { TarjetaAtencion } from '../panel/TarjetaAtencion';
 import { TarjetaEntregas } from '../panel/TarjetaEntregas';
 import { TarjetaEquiposPanel } from '../panel/TarjetaEquiposPanel';
+import { TarjetaProyectosPanel } from '../panel/TarjetaProyectosPanel';
 import {
   alertasPorEquipo,
   atencionDelDia,
@@ -28,23 +36,23 @@ import {
   SIN_ACCESO_PANEL,
   textoActualizado,
 } from '../panel/vista';
-import { TarjetaProyecto } from '../proyectos/TarjetaProyecto';
-import { cargarResumenes, type ApiResumenes, type ResumenProyecto } from '../proyectos/tarjetas';
 import { idDeRuta } from '../proyectos/vista';
 import { rutas } from '../rutas';
 import { useUsuario } from '../sesion/ContextoSesion';
 import { mensajeErrorAbrir } from '../tablero/ubicacion';
 
-const API_RESUMENES: ApiResumenes = { panelProyecto, detalleProyecto, tableroHito };
-
 type EstadoElegir =
-  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; proyectos: ProyectoVista[] };
+  | { estado: 'cargando' }
+  | { estado: 'error'; mensaje: string }
+  | { estado: 'unico'; idProyecto: number }
+  | { estado: 'vacio' }
+  | { estado: 'listo'; paneles: PanelDeProyecto[] };
 
 export function ElegirPanel() {
   const usuario = useUsuario();
   const [estado, setEstado] = useState<EstadoElegir>({ estado: 'cargando' });
-  const [resumenes, setResumenes] = useState<Map<number, ResumenProyecto> | null>(null);
   const [vuelta, setVuelta] = useState(0);
+  const [recargando, setRecargando] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -55,6 +63,7 @@ export function ElegirPanel() {
       } catch (e) {
         if (vigente) {
           setEstado({ estado: 'error', mensaje: mensajeDeError(e) });
+          setRecargando(false);
         }
         return;
       }
@@ -62,29 +71,44 @@ export function ElegirPanel() {
         return;
       }
       const propios = proyectosPropios(lista, usuario.idUsuario);
-      setEstado({ estado: 'listo', proyectos: propios });
-      if (propios.length < 2) {
+      if (propios.length === 1) {
+        setEstado({ estado: 'unico', idProyecto: propios[0].idProyecto });
+        setRecargando(false);
         return;
       }
-      const mapa = await cargarResumenes(
-        API_RESUMENES,
-        propios,
-        { idUsuario: usuario.idUsuario, rol: usuario.rol },
-        fechaIsoBogota(new Date()),
-      );
-      if (vigente) {
-        setResumenes(mapa);
+      if (propios.length === 0) {
+        setEstado({ estado: 'vacio' });
+        setRecargando(false);
+        return;
       }
+
+      const paneles = await cargarPanelesPropios({ panelProyecto, detalleProyecto }, propios);
+      if (!vigente) {
+        return;
+      }
+      if (paneles.every((p) => p.datos === null)) {
+        setEstado({ estado: 'error', mensaje: 'No se pudieron cargar tus proyectos.' });
+      } else {
+        setEstado({ estado: 'listo', paneles });
+      }
+      setRecargando(false);
     }
     void cargar();
     return () => {
       vigente = false;
     };
-  }, [usuario.idUsuario, usuario.rol, vuelta]);
+  }, [usuario.idUsuario, vuelta]);
+
+  function actualizar() {
+    if (recargando) {
+      return;
+    }
+    setRecargando(true);
+    setVuelta((v) => v + 1);
+  }
 
   function reintentar() {
     setEstado({ estado: 'cargando' });
-    setResumenes(null);
     setVuelta((v) => v + 1);
   }
 
@@ -108,12 +132,11 @@ export function ElegirPanel() {
     );
   }
 
-  const { proyectos } = estado;
-  if (proyectos.length === 1) {
-    return <Navigate to={rutas.panelProyecto(proyectos[0].idProyecto)} replace />;
+  if (estado.estado === 'unico') {
+    return <Navigate to={rutas.panelProyecto(estado.idProyecto)} replace />;
   }
 
-  if (proyectos.length === 0) {
+  if (estado.estado === 'vacio') {
     return (
       <div className="pagina">
         <EncabezadoPagina titulo="Panel del docente" />
@@ -131,13 +154,36 @@ export function ElegirPanel() {
     );
   }
 
+  const { paneles } = estado;
+  const hoy = fechaIsoBogota(new Date());
+  const ultima = ultimaActualizacion(paneles);
+  const descripcion =
+    ultima === null ? `${paneles.length} proyectos` : `${paneles.length} proyectos · ${textoActualizado(ultima)}`;
+  const fallidos = paneles.filter((p) => p.datos === null).map((p) => p.proyecto.nombre);
+  const botonActualizar = estadoBotonPanel('actualizar', recargando);
+
   return (
     <div className="pagina">
-      <EncabezadoPagina titulo="Panel del docente" descripcion="Tienes varios proyectos. Elige uno." />
-      <div className="rejilla-proyectos">
-        {proyectos.map((p) => (
-          <TarjetaProyecto key={p.idProyecto} proyecto={p} edita resumen={resumenes?.get(p.idProyecto)} />
-        ))}
+      <EncabezadoPagina titulo="Panel del docente" descripcion={descripcion}>
+        <div className="pagina__acciones">
+          <Boton variante="secundario" disabled={botonActualizar.deshabilitado} onClick={actualizar}>
+            {botonActualizar.texto}
+          </Boton>
+        </div>
+      </EncabezadoPagina>
+      {fallidos.length > 0 && (
+        <Alerta tipo="aviso">{`No se pudieron cargar los datos de ${fallidos.join(', ')}. Lo demás está al día.`}</Alerta>
+      )}
+      <ResumenPanel resumen={resumenGeneral(paneles, hoy)} />
+      <div className="detalle-tarea">
+        <div className="detalle-tarea__columna">
+          <div id="atencion">
+            <TarjetaAtencion elementos={atencionGeneral(paneles, hoy)} />
+          </div>
+        </div>
+        <div className="detalle-tarea__columna">
+          <TarjetaProyectosPanel proyectos={proyectosDelPanel(paneles, hoy)} />
+        </div>
       </div>
     </div>
   );

@@ -2966,11 +2966,15 @@ select.campo__entrada {
   color: var(--color-peligro);
 }
 
-/* Franja de resumen del panel (4 columnas compactas). */
+/* Franja de resumen del panel (4 columnas compactas; 3 en el panel general). */
 .resumen-panel {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--espacio-4);
+}
+
+.resumen-panel--tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .resumen-panel__dato {
@@ -3064,7 +3068,59 @@ select.campo__entrada {
   overflow-wrap: break-word;
 }
 
+.atencion__proyecto {
+  display: block;
+  font-size: var(--tamano-pequeno);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
 .atencion__accion {
+  white-space: nowrap;
+  justify-self: end;
+}
+
+/* Tarjeta «Tus proyectos» del panel general. */
+.proyectos-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proyectos-panel__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--relleno-evidencia);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.proyectos-panel__datos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-1) var(--espacio-3);
+  min-width: 0;
+}
+
+.proyectos-panel__nombre {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.proyectos-panel__estado {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.proyectos-panel__accion {
   white-space: nowrap;
   justify-self: end;
 }
@@ -3166,13 +3222,15 @@ select.campo__entrada {
 }
 
 @media (max-width: 600px) {
-  .atencion__fila {
+  .atencion__fila,
+  .proyectos-panel__fila {
     grid-template-columns: minmax(0, 1fr);
     justify-items: start;
     gap: var(--espacio-2);
   }
 
-  .atencion__accion {
+  .atencion__accion,
+  .proyectos-panel__accion {
     justify-self: start;
   }
 }

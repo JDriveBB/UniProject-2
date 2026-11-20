@@ -14,6 +14,7 @@ import {
   avancePonderado,
   cargarResumenes,
   estadoProyecto,
+  etapaProyecto,
   resumenDocente,
   resumenEstudiante,
   type ApiResumenes,
@@ -130,7 +131,7 @@ describe('tarjetas de proyectos', () => {
     expect(avancePonderado([{ porcentajeAvance: 80, horasEstimadas: 0 }])).toBeNull();
   });
 
-  it('resumenDocente resume equipos, hitos, avance, próxima entrega, por calificar y en atención', () => {
+  it('resumenDocente resume equipos, hitos, estudiantes, próxima entrega, por calificar y en atención', () => {
     const hitos: HitoVista[] = [
       hitoBase({ idHito: 1, orden: 1, nombreHito: 'Análisis', fechaLimite: '2026-09-10' }),
       hitoBase({ idHito: 2, orden: 2, nombreHito: 'Diseño', fechaLimite: '2026-09-23' }),
@@ -141,7 +142,10 @@ describe('tarjetas de proyectos', () => {
         idEquipo: 10,
         idProyecto: 1,
         nombreEquipo: 'Alfa',
-        miembros: [],
+        miembros: [
+          { idUsuario: 101, nombre: 'E1', rolEquipo: 'LIDER' },
+          { idUsuario: 102, nombre: 'E2', rolEquipo: 'INTEGRANTE' },
+        ],
         hitos: [
           { idHitoEquipo: 101, idHito: 1, estado: 'ENVIADO', fechaEnvio: '2026-09-12T12:00:00Z' },
           { idHitoEquipo: 102, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
@@ -151,7 +155,11 @@ describe('tarjetas de proyectos', () => {
         idEquipo: 20,
         idProyecto: 1,
         nombreEquipo: 'Beta',
-        miembros: [],
+        miembros: [
+          { idUsuario: 201, nombre: 'E3', rolEquipo: 'LIDER' },
+          { idUsuario: 202, nombre: 'E4', rolEquipo: 'INTEGRANTE' },
+          { idUsuario: 203, nombre: 'E5', rolEquipo: 'INTEGRANTE' },
+        ],
         hitos: [
           { idHitoEquipo: 201, idHito: 1, estado: 'ENVIADO', fechaEnvio: '2026-09-12T12:00:00Z' },
           { idHitoEquipo: 202, idHito: 2, estado: 'EN_CURSO', fechaEnvio: null },
@@ -185,7 +193,7 @@ describe('tarjetas de proyectos', () => {
     expect(resumenDocente({ panel, detalle: detalleBase({ hitos, equipos }) }, '2026-09-20')).toEqual({
       equipos: 2,
       hitos: 3,
-      avance: 55,
+      estudiantes: 5,
       proxima: { etiqueta: 'Hito 2 · Diseño', plazo: 'vence en 3 días', urgencia: 'pronto' },
       porCalificar: 2,
       enAtencion: 1,
@@ -201,7 +209,7 @@ describe('tarjetas de proyectos', () => {
     expect(sinDatos).toEqual({
       equipos: 1,
       hitos: 1,
-      avance: null,
+      estudiantes: 0,
       proxima: null,
       porCalificar: 0,
       enAtencion: 0,
@@ -212,7 +220,7 @@ describe('tarjetas de proyectos', () => {
     const base: ResumenDocente = {
       equipos: 3,
       hitos: 2,
-      avance: 50,
+      estudiantes: 9,
       proxima: null,
       porCalificar: 2,
       enAtencion: 0,
@@ -234,6 +242,14 @@ describe('tarjetas de proyectos', () => {
       texto: 'Al día',
       tono: 'exito',
     });
+  });
+
+  it('etapaProyecto clasifica antes, primer día, último día y después', () => {
+    const fechas = { fechaInicio: '2026-08-10', fechaFin: '2026-11-20' };
+    expect(etapaProyecto(fechas, '2026-08-09')).toEqual({ texto: 'Por empezar', tono: 'neutro' });
+    expect(etapaProyecto(fechas, '2026-08-10')).toEqual({ texto: 'En curso', tono: 'info' });
+    expect(etapaProyecto(fechas, '2026-11-20')).toEqual({ texto: 'En curso', tono: 'info' });
+    expect(etapaProyecto(fechas, '2026-11-21')).toEqual({ texto: 'Terminado', tono: 'neutro' });
   });
 
   it('resumenEstudiante cubre líder, integrante, sin equipo, sin hitos y vencido sin enviar', () => {
@@ -372,7 +388,7 @@ describe('tarjetas de proyectos', () => {
       resumen: {
         equipos: 0,
         hitos: 1,
-        avance: null,
+        estudiantes: 0,
         proxima: { etiqueta: 'Hito 1 · Requisitos', plazo: 'vence hoy', urgencia: 'pronto' },
         porCalificar: 0,
         enAtencion: 0,
