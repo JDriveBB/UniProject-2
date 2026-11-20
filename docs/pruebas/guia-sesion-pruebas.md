@@ -60,8 +60,8 @@ Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProjec
 - **Hitos:**
   - Hito 1: «Requisitos y diagramas» (vence en 3 días, alerta configurada a 3 días, avisa al docente).
   - Hito 2: «Prototipo funcional» (inicia en 4 días).
-- **Equipo Alfa:** Hito 1 completo (100 %), entregado y evaluado por la docente con nota provisional.
-- **Equipo Beta:** Hito 1 en curso. La tarea «Diagrama de clases» está bloqueada hace 3 días (>48 h, aparece en rojo en el panel del docente), Felipe solicitó apoyo, Elena no registra actividad hace 6 días (genera alerta de inactividad) y existe un comentario pedagógico del monitor.
+- **Equipo Alfa:** Hito 1 completo (100 %), entregado y evaluado por la docente con nota provisional. Hito 2 («Prototipo funcional») en curso con 7 tareas encadenadas (ruta crítica de 5 tareas: «Configurar repositorio» → «Modelo de datos» → «API de préstamos» → «Pantalla de préstamos» → «Pruebas de integración», y 2 ramas cortas: «Diseño de pantallas» y «Datos de prueba»); la primera tarea está al 100 %, dos tienen avance parcial (50 % y 40 %), «Pantalla de préstamos» fue reasignada de Bruno a Camila con motivo y «Modelo de datos» tiene un comentario de la docente.
+- **Equipo Beta:** Hito 1 en curso. La tarea «Diagrama de clases» está bloqueada hace 3 días (>48 h, aparece en rojo en el panel del docente), Felipe solicitó apoyo, Elena no registra actividad hace 6 días (genera alerta de inactividad) y existe un comentario pedagógico del monitor. Además, Elena adjuntó un enlace en «Diagrama de casos de uso» y Diego registró una solicitud de corrección pendiente sobre esa entrega.
 - **Cuentas sueltas:** Hugo no pertenece a ningún equipo; Inés y Jorge están habilitados pero no tienen cuenta creada aún.
 
 ---
@@ -91,6 +91,7 @@ Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProjec
 | D6 | Evaluar hito entregado | Tras el envío de Beta (L6), abrir `/hitos/{idHitoEquipo}/evaluar` de Beta, calificar rúbrica, retroalimentación y pulsar `Registrar evaluación`. | Hito pasa a evaluado con nota provisional; se notifica a los integrantes. | Evaluar un hito que aún esté en progreso (no enviado). |
 | D7 | Comentario docente | En `/tareas/{idTarea}`, redactar observación en «Comentarios» y pulsar `Comentar`. | Comentario publicado con insignia `Docente`. | Editar o borrar comentarios emitidos. |
 | D8 | Reportes y eliminación | Ir a `/reportes`, seleccionar proyecto y descargar PDF. En `/perfil` intentar eliminar cuenta. | Descarga exitosa de PDF; eliminación de cuenta es rechazada por tener proyectos activos. | Acceder a `/admin/docentes` (403); eliminar cuenta propia con proyectos activos. |
+| D9 | Ruta crítica e historial (Alfa, hito 2) | Abrir el tablero de Alfa (abre el hito 2 «Prototipo funcional»), pulsar `Ver ruta crítica`, volver y abrir `Ver historial`; revisar «Modelo de datos». | Ve la ruta crítica de 5 tareas (36 h) con 2 ramas cortas, el comentario docente en «Modelo de datos» y la reasignación de «Pantalla de préstamos» de Bruno a Camila con su motivo. | Modificar avance, tareas o dependencias desde estas vistas. |
 
 ### 6.2 Líder (Diego, Beta)
 
@@ -103,6 +104,7 @@ Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProjec
 | L5 | Pedir corrección | En `/tareas/{idTarea}` con evidencia de un integrante, pulsar `Solicitar corrección`, redactar observaciones y pulsar `Enviar solicitud`. | La tarea regresa a «En progreso» y se notifica al estudiante. | Solicitar corrección sin observaciones obligatorias. |
 | L6 | Enviar hito a revisión | En `/equipos/{idEquipo}/tablero`, pulsar `Enviar a revisión` con críticas pendientes (debe advertir/bloquear); completar críticas y pulsar `Enviar a revisión`. | Hito cambia a estado `ENVIADO` y se envía aviso a la docente. | Enviar el hito si existen tareas de la ruta crítica incompletas (RF7). |
 | L7 | Avance de tarea ajena | En `/tareas/{idTarea}` asignada a otro miembro de Beta, el líder modifica el porcentaje y pulsa `Registrar avance`. | Avance registrado correctamente (facultad del líder de equipo). | Abrir tablero de Alfa por URL (`/equipos/{idAlfa}/tablero`); evaluar hitos; ver `/panel` o `/reportes`; suprimir su cuenta siendo líder activo. |
+| L8 | Ruta crítica e historial (Ana, Alfa hito 2) | Entrar como Ana (`/tablero` → Equipo Alfa, abre hito 2 «Prototipo funcional»), abrir `Ver ruta crítica`, luego `Ver historial` y entrar a «Modelo de datos». | Ve la ruta crítica de 5 tareas (36 h) con 2 ramas cortas, el avance inicial (100 %, 50 %, 40 %), el comentario de la docente y la reasignación de «Pantalla de préstamos» hacia Camila con su motivo. | Editar tareas desde la vista de ruta crítica o acceder al tablero de Beta. |
 
 ### 6.3 Integrante (Felipe/Elena en Beta; Bruno en Alfa)
 
@@ -115,6 +117,8 @@ Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProjec
 | I5 | Comentar tarea | En `/tareas/{idTarea}` de su equipo, escribir en «Comentarios» y pulsar `Comentar`. | Comentario publicado con su nombre y fecha. | Enviar comentarios vacíos o que excedan 2000 caracteres. |
 | I6 | Ver evaluación de Alfa | Entrar como Bruno a `/hitos/{idHitoAlfa}/evaluacion`. | Visualiza rúbrica evaluada, retroalimentación y su calificación provisional. | Modificar notas o rúbricas de evaluación. |
 | I7 | Historial restringido | Entrar como Bruno a `/equipos/{idAlfa}/historial`. | Ve la línea de tiempo del equipo, pero en calificaciones solo figura SU nota individual. | Ver notas individuales de compañeros; editar avance/evidencia de tareas ajenas (RF13); crear tareas; ver otro equipo; acceder a `/panel` o `/reportes`. |
+| I8 | Corrección pendiente (Elena, Beta) | Entrar como Elena a `/mis-tareas` y abrir «Diagrama de casos de uso». | Muestra la insignia «Corrección solicitada», el enlace adjuntado y las observaciones de Diego; al desbloquearse la predecesora exige `Adjuntar nueva versión` antes de marcar 100 %. | Completar la tarea al 100 % mientras siga la corrección pendiente o aprobarla sin nueva entrega. |
+| I9 | Ruta crítica e historial (Bruno/Camila, Alfa hito 2) | Entrar como Camila (o Bruno) a `/tablero` (Equipo Alfa, hito 2), abrir `Ver ruta crítica` y `Ver historial`. | Camila ve «Pantalla de préstamos» asignada tras la reasignación; la ruta crítica muestra 5 tareas críticas y 2 ramas, y el historial detalla la reasignación con su motivo sin notas ajenas. | Reasignar tareas, modificar dependencias o editar el avance de tareas ajenas. |
 
 ### 6.4 Monitor (Gabriela)
 

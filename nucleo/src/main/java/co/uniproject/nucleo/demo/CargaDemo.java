@@ -14,18 +14,24 @@ import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudHito;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudLider;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudMiembro;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudProyecto;
+import co.uniproject.nucleo.ejecucion.servicio.EvidenciaVista;
+import co.uniproject.nucleo.ejecucion.servicio.PeticionCorreccion;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioApoyo;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioAvance;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioComentarios;
+import co.uniproject.nucleo.ejecucion.servicio.ServicioCorrecciones;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioDependencias;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioEvidencias;
+import co.uniproject.nucleo.ejecucion.servicio.ServicioReasignacion;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioTareas;
 import co.uniproject.nucleo.ejecucion.servicio.SolicitudApoyo;
 import co.uniproject.nucleo.ejecucion.servicio.SolicitudAvance;
 import co.uniproject.nucleo.ejecucion.servicio.SolicitudComentario;
 import co.uniproject.nucleo.ejecucion.servicio.SolicitudDependencias;
 import co.uniproject.nucleo.ejecucion.servicio.SolicitudEnlace;
+import co.uniproject.nucleo.ejecucion.servicio.SolicitudReasignacion;
 import co.uniproject.nucleo.ejecucion.servicio.SolicitudTarea;
+import co.uniproject.nucleo.ejecucion.servicio.TipoReasignacion;
 import co.uniproject.nucleo.evaluacion.servicio.CalificacionSolicitada;
 import co.uniproject.nucleo.evaluacion.servicio.ServicioEnvio;
 import co.uniproject.nucleo.evaluacion.servicio.ServicioEvaluacion;
@@ -70,6 +76,8 @@ public class CargaDemo {
     private final ServicioEvidencias evidencias;
     private final ServicioComentarios comentarios;
     private final ServicioApoyo apoyo;
+    private final ServicioReasignacion reasignacion;
+    private final ServicioCorrecciones correcciones;
     private final ServicioEnvio envio;
     private final ServicioEvaluacion evaluacion;
 
@@ -87,6 +95,8 @@ public class CargaDemo {
             ServicioEvidencias evidencias,
             ServicioComentarios comentarios,
             ServicioApoyo apoyo,
+            ServicioReasignacion reasignacion,
+            ServicioCorrecciones correcciones,
             ServicioEnvio envio,
             ServicioEvaluacion evaluacion) {
         this.jdbc = jdbc;
@@ -102,6 +112,8 @@ public class CargaDemo {
         this.evidencias = evidencias;
         this.comentarios = comentarios;
         this.apoyo = apoyo;
+        this.reasignacion = reasignacion;
+        this.correcciones = correcciones;
         this.envio = envio;
         this.evaluacion = evaluacion;
     }
@@ -227,6 +239,52 @@ public class CargaDemo {
         comentarios.comentar(
                 monitor, b2, new SolicitudComentario("Pueden empezar el borrador aunque falten entrevistas."));
 
+        // Equipo Alfa: hito 2 en curso con ruta crítica de 5 tareas, 2 ramas cortas, reasignación y comentario.
+        long alfa2 = hitoEquipo(hito2.idHito(), alfa.idEquipo());
+        long repo = tarea(ana, alfa2, "Configurar repositorio", ana, "4", hoy.plusDays(6), true);
+        long modelo = tarea(ana, alfa2, "Modelo de datos", bruno, "8", hoy.plusDays(12), true);
+        long diseno = tarea(ana, alfa2, "Diseño de pantallas", camila, "6", hoy.plusDays(14), false);
+        long api = tarea(ana, alfa2, "API de préstamos", ana, "10", hoy.plusDays(18), true);
+        long datosPrueba = tarea(ana, alfa2, "Datos de prueba", bruno, "4", hoy.plusDays(20), false);
+        long pantalla = tarea(ana, alfa2, "Pantalla de préstamos", bruno, "8", hoy.plusDays(24), true);
+        long pruebas = tarea(ana, alfa2, "Pruebas de integración", ana, "6", hoy.plusDays(28), true);
+        dependencias.agregar(ana, modelo, new SolicitudDependencias(List.of(repo)));
+        dependencias.agregar(ana, diseno, new SolicitudDependencias(List.of(repo)));
+        dependencias.agregar(ana, api, new SolicitudDependencias(List.of(modelo)));
+        dependencias.agregar(ana, datosPrueba, new SolicitudDependencias(List.of(modelo)));
+        dependencias.agregar(ana, pantalla, new SolicitudDependencias(List.of(api, diseno)));
+        dependencias.agregar(ana, pruebas, new SolicitudDependencias(List.of(pantalla, datosPrueba)));
+        avance.actualizar(ana, repo, new SolicitudAvance(100, "Repositorio y estructura base creados"));
+        avance.actualizar(bruno, modelo, new SolicitudAvance(50, "Entidades de catálogo y préstamo definidas"));
+        avance.actualizar(camila, diseno, new SolicitudAvance(40, "Bocetos iniciales de préstamo y devolución"));
+
+        // Reasignación (RF11) en Alfa hito 2: pasa de Bruno a Camila con motivo.
+        reasignacion.reasignar(
+                ana,
+                pantalla,
+                new SolicitudReasignacion(
+                        camila.idUsuario(),
+                        TipoReasignacion.TOTAL,
+                        null,
+                        null,
+                        "Equilibrar la carga entre API y pantallas del prototipo"));
+
+        // Equipo Beta: evidencia adjunta de Elena y corrección pendiente pedida por Diego (RF5).
+        EvidenciaVista evidenciaElena = evidencias.adjuntarEnlace(
+                elena, b2, new SolicitudEnlace("https://example.org/demo/diagrama-casos-uso"));
+        correcciones.solicitar(
+                diego,
+                b2,
+                new PeticionCorreccion(
+                        evidenciaElena.idEvidencia(),
+                        "Falta el actor Administrador y el flujo alterno de préstamo vencido."));
+
+        // Comentario adicional del docente en Alfa hito 2.
+        comentarios.comentar(
+                docente,
+                modelo,
+                new SolicitudComentario("Verifiquen las restricciones de préstamo activo antes de cerrar el modelo."));
+
         // Decisión 22-8: solo datos demo, para que el panel muestre el rojo recién cargado.
         jdbc.sql("UPDATE tarea SET fecha_bloqueo = now() - interval '3 days' "
                         + "WHERE id_tarea = :tarea AND bloqueada_por_dependencia")
@@ -236,6 +294,10 @@ public class CargaDemo {
                         + "WHERE id_equipo = :equipo AND id_usuario = :usuario")
                 .param("equipo", beta.idEquipo())
                 .param("usuario", elena.idUsuario())
+                .update();
+        // Solo datos demo: conserva la inactividad de 6 días de Elena pese al enlace de muestra.
+        jdbc.sql("UPDATE evidencia SET fecha_subida = now() - interval '6 days' WHERE id_evidencia = :evidencia")
+                .param("evidencia", evidenciaElena.idEvidencia())
                 .update();
 
         // Segundo proyecto: muestra la lista de proyectos, la elección de panel y un hito por calificar.
@@ -355,10 +417,22 @@ public class CargaDemo {
             UsuarioAutenticado encargado,
             String horas,
             boolean critica) {
+        return tarea(lider, idHitoEquipo, titulo, encargado, horas, null, critica);
+    }
+
+    private long tarea(
+            UsuarioAutenticado lider,
+            long idHitoEquipo,
+            String titulo,
+            UsuarioAutenticado encargado,
+            String horas,
+            LocalDate fechaLimite,
+            boolean critica) {
         return tareas.crear(
                         lider,
                         idHitoEquipo,
-                        new SolicitudTarea(titulo, null, encargado.idUsuario(), new BigDecimal(horas), null, critica))
+                        new SolicitudTarea(
+                                titulo, null, encargado.idUsuario(), new BigDecimal(horas), fechaLimite, critica))
                 .idTarea();
     }
 }
