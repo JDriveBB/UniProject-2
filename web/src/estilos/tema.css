@@ -3219,6 +3219,11 @@ select.campo__entrada {
   .resumen-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* Con 3 datos en 2 columnas, el último ocupa toda la segunda fila. */
+  .resumen-panel--tres > :last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 600px) {
