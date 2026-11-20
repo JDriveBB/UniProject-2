@@ -10,7 +10,7 @@ Esta sesión valida de forma integral los flujos de negocio, el control de acces
 
 - **Datos ficticios y Ley 1581 de 2012:** Toda la sesión utiliza cuentas simuladas bajo el dominio `@demo.uniproject.test`. Queda terminantemente prohibido introducir nombres, correos o teléfonos personales reales.
 - **Privacidad en capturas y registros:** En capturas de pantalla, transcripciones y reportes de hallazgos nunca deben figurar identificadores privados de Telegram (`chat_id`, nombres de usuario personales ni números telefónicos).
-- **Custodia de credenciales:** Las contraseñas de las cuentas demo y del administrador nunca se registran en el código ni en el repositorio; se generan dinámicamente y residen exclusivamente en el archivo local `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt`.
+- **Custodia de credenciales:** La contraseña única de las cuentas demo y del administrador nunca se registra en el código ni en el repositorio; se genera al azar solo la primera vez que se crea `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt`, se conserva al reiniciar y se puede cambiar editando ese archivo.
 
 ---
 
@@ -35,7 +35,9 @@ Esta sesión valida de forma integral los flujos de negocio, el control de acces
 
 ## 3. Credenciales demo
 
-Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt` (`DEMO_CONTRASENA` para las cuentas demo y `ADMIN_CONTRASENA` para el administrador).
+Todas las cuentas (incluidas las cuentas demo y el administrador) comparten una sola contraseña: `DEMO_CONTRASENA` en `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt`.
+
+**Cambiar la contraseña:** abrir el archivo con el Bloc de notas (`notepad "$env:LOCALAPPDATA\UniProject\sesion-pruebas\credenciales.txt"`), cambiar el valor de `DEMO_CONTRASENA` (10 caracteres o más, máximo 72 bytes UTF-8), guardar y correr `.\infra\pruebas\sesion-pruebas.ps1 -Accion Reiniciar -SinConfirmar`; compartirla con el equipo solo por privado.
 
 | Correo | Nombre | Rol | Equipo | Para qué se usa en la sesión |
 |---|---|---|---|---|
@@ -294,7 +296,7 @@ Guardar los hallazgos encontrados durante la sesión en el archivo `docs/pruebas
      ```powershell
      .\infra\pruebas\sesion-pruebas.ps1 -Accion Bajar
      ```
-   - *Eliminando volúmenes y credenciales generadas:*
+   - *Eliminando volúmenes pero conservando `credenciales.txt` (para empezar con una contraseña nueva al azar, borrar ese archivo a mano antes de volver a levantar):*
      ```powershell
      .\infra\pruebas\sesion-pruebas.ps1 -Accion Bajar -BorrarDatos
      ```

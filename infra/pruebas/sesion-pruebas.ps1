@@ -65,32 +65,37 @@ function LeerCredenciales {
         return $null
     }
     $demo = $null
-    $admin = $null
     foreach ($linea in [System.IO.File]::ReadAllLines($ARCHIVO_CRED)) {
         if ($linea.StartsWith('DEMO_CONTRASENA=')) {
             $demo = $linea.Substring('DEMO_CONTRASENA='.Length).Trim()
-        } elseif ($linea.StartsWith('ADMIN_CONTRASENA=')) {
-            $admin = $linea.Substring('ADMIN_CONTRASENA='.Length).Trim()
         }
     }
-    if ([string]::IsNullOrEmpty($demo) -or [string]::IsNullOrEmpty($admin)) {
-        throw 'credenciales.txt incompleto: usa -Accion Reiniciar'
+    if ([string]::IsNullOrEmpty($demo)) {
+        throw "Falta DEMO_CONTRASENA en $ARCHIVO_CRED"
     }
     return [pscustomobject]@{
         Demo  = $demo
-        Admin = $admin
+        Admin = $demo
     }
 }
 
-function EscribirCredenciales([string]$demo, [string]$admin) {
+function ExigirContrasenaValida([string]$contrasena) {
+    $bytes = [System.Text.Encoding]::UTF8.GetByteCount($contrasena)
+    if ($contrasena.Length -lt 10 -or $bytes -gt 72) {
+        Write-Host 'La contrasena de DEMO_CONTRASENA en credenciales.txt debe tener al menos 10 caracteres y maximo 72 bytes UTF-8'
+        exit 1
+    }
+}
+
+function EscribirCredenciales([string]$demo) {
     if (-not (Test-Path $DIR_CRED)) {
         [System.IO.Directory]::CreateDirectory($DIR_CRED) | Out-Null
     }
     $fecha = (Get-Date).ToString('yyyy-MM-dd HH:mm')
     $lineas = @(
         '# UniProject - sesion de pruebas. NO subir a git ni compartir fuera del equipo.',
+        '# Para cambiar la contrasena, edita DEMO_CONTRASENA (10 caracteres o mas) y aplica con -Accion Reiniciar -SinConfirmar.',
         "DEMO_CONTRASENA=$demo",
-        "ADMIN_CONTRASENA=$admin",
         "URL=$URL",
         "Generado=$fecha",
         '',
@@ -104,7 +109,7 @@ function EscribirCredenciales([string]$demo, [string]$admin) {
         "felipe@$DOMINIO Felipe Ruiz Equipo Beta",
         "monitor@$DOMINIO Gabriela Soto MONITOR",
         "hugo@$DOMINIO Hugo Lara estudiante sin equipo (sacrificio)",
-        "$ADMIN_EMAIL ADMINISTRADOR (usa ADMIN_CONTRASENA)",
+        "$ADMIN_EMAIL ADMINISTRADOR (misma contrasena que las cuentas demo)",
         '',
         "Correos habilitados sin cuenta: ines@$DOMINIO, jorge@$DOMINIO"
     )
@@ -316,10 +321,10 @@ function EjecutarLevantar {
     }
     if ($null -eq $cred -and -not $volExiste) {
         $cDemo = NuevaClave 'Demo'
-        $cAdmin = NuevaClave 'Admin'
-        EscribirCredenciales $cDemo $cAdmin
+        EscribirCredenciales $cDemo
         $cred = LeerCredenciales
     }
+    ExigirContrasenaValida $cred.Demo
     [Environment]::SetEnvironmentVariable('UNIPROJECT_DEMO_CONTRASENA', $cred.Demo, 'Process')
     [Environment]::SetEnvironmentVariable('UNIPROJECT_ADMIN_CONTRASENA', $cred.Admin, 'Process')
 
@@ -449,6 +454,7 @@ function EjecutarLevantar {
 
     Write-Host "URL: $URL"
     Write-Host "Credenciales: $ARCHIVO_CRED"
+    Write-Host 'Si cambias DEMO_CONTRASENA en ese archivo, aplicala con -Accion Reiniciar -SinConfirmar (borra los datos de pruebas).'
     Write-Host 'Cuentas:'
     Write-Host "  docente@$DOMINIO Laura Mendez DOCENTE"
     Write-Host "  ana@$DOMINIO Ana Rojas lider Equipo Alfa"
@@ -459,7 +465,7 @@ function EjecutarLevantar {
     Write-Host "  felipe@$DOMINIO Felipe Ruiz Equipo Beta"
     Write-Host "  monitor@$DOMINIO Gabriela Soto MONITOR"
     Write-Host "  hugo@$DOMINIO Hugo Lara estudiante sin equipo (sacrificio)"
-    Write-Host "  $ADMIN_EMAIL ADMINISTRADOR (usa ADMIN_CONTRASENA)"
+    Write-Host "  $ADMIN_EMAIL ADMINISTRADOR (misma contrasena que las cuentas demo)"
     Write-Host "  Correos habilitados sin cuenta: ines@$DOMINIO, jorge@$DOMINIO"
     Write-Host "Panel RabbitMQ: http://127.0.0.1:$PUERTO_PANEL_RABBITMQ (usuario y contrasena de administrador de .env)"
     Write-Host "Estado Telegram: token=$estadoToken, username=$estadoUser"
@@ -514,7 +520,7 @@ function EjecutarBajar([switch]$Borrar, [switch]$SinConf) {
     $antes = HuellaDesarrollo
     if ($Borrar) {
         if (-not $SinConf) {
-            $resp = Read-Host 'Esta seguro de borrar los datos de pruebas? Escriba SI para confirmar'
+            $resp = Read-Host 'Esta seguro de borrar los datos de pruebas (se conserva credenciales.txt)? Escriba SI para confirmar'
             if ($resp -ne 'SI') {
                 Write-Host 'Operacion cancelada'
                 return
@@ -526,8 +532,7 @@ function EjecutarBajar([switch]$Borrar, [switch]$SinConf) {
             exit 1
         }
         if (Test-Path $ARCHIVO_CRED) {
-            Remove-Item -Force $ARCHIVO_CRED -ErrorAction SilentlyContinue
-            Write-Host "Archivo de credenciales borrado ($ARCHIVO_CRED)"
+            Write-Host "Archivo de credenciales conservado ($ARCHIVO_CRED)"
         }
     } else {
         dc down --remove-orphans
@@ -536,8 +541,12 @@ function EjecutarBajar([switch]$Borrar, [switch]$SinConf) {
 }
 
 function EjecutarReiniciar([switch]$SinConf) {
+    if (Test-Path $ARCHIVO_CRED) {
+        $cred = LeerCredenciales
+        ExigirContrasenaValida $cred.Demo
+    }
     if (-not $SinConf) {
-        $resp = Read-Host 'Esta seguro de reiniciar la sesion de pruebas? Escriba SI para confirmar'
+        $resp = Read-Host 'Esta seguro de reiniciar la sesion de pruebas (borra los datos y conserva credenciales.txt)? Escriba SI para confirmar'
         if ($resp -ne 'SI') {
             Write-Host 'Operacion cancelada'
             return

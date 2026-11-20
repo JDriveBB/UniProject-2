@@ -2,7 +2,7 @@
 
 Lista operativa de verificación para presentar **UniProject** en vivo el **jueves 2026-11-26** (20 minutos) desde el computador de **Santy**, utilizando el entorno aislado de la sesión de pruebas (`infra/pruebas/sesion-pruebas.ps1`, URL `http://127.0.0.1:18080`).
 
-> **Regla de privacidad y credenciales:** las contraseñas demo (`DEMO_CONTRASENA`) y de administración (`ADMIN_CONTRASENA`) **no se escriben** en documentos ni en pantalla compartida. Se consultan únicamente en `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt`. Toda la demo usa cuentas ficticias `@demo.uniproject.test`.
+> **Regla de privacidad y credenciales:** la contraseña única (`DEMO_CONTRASENA`, usada tanto por las cuentas demo como por el administrador) **no se escribe** en documentos ni en pantalla compartida. Se consulta únicamente en `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt`. Toda la demo usa cuentas ficticias `@demo.uniproject.test`.
 
 ---
 
@@ -57,7 +57,7 @@ Lista operativa de verificación para presentar **UniProject** en vivo el **juev
   .\infra\pruebas\sesion-pruebas.ps1 -Accion Estado
   ```
 - [ ] Revisar de nuevo los logs del agente (`docker compose -p uniproject-pruebas logs --tail 20 agente`) para confirmar ausencia de `409 Conflict` y conexión activa con RabbitMQ.
-- [ ] Leer `DEMO_CONTRASENA` y `ADMIN_CONTRASENA` desde `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt` **sin abrir ese archivo mientras se comparte pantalla**.
+- [ ] Leer `DEMO_CONTRASENA` (también válida para el administrador) desde `%LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt` **sin abrir ese archivo mientras se comparte pantalla**.
 
 ### 2.2. Vincular una cuenta demo al Telegram de quien presenta
 - [ ] En la ventana del líder **Diego Pérez** (`diego@demo.uniproject.test`), ir a `/perfil` → tarjeta `Telegram` → pulsar `Vincular Telegram` → abrir el bot con `Abrir Telegram` (o enviar `/start <codigo>`) → pulsar `Ya lo vinculé` y comprobar la insignia `Vinculado`.
@@ -107,7 +107,7 @@ Abrir **cuatro perfiles de navegador independientes o ventanas con sesión aisla
   ```powershell
   .\infra\pruebas\sesion-pruebas.ps1 -Accion Bajar
   ```
-- [ ] Si se quiere eliminar los volúmenes de pruebas y `credenciales.txt`:
+- [ ] Si se quiere eliminar los volúmenes de pruebas (conservando `credenciales.txt`):
   ```powershell
   .\infra\pruebas\sesion-pruebas.ps1 -Accion Bajar -BorrarDatos
   ```
