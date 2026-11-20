@@ -30,8 +30,12 @@ public class ServicioSupresion {
 
     /** Mismo texto que usuario_anonimizado_ck (V4). */
     public static final String NOMBRE_ANONIMO = "Usuario anonimizado";
+
     public static final String COMENTARIO_ELIMINADO = "[comentario eliminado]";
     public static final String OBSERVACION_ELIMINADA = "[observación eliminada]";
+    /** URL fija con dominio reservado (RFC 2606) que cumple evidencia_forma_ck (V3) sin llevar a ningún sitio. */
+    public static final String ENLACE_ELIMINADO = "https://evidencia-eliminada.invalid/";
+
     private static final String HASH_INUTILIZABLE = "!";
 
     private final JdbcClient jdbc;
@@ -42,8 +46,12 @@ public class ServicioSupresion {
 
     private record Cuenta(String nombre, String email, String hash, RolPlataforma rol, boolean anonimizada) {}
 
-    public ServicioSupresion(JdbcClient jdbc, PasswordEncoder codificador, RegistroAuditoria auditoria,
-                             PersonasEnEventos eventos, Clock reloj) {
+    public ServicioSupresion(
+            JdbcClient jdbc,
+            PasswordEncoder codificador,
+            RegistroAuditoria auditoria,
+            PersonasEnEventos eventos,
+            Clock reloj) {
         this.jdbc = jdbc;
         this.codificador = codificador;
         this.auditoria = auditoria;
@@ -65,18 +73,22 @@ public class ServicioSupresion {
     }
 
     public static SolicitudInvalidaException correoReservado() {
-        return new SolicitudInvalidaException("CORREO_RESERVADO",
-                "Los correos " + SUFIJO_ANONIMO + " están reservados y no se pueden habilitar");
+        return new SolicitudInvalidaException(
+                "CORREO_RESERVADO", "Los correos " + SUFIJO_ANONIMO + " están reservados y no se pueden habilitar");
     }
 
     /** Idempotente: sobre una cuenta ya anonimizada no hace nada. */
     @Transactional
     public void suprimir(long idUsuario, String contrasena) {
-        Cuenta cuenta = jdbc.sql("SELECT nombre, email, password_hash, rol_plataforma, "
-                        + "fecha_anonimizacion IS NOT NULL AS anonimizada FROM usuario WHERE id_usuario = :id FOR UPDATE")
+        Cuenta cuenta = jdbc.sql(
+                        "SELECT nombre, email, password_hash, rol_plataforma, "
+                                + "fecha_anonimizacion IS NOT NULL AS anonimizada FROM usuario WHERE id_usuario = :id FOR UPDATE")
                 .param("id", idUsuario)
-                .query((rs, fila) -> new Cuenta(rs.getString("nombre"), rs.getString("email"),
-                        rs.getString("password_hash"), RolPlataforma.valueOf(rs.getString("rol_plataforma")),
+                .query((rs, fila) -> new Cuenta(
+                        rs.getString("nombre"),
+                        rs.getString("email"),
+                        rs.getString("password_hash"),
+                        RolPlataforma.valueOf(rs.getString("rol_plataforma")),
                         rs.getBoolean("anonimizada")))
                 .optional()
                 .orElseThrow(() -> new RecursoNoEncontradoException("La cuenta ya no existe"));
@@ -90,9 +102,15 @@ public class ServicioSupresion {
         Instant ahora = Instant.now(reloj);
         exigirQuePuedeSuprimirse(idUsuario, cuenta.rol(), FechasDominio.hoy(ahora));
         String anonimo = correoAnonimo(idUsuario);
-        jdbc.sql("DELETE FROM codigo_vinculacion WHERE usuario_id = :id").param("id", idUsuario).update();
-        jdbc.sql("DELETE FROM recuperacion_contrasena WHERE usuario_id = :id").param("id", idUsuario).update();
-        jdbc.sql("DELETE FROM notificacion WHERE id_destinatario = :id").param("id", idUsuario).update();
+        jdbc.sql("DELETE FROM codigo_vinculacion WHERE usuario_id = :id")
+                .param("id", idUsuario)
+                .update();
+        jdbc.sql("DELETE FROM recuperacion_contrasena WHERE usuario_id = :id")
+                .param("id", idUsuario)
+                .update();
+        jdbc.sql("DELETE FROM notificacion WHERE id_destinatario = :id")
+                .param("id", idUsuario)
+                .update();
         // Bloque 29 (decisión 29-4): el texto libre que escribió sale; el hecho sigue en log_auditoria.
         jdbc.sql("UPDATE solicitud_apoyo SET mensaje = NULL WHERE id_solicitante = :id")
                 .param("id", idUsuario)
@@ -106,7 +124,8 @@ public class ServicioSupresion {
                 .param("id", idUsuario)
                 .update();
         // Bloque 41: también el texto de sus avances y de las correcciones que pidió como líder.
-        jdbc.sql("UPDATE registro_avance SET observacion = :marcador WHERE id_usuario = :id AND observacion IS NOT NULL")
+        jdbc.sql(
+                        "UPDATE registro_avance SET observacion = :marcador WHERE id_usuario = :id AND observacion IS NOT NULL")
                 .param("marcador", OBSERVACION_ELIMINADA)
                 .param("id", idUsuario)
                 .update();
@@ -127,6 +146,11 @@ public class ServicioSupresion {
                         + "WHERE id_usuario = :id AND tipo_evidencia IN ('PDF', 'IMAGEN')")
                 .param("id", idUsuario)
                 .update();
+        // Ley 1581 (D-15 5A): las URL de evidencias ENLACE pueden contener datos del titular (usuario, ruta).
+        jdbc.sql("UPDATE evidencia SET url = :anonima WHERE id_usuario = :id AND tipo_evidencia = 'ENLACE'")
+                .param("anonima", ENLACE_ELIMINADO)
+                .param("id", idUsuario)
+                .update();
         jdbc.sql("UPDATE usuario SET nombre = :nombre, email = :anonimo, password_hash = :hash, "
                         + "telegram_chat_id = NULL, autoriza_tratamiento_datos = false, fecha_autorizacion = NULL, "
                         + "fecha_anonimizacion = :ahora WHERE id_usuario = :id")
@@ -142,25 +166,35 @@ public class ServicioSupresion {
     /** Decisión 27-11: 409 si la cuenta sostiene algo que sigue en curso. */
     private void exigirQuePuedeSuprimirse(long idUsuario, RolPlataforma rol, LocalDate hoy) {
         if (rol == RolPlataforma.ADMINISTRADOR) {
-            throw new ReglaNegocioException("CUENTA_ADMINISTRADOR",
-                    "La cuenta de administrador no se puede eliminar desde la aplicación");
+            throw new ReglaNegocioException(
+                    "CUENTA_ADMINISTRADOR", "La cuenta de administrador no se puede eliminar desde la aplicación");
         }
-        if (existe("SELECT EXISTS (SELECT 1 FROM proyecto WHERE id_docente = :id AND fecha_fin >= :hoy)",
-                idUsuario, hoy)) {
-            throw new ReglaNegocioException("DOCENTE_CON_PROYECTOS_ACTIVOS",
+        if (existe(
+                "SELECT EXISTS (SELECT 1 FROM proyecto WHERE id_docente = :id AND fecha_fin >= :hoy)",
+                idUsuario,
+                hoy)) {
+            throw new ReglaNegocioException(
+                    "DOCENTE_CON_PROYECTOS_ACTIVOS",
                     "No puedes eliminar tu cuenta mientras tengas proyectos activos (hasta su fecha de fin)");
         }
-        if (existe("SELECT EXISTS (SELECT 1 FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
+        if (existe(
+                "SELECT EXISTS (SELECT 1 FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
                         + "JOIN proyecto p ON p.id_proyecto = e.id_proyecto WHERE m.id_usuario = :id "
                         + "AND m.rol_equipo = 'LIDER' AND p.fecha_fin >= :hoy)",
-                idUsuario, hoy)) {
-            throw new ReglaNegocioException("LIDER_DE_EQUIPO_ACTIVO",
+                idUsuario,
+                hoy)) {
+            throw new ReglaNegocioException(
+                    "LIDER_DE_EQUIPO_ACTIVO",
                     "Eres líder de un equipo en un proyecto activo. Pide a tu docente que asigne otro líder "
                             + "antes de eliminar tu cuenta");
         }
     }
 
     private boolean existe(String sql, long idUsuario, LocalDate hoy) {
-        return jdbc.sql(sql).param("id", idUsuario).param("hoy", hoy).query(Boolean.class).single();
+        return jdbc.sql(sql)
+                .param("id", idUsuario)
+                .param("hoy", hoy)
+                .query(Boolean.class)
+                .single();
     }
 }

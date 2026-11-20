@@ -796,4 +796,37 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
         assertThat(cambioLimitado.statusCode()).isEqualTo(429);
         assertThat(cambioLimitado.body()).contains("\"codigo\":\"DEMASIADAS_SOLICITUDES\"");
     }
+
+    @Test
+    void supresionAnonimizaUrlDeEvidenciasEnlaceYConservaLasAjenas() {
+        Escenario e = escenario();
+        String ruta = "/api/tareas/" + e.idTarea() + "/evidencias";
+        String urlTitular = "https://github.com/titular-" + e.idEstudiante() + "/entrega";
+        String urlOtro = "https://github.com/lider-" + e.idLider() + "/otra-entrega";
+
+        HttpResponse<String> evTitular = sesion(e.estudiante()).post(ruta, "{\"url\":\"" + urlTitular + "\"}");
+        assertThat(evTitular.statusCode()).as(evTitular.body()).isEqualTo(201);
+        long idEvTitular = numero(evTitular.body(), "idEvidencia");
+
+        HttpResponse<String> evOtro = sesion(e.lider()).post(ruta, "{\"url\":\"" + urlOtro + "\"}");
+        assertThat(evOtro.statusCode()).as(evOtro.body()).isEqualTo(201);
+        long idEvOtro = numero(evOtro.body(), "idEvidencia");
+
+        HttpResponse<String> r = suprimir(sesion(e.estudiante()), CLAVE);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(204);
+
+        assertThat(texto(
+                        "SELECT url || '|' || coalesce(nombre_archivo, 'null') FROM evidencia WHERE id_evidencia = :id",
+                        idEvTitular))
+                .isEqualTo(ServicioSupresion.ENLACE_ELIMINADO + "|null");
+        assertThat(texto("SELECT url FROM evidencia WHERE id_evidencia = :id", idEvOtro))
+                .isEqualTo(urlOtro);
+
+        HttpResponse<String> lista = sesion(e.lider()).get(ruta);
+        assertThat(lista.statusCode()).as(lista.body()).isEqualTo(200);
+        assertThat(lista.body())
+                .contains(ServicioSupresion.ENLACE_ELIMINADO)
+                .contains(urlOtro)
+                .doesNotContain(urlTitular);
+    }
 }

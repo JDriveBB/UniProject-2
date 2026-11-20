@@ -51,7 +51,7 @@ Auditoría posterior a las correcciones (revisor, 2026-11-18): aprobado, sin hal
 
 ### Límites conocidos tras las correcciones
 - Lo ya publicado en RabbitMQ o en la cola de fallidos conserva el texto original (decisión 27-5): la anonimización reescribe la outbox y la bandeja, no re-publica.
-- La supresión aún no anonimiza la `url` de las evidencias de tipo ENLACE ni los títulos/descripciones de tareas que el titular creó como líder.
+- La supresión reemplaza la `url` de las evidencias de tipo `ENLACE` del titular por `https://evidencia-eliminada.invalid/` (T-042; la URL no se guarda en `log_auditoria`, `texto_auditoria`, `evento_saliente` ni `notificacion`), pero aún no anonimiza los títulos/descripciones de tareas que el titular creó como líder.
 - Una cadena vacía `""` enviada a un campo `LocalDate`, `Long`, `BigDecimal` o `Boolean` ahora responde 400 `CUERPO_INVALIDO` (antes 400 `VALIDACION` por campo); la web valida antes de enviar.
 - El permiso se evalúa antes de esperar el candado: quien deja de ser encargado por una reasignación simultánea aún puede guardar un avance en esa ventana mínima.
 - Destino distinto de `tarea.reasignada` para el encargado anterior (bandeja `/tareas/{id}`, Telegram `/mis-tareas`): no corregido; exige guardar el papel del destinatario en la notificación o consultar el encargado actual. Gravedad baja.
