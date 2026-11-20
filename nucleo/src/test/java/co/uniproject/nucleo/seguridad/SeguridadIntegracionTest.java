@@ -3,6 +3,7 @@ package co.uniproject.nucleo.seguridad;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.uniproject.nucleo.ApiIntegracionBase;
+import co.uniproject.nucleo.seguridad.cuentas.EnlacesRegistro;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -28,6 +29,7 @@ class SeguridadIntegracionTest {
     private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6");
     private static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:4.3.7-management");
     private static final String ADMIN = "{\"email\":\"Admin@UniProject.test\",\"contrasena\":\"ClaveAdmin2026\"}";
+    private static final String CODIGO_FICTICIO = "A".repeat(43);
 
     static {
         postgres.start();
@@ -55,6 +57,9 @@ class SeguridadIntegracionTest {
 
     @Autowired
     private JdbcClient jdbc;
+
+    @Autowired
+    private EnlacesRegistro enlaces;
 
     /** Cliente con cookies propias: guarda Set-Cookie y manda X-XSRF-TOKEN como lo hará el SPA. */
     static final class Navegador {
@@ -139,9 +144,19 @@ class SeguridadIntegracionTest {
         return n;
     }
 
-    private static String registro(String nombre, String email, String contrasena, boolean autoriza) {
+    private static String registro(String nombre, String email, String contrasena, boolean autoriza, String codigo) {
         return "{\"nombre\":\"" + nombre + "\",\"email\":\"" + email + "\",\"contrasena\":\"" + contrasena
-                + "\",\"autorizaTratamientoDatos\":" + autoriza + "}";
+                + "\",\"autorizaTratamientoDatos\":" + autoriza + ",\"codigo\":\"" + codigo + "\"}";
+    }
+
+    private String enlaceProyecto(long idProyecto, String email) {
+        long idCorreo = jdbc.sql("SELECT id_correo_habilitado FROM correo_habilitado "
+                        + "WHERE id_proyecto = :p AND email = :e AND fecha_uso IS NULL")
+                .param("p", idProyecto)
+                .param("e", email)
+                .query(Long.class)
+                .single();
+        return enlaces.generarParaProyecto(9101L, idProyecto, idCorreo).codigo();
     }
 
     @Test
@@ -180,13 +195,16 @@ class SeguridadIntegracionTest {
 
     @Test
     void docenteSeRegistraEntraYSale() {
-        assertThat(comoAdmin()
-                        .post("/api/admin/docentes", "{\"email\":\"docente.registro@u.edu.co\"}")
-                        .statusCode())
-                .isEqualTo(201);
+        Navegador admin = comoAdmin();
+        HttpResponse<String> hab = admin.post("/api/admin/docentes", "{\"email\":\"docente.registro@u.edu.co\"}");
+        assertThat(hab.statusCode()).isEqualTo(201);
+        long idHab = ApiIntegracionBase.numero(hab.body(), "idCorreoHabilitado");
+        HttpResponse<String> enlace = admin.post("/api/admin/docentes/" + idHab + "/enlace", null);
+        assertThat(enlace.statusCode()).isEqualTo(200);
+        String codigo = ApiIntegracionBase.campoTexto(enlace.body(), "codigo");
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
-        String cuerpo = registro("Docente Registro", "Docente.Registro@U.edu.co", "ClaveDocente2026", true);
+        String cuerpo = registro("Docente Registro", "Docente.Registro@U.edu.co", "ClaveDocente2026", true, codigo);
         HttpResponse<String> alta = n.post("/api/cuentas/registro", cuerpo);
         assertThat(alta.statusCode()).isEqualTo(201);
         assertThat(alta.body()).contains("\"rol\":\"DOCENTE\"").contains("\"telegramVinculado\":false");
@@ -227,20 +245,21 @@ class SeguridadIntegracionTest {
     void registroRechazado() {
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
-        HttpResponse<String> noHabilitado =
-                n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", true));
+        HttpResponse<String> noHabilitado = n.post(
+                "/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", true, CODIGO_FICTICIO));
         assertThat(noHabilitado.statusCode()).isEqualTo(409);
         assertThat(noHabilitado.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
         // Mismo cuerpo que el de una cuenta existente: no revela si el correo tiene cuenta.
-        HttpResponse<String> conCuenta =
-                n.post("/api/cuentas/registro", registro("X", "admin@uniproject.test", "ClaveNadie2026", true));
+        HttpResponse<String> conCuenta = n.post(
+                "/api/cuentas/registro",
+                registro("X", "admin@uniproject.test", "ClaveNadie2026", true, CODIGO_FICTICIO));
         assertThat(conCuenta.statusCode()).isEqualTo(409);
         assertThat(conCuenta.body()).isEqualTo(noHabilitado.body());
-        HttpResponse<String> sinAutorizacion =
-                n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", false));
+        HttpResponse<String> sinAutorizacion = n.post(
+                "/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", false, CODIGO_FICTICIO));
         assertThat(sinAutorizacion.statusCode()).isEqualTo(400);
         assertThat(sinAutorizacion.body()).contains("\"codigo\":\"VALIDACION\"");
-        assertThat(n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "corta", true))
+        assertThat(n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "corta", true, CODIGO_FICTICIO))
                         .statusCode())
                 .isEqualTo(400);
         assertThat(n.post("/api/cuentas/registro", "no es json").body()).contains("\"codigo\":\"CUERPO_INVALIDO\"");
@@ -264,7 +283,14 @@ class SeguridadIntegracionTest {
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
 
-        assertThat(n.post("/api/cuentas/registro", registro("Est Uno", "est.uno@u.edu.co", "ClaveEst2026", true))
+        assertThat(n.post(
+                                "/api/cuentas/registro",
+                                registro(
+                                        "Est Uno",
+                                        "est.uno@u.edu.co",
+                                        "ClaveEst2026",
+                                        true,
+                                        enlaceProyecto(9201, "est.uno@u.edu.co")))
                         .body())
                 .contains("\"rol\":\"ESTUDIANTE\"");
         assertThat(jdbc.sql(
@@ -274,7 +300,14 @@ class SeguridadIntegracionTest {
                         .single())
                 .isEqualTo(2);
 
-        assertThat(n.post("/api/cuentas/registro", registro("Mon Uno", "mon.uno@u.edu.co", "ClaveMon20260", true))
+        assertThat(n.post(
+                                "/api/cuentas/registro",
+                                registro(
+                                        "Mon Uno",
+                                        "mon.uno@u.edu.co",
+                                        "ClaveMon20260",
+                                        true,
+                                        enlaceProyecto(9201, "mon.uno@u.edu.co")))
                         .body())
                 .contains("\"rol\":\"MONITOR\"");
         assertThat(jdbc.sql("SELECT count(*) FROM monitor_proyecto mp JOIN usuario u ON u.id_usuario = mp.id_monitor "
@@ -283,12 +316,13 @@ class SeguridadIntegracionTest {
                         .single())
                 .isEqualTo(1);
 
-        HttpResponse<String> ambiguo =
-                n.post("/api/cuentas/registro", registro("Amb", "ambiguo@u.edu.co", "ClaveAmb20260", true));
+        HttpResponse<String> ambiguo = n.post(
+                "/api/cuentas/registro",
+                registro("Amb", "ambiguo@u.edu.co", "ClaveAmb20260", true, enlaceProyecto(9201, "ambiguo@u.edu.co")));
         assertThat(ambiguo.statusCode()).isEqualTo(409);
         assertThat(ambiguo.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
-        HttpResponse<String> noHabilitado =
-                n.post("/api/cuentas/registro", registro("Nadie", "nadie@u.edu.co", "ClaveNadie2026", true));
+        HttpResponse<String> noHabilitado = n.post(
+                "/api/cuentas/registro", registro("Nadie", "nadie@u.edu.co", "ClaveNadie2026", true, CODIGO_FICTICIO));
         assertThat(noHabilitado.statusCode()).isEqualTo(409);
         assertThat(ambiguo.body()).isEqualTo(noHabilitado.body());
     }

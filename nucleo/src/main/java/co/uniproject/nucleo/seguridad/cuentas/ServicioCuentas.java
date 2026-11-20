@@ -36,8 +36,9 @@ public class ServicioCuentas {
     static final int MINIMO_CARACTERES_CONTRASENA = 10;
     static final int MAXIMO_BYTES_CONTRASENA = 72;
     public static final String CODIGO_REGISTRO_NO_DISPONIBLE = "REGISTRO_NO_DISPONIBLE";
-    public static final String MENSAJE_REGISTRO_NO_DISPONIBLE = "No se pudo crear la cuenta con ese correo. "
-            + "Si ya tienes cuenta, inicia sesión; si no, pide a tu docente que habilite tu correo.";
+    public static final String MENSAJE_REGISTRO_NO_DISPONIBLE =
+            "No se pudo crear la cuenta. Revisa que el correo sea el mismo al que te llegó la invitación "
+                    + "y que el enlace no haya vencido; si no, pide a tu docente un enlace nuevo.";
 
     private final UsuarioRepositorio usuarios;
     private final CorreoHabilitadoRepositorio correos;
@@ -114,6 +115,19 @@ public class ServicioCuentas {
         exigirContrasenaValida(solicitud.contrasena());
         // Siempre un bcrypt, antes de mirar el correo: éxito y rechazos tardan parecido.
         String hash = codificador.encode(solicitud.contrasena());
+        Instant ahora = Instant.now(reloj);
+        CodigosRecuperacion.Partes codigo =
+                CodigosRecuperacion.leer(solicitud.codigo()).orElseThrow(ServicioCuentas::registroNoDisponible);
+        CorreoHabilitado invitacion = correos.bloquearPendientePorSelector(codigo.selector())
+                .orElseThrow(ServicioCuentas::registroNoDisponible);
+        boolean verificadorValido =
+                CodigosRecuperacion.coincide(codigo.verificador(), invitacion.getEnlaceVerificadorHash());
+        if (!verificadorValido
+                || !email.equals(invitacion.getEmail())
+                || invitacion.getEnlaceVenceEn() == null
+                || !invitacion.getEnlaceVenceEn().isAfter(ahora)) {
+            throw registroNoDisponible();
+        }
         if (usuarios.existsByEmail(email)) {
             throw registroNoDisponible();
         }
@@ -126,7 +140,6 @@ public class ServicioCuentas {
         if (roles.size() > 1) {
             throw registroNoDisponible();
         }
-        Instant ahora = Instant.now(reloj);
         Usuario usuario =
                 nuevoUsuario(solicitud.nombre(), email, hash, roles.iterator().next(), ahora);
         try {
@@ -138,6 +151,9 @@ public class ServicioCuentas {
         for (CorreoHabilitado c : habilitados) {
             c.setIdUsuarioRegistrado(usuario.getIdUsuario());
             c.setFechaUso(ahora);
+            c.setEnlaceSelector(null);
+            c.setEnlaceVerificadorHash(null);
+            c.setEnlaceVenceEn(null);
             if (c.getRolPlataforma() == RolPlataforma.MONITOR) {
                 MonitorProyecto m = new MonitorProyecto();
                 m.setIdProyecto(c.getIdProyecto());

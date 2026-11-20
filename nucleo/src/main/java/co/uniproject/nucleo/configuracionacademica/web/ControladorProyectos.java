@@ -17,9 +17,12 @@ import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudHito;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudProyecto;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.CorreoHabilitadoVista;
+import co.uniproject.nucleo.seguridad.cuentas.EnlaceRegistroVista;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -118,6 +121,16 @@ public class ControladorProyectos {
             @PathVariable("idProyecto") long idProyecto,
             @PathVariable("idCorreoHabilitado") long idCorreoHabilitado) {
         correos.retirarCorreo(usuario, idProyecto, idCorreoHabilitado);
+    }
+
+    @PostMapping("/{idProyecto}/correos/{idCorreoHabilitado}/enlace")
+    public ResponseEntity<EnlaceRegistroVista> generarEnlaceCorreo(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @PathVariable("idCorreoHabilitado") long idCorreoHabilitado) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(correos.generarEnlace(usuario, idProyecto, idCorreoHabilitado));
     }
 
     /** D-11 y D-12: estudiantes habilitados del proyecto con su equipo o invitación. Solo el docente dueño. */

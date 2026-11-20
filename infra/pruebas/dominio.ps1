@@ -108,19 +108,27 @@ function Csrf([string]$actor) {
     return (Api $actor "GET" "/api/sesion/csrf").Codigo
 }
 
-function Registrar([string]$actor, [string]$nombre, [string]$email) {
+function Registrar([string]$actor, [string]$nombre, [string]$email, [string]$codigo) {
     Csrf $actor | Out-Null
-    return Api $actor "POST" "/api/cuentas/registro" (ComoJson @{ nombre = $nombre; email = $email; contrasena = $CLAVE; autorizaTratamientoDatos = $true })
+    return Api $actor "POST" "/api/cuentas/registro" (ComoJson @{ nombre = $nombre; email = $email; contrasena = $CLAVE; autorizaTratamientoDatos = $true; codigo = $codigo })
 }
 
-function Ingresar([string]$actor, [string]$email) {
+function EnlaceProyecto([long]$idProyecto, [string]$email) {
+    $idCorreo = Sql "SELECT id_correo_habilitado FROM correo_habilitado WHERE id_proyecto = $idProyecto AND email = '$email' AND fecha_uso IS NULL"
+    $r = Api "docente" "POST" "/api/proyectos/$idProyecto/correos/$idCorreo/enlace"
+    return (Leer $r).codigo
+}
+
+function Ingresar([string]$actor, [string]$email, [string]$contrasena = $CLAVE) {
     Csrf $actor | Out-Null
-    $r = Api $actor "POST" "/api/sesion/login" (ComoJson @{ email = $email; contrasena = $CLAVE })
+    $r = Api $actor "POST" "/api/sesion/login" (ComoJson @{ email = $email; contrasena = $contrasena })
     Csrf $actor | Out-Null
     return $r
 }
 
 $ADMIN = "e2e.admin@prueba.invalid"
+$CLAVE_ADMIN = "abcdefghijklmnopqrstuvwxyz"
+$HASH_ADMIN = '$2a$06$.rCVZVOThsIa97pEDOxvGuRRgzG64bvtJ0938xuqzv18d3ZpQhstC'
 $DOCENTE = Correo "docente"
 $LIDER = Correo "lider"
 $INTEGRANTE = Correo "integrante"
@@ -136,10 +144,13 @@ if (-not $listo) {
     exit 1
 }
 
-# D1 Docente registrado por habilitacion (K2, R-10)
+# D1 Docente registrado por habilitacion (K2, R-10, T-040)
 try {
-    Sql "INSERT INTO usuario (nombre, email, password_hash, rol_plataforma) SELECT 'E2E Admin', '$ADMIN', '!', 'ADMINISTRADOR' WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE email = '$ADMIN'); INSERT INTO correo_habilitado (email, rol_plataforma, id_habilitado_por) SELECT '$DOCENTE', 'DOCENTE', id_usuario FROM usuario WHERE email = '$ADMIN';" | Out-Null
-    $r1 = Registrar "docente" "Docente E2E" $DOCENTE
+    Sql "INSERT INTO usuario (nombre, email, password_hash, rol_plataforma) SELECT 'E2E Admin', '$ADMIN', '$HASH_ADMIN', 'ADMINISTRADOR' WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE email = '$ADMIN'); UPDATE usuario SET password_hash = '$HASH_ADMIN', fecha_anonimizacion = NULL WHERE email = '$ADMIN'; INSERT INTO correo_habilitado (email, rol_plataforma, id_habilitado_por) SELECT '$DOCENTE', 'DOCENTE', id_usuario FROM usuario WHERE email = '$ADMIN';" | Out-Null
+    Ingresar "admin" $ADMIN $CLAVE_ADMIN | Out-Null
+    $idCorreoDoc = Sql "SELECT id_correo_habilitado FROM correo_habilitado WHERE email = '$DOCENTE' AND rol_plataforma = 'DOCENTE' AND fecha_uso IS NULL"
+    $enlaceDoc = Api "admin" "POST" "/api/admin/docentes/$idCorreoDoc/enlace"
+    $r1 = Registrar "docente" "Docente E2E" $DOCENTE (Leer $enlaceDoc).codigo
     $r2 = Ingresar "docente" $DOCENTE
     $r3 = Api "docente" "GET" "/api/sesion/yo"
     $yo = Leer $r3
@@ -181,8 +192,8 @@ try {
 
 # D3 Estudiantes registrados, equipo con lider y permiso negado (4a, 4b)
 try {
-    $rl = Registrar "lider" "Lider E2E" $LIDER
-    $ri = Registrar "integrante" "Integrante E2E" $INTEGRANTE
+    $rl = Registrar "lider" "Lider E2E" $LIDER (EnlaceProyecto $ID_PROYECTO $LIDER)
+    $ri = Registrar "integrante" "Integrante E2E" $INTEGRANTE (EnlaceProyecto $ID_PROYECTO $INTEGRANTE)
     $ID_LIDER = (Leer $rl).idUsuario
     $ID_INTEGRANTE = (Leer $ri).idUsuario
     $il = Ingresar "lider" $LIDER

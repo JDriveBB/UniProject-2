@@ -46,6 +46,16 @@ public class CorreoHabilitado {
     @Column(name = "id_equipo_invitado")
     private Long idEquipoInvitado;
 
+    /** V9 (D-15 5A): enlace de invitación de un solo uso; los tres nulos cuando aún no se genera o tras registrarse. */
+    @Column(name = "enlace_selector")
+    private byte[] enlaceSelector;
+
+    @Column(name = "enlace_verificador_hash")
+    private byte[] enlaceVerificadorHash;
+
+    @Column(name = "enlace_vence_en")
+    private Instant enlaceVenceEn;
+
     public Long getIdCorreoHabilitado() {
         return idCorreoHabilitado;
     }
@@ -116,5 +126,29 @@ public class CorreoHabilitado {
 
     public void setIdEquipoInvitado(Long idEquipoInvitado) {
         this.idEquipoInvitado = idEquipoInvitado;
+    }
+
+    public byte[] getEnlaceSelector() {
+        return enlaceSelector;
+    }
+
+    public void setEnlaceSelector(byte[] enlaceSelector) {
+        this.enlaceSelector = enlaceSelector;
+    }
+
+    public byte[] getEnlaceVerificadorHash() {
+        return enlaceVerificadorHash;
+    }
+
+    public void setEnlaceVerificadorHash(byte[] enlaceVerificadorHash) {
+        this.enlaceVerificadorHash = enlaceVerificadorHash;
+    }
+
+    public Instant getEnlaceVenceEn() {
+        return enlaceVenceEn;
+    }
+
+    public void setEnlaceVenceEn(Instant enlaceVenceEn) {
+        this.enlaceVenceEn = enlaceVenceEn;
     }
 }

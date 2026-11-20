@@ -42,7 +42,8 @@ public final class TextosHistorial {
             Map.entry("RESTABLECER_CONTRASENA", "Restableció la contraseña"),
             Map.entry("CAMBIAR_CONTRASENA", "Cambió la contraseña"),
             Map.entry("SOLICITAR_APOYO", "Pidió apoyo"),
-            Map.entry("SOLICITAR_CORRECCION", "Pidió una corrección"));
+            Map.entry("SOLICITAR_CORRECCION", "Pidió una corrección"),
+            Map.entry("GENERAR_ENLACE_REGISTRO", "Generó un enlace de registro"));
 
     private static final Map<String, String> ENTIDADES = Map.of(
             "equipo", "Equipo",

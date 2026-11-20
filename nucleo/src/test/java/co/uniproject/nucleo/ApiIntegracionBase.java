@@ -105,11 +105,33 @@ public abstract class ApiIntegracionBase {
     }
 
     /** Primer valor numérico del campo en un JSON, p. ej. numero(cuerpo, "idProyecto"). */
-    protected static long numero(String json, String campo) {
+    public static long numero(String json, String campo) {
         Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*(\\d+)")
                 .matcher(json);
         assertThat(m.find()).as("campo %s en %s", campo, json).isTrue();
         return Long.parseLong(m.group(1));
+    }
+
+    /** Primer valor de texto del campo en un JSON plano, p. ej. campoTexto(cuerpo, "codigo"). */
+    public static String campoTexto(String json, String campo) {
+        Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*\"([^\"]+)\"")
+                .matcher(json);
+        assertThat(m.find()).as("campo %s en %s", campo, json).isTrue();
+        return m.group(1);
+    }
+
+    /** Busca la habilitación pendiente del correo en el proyecto y pide al docente un enlace de registro nuevo. */
+    protected String enlace(Navegador docente, long idProyecto, String email) {
+        long idCorreo = jdbc.sql("SELECT id_correo_habilitado FROM correo_habilitado "
+                        + "WHERE id_proyecto = :p AND email = :e AND fecha_uso IS NULL")
+                .param("p", idProyecto)
+                .param("e", email.strip().toLowerCase(Locale.ROOT))
+                .query(Long.class)
+                .single();
+        HttpResponse<String> r =
+                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        return campoTexto(r.body(), "codigo");
     }
 
     /** true si el JSON tiene "campo": valor exacto (12 no casa con 123). */

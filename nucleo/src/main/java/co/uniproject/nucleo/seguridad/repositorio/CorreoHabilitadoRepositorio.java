@@ -4,6 +4,7 @@ import co.uniproject.nucleo.seguridad.dominio.CorreoHabilitado;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,11 @@ public interface CorreoHabilitadoRepositorio extends JpaRepository<CorreoHabilit
     @Query("SELECT c FROM CorreoHabilitado c WHERE c.email = :email AND c.fechaUso IS NULL "
             + "ORDER BY c.idCorreoHabilitado")
     List<CorreoHabilitado> bloquearPendientes(@Param("email") String email);
+
+    /** Habilitación pendiente dueña del selector del enlace de invitación, bloqueada durante el registro (T-040). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM CorreoHabilitado c WHERE c.enlaceSelector = :selector AND c.fechaUso IS NULL")
+    Optional<CorreoHabilitado> bloquearPendientePorSelector(@Param("selector") byte[] selector);
 
     List<CorreoHabilitado> findByIdProyectoOrderByEmail(Long idProyecto);
 

@@ -10,6 +10,8 @@ import co.uniproject.nucleo.configuracionacademica.repositorio.MonitorProyectoRe
 import co.uniproject.nucleo.configuracionacademica.repositorio.ProyectoRepositorio;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.CorreoHabilitadoVista;
+import co.uniproject.nucleo.seguridad.cuentas.EnlaceRegistroVista;
+import co.uniproject.nucleo.seguridad.cuentas.EnlacesRegistro;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioCuentas;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioSupresion;
 import co.uniproject.nucleo.seguridad.dominio.CorreoHabilitado;
@@ -48,6 +50,7 @@ public class ServicioCorreosProyecto {
     private final RegistroAuditoria auditoria;
     private final Clock reloj;
     private final JdbcClient jdbc;
+    private final EnlacesRegistro enlaces;
 
     public ServicioCorreosProyecto(
             ProyectoRepositorio proyectos,
@@ -57,7 +60,8 @@ public class ServicioCorreosProyecto {
             Permisos permisos,
             RegistroAuditoria auditoria,
             Clock reloj,
-            JdbcClient jdbc) {
+            JdbcClient jdbc,
+            EnlacesRegistro enlaces) {
         this.proyectos = proyectos;
         this.correos = correos;
         this.usuarios = usuarios;
@@ -66,6 +70,7 @@ public class ServicioCorreosProyecto {
         this.auditoria = auditoria;
         this.reloj = reloj;
         this.jdbc = jdbc;
+        this.enlaces = enlaces;
     }
 
     /** Decisión 15-6. La auditoría guarda el rol habilitado, nunca el correo (Ley 1581). */
@@ -248,5 +253,12 @@ public class ServicioCorreosProyecto {
         throw new ReglaNegocioException(
                 "HABILITACION_USADA",
                 "Esa persona ya creó su cuenta. Quítala de su equipo o de los monitores del proyecto");
+    }
+
+    /** T-040 (D-15 5A): genera o reemplaza el enlace de invitación de un solo uso de una habilitación pendiente. */
+    @Transactional
+    public EnlaceRegistroVista generarEnlace(UsuarioAutenticado usuario, long idProyecto, long idCorreoHabilitado) {
+        permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
+        return enlaces.generarParaProyecto(usuario.idUsuario(), idProyecto, idCorreoHabilitado);
     }
 }

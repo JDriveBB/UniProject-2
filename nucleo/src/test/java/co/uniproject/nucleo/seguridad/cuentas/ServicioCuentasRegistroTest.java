@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -21,9 +22,12 @@ import co.uniproject.nucleo.seguridad.repositorio.CorreoHabilitadoRepositorio;
 import co.uniproject.nucleo.seguridad.repositorio.UsuarioRepositorio;
 import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,12 +40,14 @@ class ServicioCuentasRegistroTest {
 
     private static final String CLAVE = "ClavePrueba2026";
     private static final String EMAIL = "persona@u.edu.co";
+    private static final Instant AHORA = Instant.parse("2026-09-01T12:00:00Z");
 
     private final AtomicInteger encodes = new AtomicInteger();
     private UsuarioRepositorio usuarios;
     private CorreoHabilitadoRepositorio correos;
     private ServicioEquipos equipos;
     private ServicioCuentas servicio;
+    private CodigosRecuperacion.Nuevo codigoValido;
     private int encodesTrasConstruir;
 
     @BeforeEach
@@ -49,6 +55,9 @@ class ServicioCuentasRegistroTest {
         usuarios = mock(UsuarioRepositorio.class);
         correos = mock(CorreoHabilitadoRepositorio.class);
         equipos = mock(ServicioEquipos.class);
+        codigoValido = CodigosRecuperacion.nuevo();
+        when(correos.bloquearPendientePorSelector(any()))
+                .thenReturn(Optional.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
         PasswordEncoder bcrypt = new BCryptPasswordEncoder(4);
         PasswordEncoder contador = new PasswordEncoder() {
             @Override
@@ -69,12 +78,16 @@ class ServicioCuentasRegistroTest {
                 equipos,
                 contador,
                 mock(RegistroAuditoria.class),
-                Clock.fixed(Instant.parse("2026-09-01T12:00:00Z"), ZoneOffset.UTC));
+                Clock.fixed(AHORA, ZoneOffset.UTC));
         encodesTrasConstruir = encodes.get();
     }
 
-    private static SolicitudRegistro solicitud() {
-        return new SolicitudRegistro("Persona", EMAIL, CLAVE, true);
+    private SolicitudRegistro solicitud() {
+        return solicitudCon(EMAIL, codigoValido.texto());
+    }
+
+    private static SolicitudRegistro solicitudCon(String email, String codigo) {
+        return new SolicitudRegistro("Persona", email, CLAVE, true, codigo);
     }
 
     private static CorreoHabilitado habilitacion(RolPlataforma rol) {
@@ -84,8 +97,26 @@ class ServicioCuentasRegistroTest {
         return c;
     }
 
+    private CorreoHabilitado habilitacionConCodigo(Instant venceEn) {
+        CorreoHabilitado c = habilitacion(RolPlataforma.ESTUDIANTE);
+        c.setEnlaceSelector(codigoValido.selector());
+        c.setEnlaceVerificadorHash(codigoValido.hashVerificador());
+        c.setEnlaceVenceEn(venceEn);
+        return c;
+    }
+
+    private static String otroVerificador(String codigo) {
+        byte[] bytes = Base64.getUrlDecoder().decode(codigo);
+        bytes[bytes.length - 1] ^= 0x01;
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
     private void exigirRechazoUniforme() {
-        assertThatThrownBy(() -> servicio.registrar(solicitud()))
+        exigirRechazoUniforme(solicitud());
+    }
+
+    private void exigirRechazoUniforme(SolicitudRegistro peticion) {
+        assertThatThrownBy(() -> servicio.registrar(peticion))
                 .isInstanceOfSatisfying(ReglaNegocioException.class, e -> {
                     assertThat(e.getCodigo()).isEqualTo(ServicioCuentas.CODIGO_REGISTRO_NO_DISPONIBLE);
                     assertThat(e.getMessage()).isEqualTo(ServicioCuentas.MENSAJE_REGISTRO_NO_DISPONIBLE);
@@ -120,6 +151,38 @@ class ServicioCuentasRegistroTest {
         when(usuarios.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("duplicado"));
         exigirRechazoUniforme();
         verify(equipos, never()).incorporarInvitado(anyLong(), anyLong(), anyLong(), anyLong());
+
+        clearInvocations(usuarios);
+
+        // (e) código con formato inválido
+        encodesTrasConstruir = encodes.get();
+        exigirRechazoUniforme(solicitudCon(EMAIL, "no-es-un-codigo-valido"));
+        verify(usuarios, never()).saveAndFlush(any());
+
+        // (f) selector desconocido (bloquearPendientePorSelector vacío)
+        encodesTrasConstruir = encodes.get();
+        when(correos.bloquearPendientePorSelector(any())).thenReturn(Optional.empty());
+        exigirRechazoUniforme();
+        verify(usuarios, never()).saveAndFlush(any());
+
+        // (g) verificador que no coincide
+        encodesTrasConstruir = encodes.get();
+        when(correos.bloquearPendientePorSelector(any()))
+                .thenReturn(Optional.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
+        exigirRechazoUniforme(solicitudCon(EMAIL, otroVerificador(codigoValido.texto())));
+        verify(usuarios, never()).saveAndFlush(any());
+
+        // (h) correo distinto al de la habilitación del código
+        encodesTrasConstruir = encodes.get();
+        exigirRechazoUniforme(solicitudCon("otro@u.edu.co", codigoValido.texto()));
+        verify(usuarios, never()).saveAndFlush(any());
+
+        // (i) código vencido
+        encodesTrasConstruir = encodes.get();
+        when(correos.bloquearPendientePorSelector(any()))
+                .thenReturn(Optional.of(habilitacionConCodigo(AHORA.minusSeconds(1))));
+        exigirRechazoUniforme();
+        verify(usuarios, never()).saveAndFlush(any());
     }
 
     @Test
@@ -148,7 +211,7 @@ class ServicioCuentasRegistroTest {
 
     @Test
     void contrasenaInvalidaNoHasheaNiMiraElCorreo() {
-        SolicitudRegistro corta = new SolicitudRegistro("Persona", EMAIL, "123456789", true);
+        SolicitudRegistro corta = new SolicitudRegistro("Persona", EMAIL, "123456789", true, codigoValido.texto());
 
         assertThatThrownBy(() -> servicio.registrar(corta))
                 .isInstanceOfSatisfying(

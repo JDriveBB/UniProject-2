@@ -50,13 +50,14 @@ class InvitacionEquipoIntegracionTest extends ApiIntegracionBase {
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
     }
 
-    private void registrar(String email, String nombre) {
+    private void registrar(Navegador docente, long idProyecto, String email, String nombre) {
+        String codigo = enlace(docente, idProyecto, email);
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
         HttpResponse<String> r = n.post(
                 "/api/cuentas/registro",
                 "{\"nombre\":\"" + nombre + "\",\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE
-                        + "\",\"autorizaTratamientoDatos\":true}");
+                        + "\",\"autorizaTratamientoDatos\":true,\"codigo\":\"" + codigo + "\"}");
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
     }
 
@@ -123,7 +124,7 @@ class InvitacionEquipoIntegracionTest extends ApiIntegracionBase {
                 .contains("{\"email\":\"" + libre + "\",\"nombre\":null,\"registrado\":false,\"idEquipo\":null,"
                         + "\"idEquipoInvitado\":null}");
 
-        registrar(ines, "Ines Prueba");
+        registrar(docente, id, ines, "Ines Prueba");
         long idInes = idUsuario(ines);
         assertThat(jdbc.sql("SELECT count(*) FROM miembro_equipo WHERE id_equipo = :e AND id_usuario = :u "
                                 + "AND rol_equipo = 'INTEGRANTE'")
@@ -161,7 +162,7 @@ class InvitacionEquipoIntegracionTest extends ApiIntegracionBase {
         String monitor = correoUnico("mon");
         habilitar(docente, id, "ESTUDIANTE", invitada, conCuenta);
         habilitar(docente, id, "MONITOR", monitor);
-        registrar(conCuenta, "Con Cuenta");
+        registrar(docente, id, conCuenta, "Con Cuenta");
 
         HttpResponse<String> noHabilitado =
                 docente.post("/api/equipos/" + idA + "/invitaciones", invitacion(correoUnico("nadie")));
@@ -209,7 +210,7 @@ class InvitacionEquipoIntegracionTest extends ApiIntegracionBase {
                 .param("c", ines)
                 .update();
 
-        registrar(ines, "Ines Prueba");
+        registrar(docente, id, ines, "Ines Prueba");
         long idInes = idUsuario(ines);
         assertThat(jdbc.sql("SELECT count(*) FROM miembro_equipo WHERE id_usuario = :u")
                         .param("u", idInes)
@@ -245,7 +246,7 @@ class InvitacionEquipoIntegracionTest extends ApiIntegracionBase {
         String ines = correoUnico("ines");
         String ana = correoUnico("ana");
         habilitar(docente, id, "ESTUDIANTE", ines, ana);
-        registrar(ana, "Ana Prueba");
+        registrar(docente, id, ana, "Ana Prueba");
         assertThat(docente.post("/api/equipos/" + idA + "/miembros", invitacion(ana))
                         .statusCode())
                 .isEqualTo(201);

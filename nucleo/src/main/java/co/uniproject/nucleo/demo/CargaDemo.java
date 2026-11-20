@@ -173,16 +173,16 @@ public class CargaDemo {
                                 correo("jorge")),
                         RolPlataforma.ESTUDIANTE));
         correos.habilitar(docente, idProyecto, new SolicitudCorreos(List.of(correo("monitor")), RolPlataforma.MONITOR));
-        UsuarioAutenticado ana = registrar("Ana Rojas", "ana", contrasena);
-        UsuarioAutenticado bruno = registrar("Bruno Díaz", "bruno", contrasena);
-        UsuarioAutenticado camila = registrar("Camila Torres", "camila", contrasena);
-        UsuarioAutenticado diego = registrar("Diego Pérez", "diego", contrasena);
-        UsuarioAutenticado elena = registrar("Elena Gómez", "elena", contrasena);
-        UsuarioAutenticado felipe = registrar("Felipe Ruiz", "felipe", contrasena);
-        UsuarioAutenticado monitor = registrar("Gabriela Soto", "monitor", contrasena);
+        UsuarioAutenticado ana = registrar(docente, idProyecto, "Ana Rojas", "ana", contrasena);
+        UsuarioAutenticado bruno = registrar(docente, idProyecto, "Bruno Díaz", "bruno", contrasena);
+        UsuarioAutenticado camila = registrar(docente, idProyecto, "Camila Torres", "camila", contrasena);
+        UsuarioAutenticado diego = registrar(docente, idProyecto, "Diego Pérez", "diego", contrasena);
+        UsuarioAutenticado elena = registrar(docente, idProyecto, "Elena Gómez", "elena", contrasena);
+        UsuarioAutenticado felipe = registrar(docente, idProyecto, "Felipe Ruiz", "felipe", contrasena);
+        UsuarioAutenticado monitor = registrar(docente, idProyecto, "Gabriela Soto", "monitor", contrasena);
         // hugo = cuenta de sacrificio de la sesión de pruebas (límites, recuperación, supresión);
         // ines/jorge = correos pendientes para probar registro y «Retirar».
-        registrar("Hugo Lara", "hugo", contrasena);
+        registrar(docente, idProyecto, "Hugo Lara", "hugo", contrasena);
 
         EquipoVista alfa = equipo(docente, idProyecto, "Equipo Alfa", ana, List.of(ana, bruno, camila));
         EquipoVista beta = equipo(docente, idProyecto, "Equipo Beta", diego, List.of(diego, elena, felipe));
@@ -305,8 +305,17 @@ public class CargaDemo {
         return new UsuarioAutenticado(id, nombre, DOCENTE, RolPlataforma.DOCENTE);
     }
 
-    private UsuarioAutenticado registrar(String nombre, String usuario, String contrasena) {
-        UsuarioSesion s = cuentas.registrar(new SolicitudRegistro(nombre, correo(usuario), contrasena, true));
+    private UsuarioAutenticado registrar(
+            UsuarioAutenticado docente, long idProyecto, String nombre, String usuario, String contrasena) {
+        String email = correo(usuario);
+        long idCorreo = jdbc.sql(
+                        "SELECT id_correo_habilitado FROM correo_habilitado WHERE id_proyecto = :p AND email = :e")
+                .param("p", idProyecto)
+                .param("e", email)
+                .query(Long.class)
+                .single();
+        String codigo = correos.generarEnlace(docente, idProyecto, idCorreo).codigo();
+        UsuarioSesion s = cuentas.registrar(new SolicitudRegistro(nombre, email, contrasena, true, codigo));
         return new UsuarioAutenticado(s.idUsuario(), s.nombre(), s.email(), s.rol());
     }
 

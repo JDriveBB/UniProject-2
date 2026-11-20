@@ -11,4 +11,11 @@ public record SolicitudRegistro(
         @NotBlank @Size(max = 120) String nombre,
         @NotBlank @Email @Size(max = 254) String email,
         @NotNull @Size(min = 10, max = 72) String contrasena,
-        @AssertTrue boolean autorizaTratamientoDatos) {}
+        @AssertTrue boolean autorizaTratamientoDatos,
+        @NotBlank @Size(max = 64) String codigo) {
+
+    @Override
+    public String toString() {
+        return "SolicitudRegistro[codigo=***]";
+    }
+}

@@ -102,7 +102,7 @@ paths:
         '400': {$ref: '#/components/responses/Invalida'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '409':
-          description: 'REGISTRO_NO_DISPONIBLE: mismo código y mensaje si el correo no está habilitado, ya tiene cuenta o tiene habilitaciones de roles distintos (no revela cuál)'
+          description: 'REGISTRO_NO_DISPONIBLE: mismo código y mensaje si el código no es válido o venció, si el correo no coincide, no está habilitado, ya tiene cuenta o tiene habilitaciones de roles distintos (no revela cuál)'
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
@@ -184,6 +184,27 @@ paths:
                 items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+  /api/admin/docentes/{idCorreoHabilitado}/enlace:
+    parameters:
+      - $ref: '#/components/parameters/idCorreoHabilitado'
+    post:
+      tags: [administracion]
+      operationId: generarEnlaceDocente
+      summary: 'Genera un enlace de invitación de un solo uso (30 días) para una habilitación pendiente de DOCENTE; anula el anterior. Solo ADMINISTRADOR'
+      responses:
+        '200':
+          description: 'Código recién generado (Cache-Control: no-store); solo se devuelve en esta respuesta'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnlaceRegistro'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'HABILITACION_USADA: esa persona ya creó su cuenta'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/proyectos:
     post:
       tags: [proyectos]
@@ -338,6 +359,28 @@ paths:
       responses:
         '204':
           description: Habilitación retirada
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'HABILITACION_USADA: la persona ya creó su cuenta; se quita desde su equipo o desde los monitores'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/proyectos/{idProyecto}/correos/{idCorreoHabilitado}/enlace:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+      - $ref: '#/components/parameters/idCorreoHabilitado'
+    post:
+      tags: [proyectos]
+      operationId: generarEnlaceCorreo
+      summary: 'Genera un enlace de invitación de un solo uso (30 días) para una habilitación pendiente del proyecto; anula el anterior. Solo el docente dueño'
+      responses:
+        '200':
+          description: 'Código recién generado (Cache-Control: no-store); solo se devuelve en esta respuesta'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnlaceRegistro'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '404': {$ref: '#/components/responses/NoEncontrado'}
@@ -1295,12 +1338,13 @@ components:
         contrasena: {type: string, maxLength: 200}
     SolicitudRegistro:
       type: object
-      required: [nombre, email, contrasena, autorizaTratamientoDatos]
+      required: [nombre, email, contrasena, autorizaTratamientoDatos, codigo]
       properties:
         nombre: {type: string, maxLength: 120}
         email: {type: string, format: email, maxLength: 254}
         contrasena: {type: string, minLength: 10, maxLength: 72}
         autorizaTratamientoDatos: {type: boolean, const: true, description: Autorización Ley 1581}
+        codigo: {type: string, maxLength: 64, description: 'Código del enlace de invitación de un solo uso (43 caracteres). Secreto: no se guarda'}
     SolicitudRecuperacion:
       type: object
       required: [email]
@@ -1340,6 +1384,12 @@ components:
         idProyecto: {$ref: '#/components/schemas/IdNulo'}
         fechaHabilitacion: {$ref: '#/components/schemas/Instante'}
         registrado: {type: boolean}
+    EnlaceRegistro:
+      type: object
+      required: [codigo, venceEn]
+      properties:
+        codigo: {type: string, description: 'Código de 43 caracteres en Base64 URL sin relleno. Solo se devuelve al generarlo'}
+        venceEn: {$ref: '#/components/schemas/Instante'}
     SolicitudProyecto:
       type: object
       required: [nombre, fechaInicio, fechaFin, usaMonitores]
