@@ -156,6 +156,7 @@ Al arrancar el núcleo con el perfil `demo` en `UNIPROJECT_PERFILES` y una contr
 ## Documentación
 
 - [docs/diseno/](docs/diseno/README.md) — Documento de diseño: arquitectura, patrones, decisiones, modelo de datos, dominio, comportamiento y matriz de trazabilidad (con su PDF).
+- [docs/sustentacion/guion.md](docs/sustentacion/guion.md) — Guion paso a paso de la sustentación en vivo (20 minutos) y [lista previa](docs/sustentacion/lista-previa.md).
 - [docs/openapi/openapi.yaml](docs/openapi/openapi.yaml) — Especificación OpenAPI 3.1 de la API REST (`/api/**`).
 - [docs/asyncapi/asyncapi.yaml](docs/asyncapi/asyncapi.yaml) — Especificación AsyncAPI 3.0 de los eventos publicados en RabbitMQ.
 - [docs/pruebas/](docs/pruebas/) — Documentación de pruebas manuales ([guia-sesion-pruebas.md](docs/pruebas/guia-sesion-pruebas.md)).

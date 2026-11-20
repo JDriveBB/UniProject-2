@@ -1,5 +1,7 @@
 # Documento de diseño — UniProject
 
+Versión en PDF (con los diagramas dibujados): [UniProject-diseno.pdf](UniProject-diseno.pdf).
+
 Este documento describe la arquitectura real de **UniProject** tal como está construida en el código fuente, los patrones de diseño y principios SOLID aplicados en sus módulos, y el registro de decisiones de arquitectura (ADR) con las justificaciones técnicas y las diferencias respecto a la primera entrega. Sirve como referencia técnica verificable contra el repositorio para la sustentación del proyecto final de Diseño de Software I.
 
 ## Índice
