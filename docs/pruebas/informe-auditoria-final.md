@@ -30,10 +30,10 @@ Fecha: 2026-11-18 · Base: commit `e0a6b1e` (rama `main`) · Entorno: stack de p
 | 9 | BAJA | Cookie de sesión sin `secure: true` (activar bajo HTTPS); `/interno/**` alcanzable en el puerto público (protegido por token); código de vinculación de Telegram guardado en claro; cada 403 escribe en `log_auditoria` sin límite; `conOtroRol` revela cuentas; editar rúbrica mientras se evalúa; el rol del núcleo es dueño de la BD. | Documentar. |
 | 10 | BAJA (web) | Nuevo proyecto con fallo parcial deja la URL en `/proyectos/nuevo`; descarga de evidencias con `<a download>` guarda archivos vacíos ante 401/403; rutas inexistentes muestran la página «Whitelabel» de Spring; detalles de validación con nombres técnicos de campo. | Corregir lo marcado como «web». |
 | 11 | BAJA (contrato) | `MiTareaVista.nivelRiesgo` puede ser null y no está marcado nullable; el OpenAPI declara 404 en `POST /api/notificaciones/{id}/leida` pero el servicio responde 403; destino distinto en bandeja y Telegram para `tarea.reasignada`. | Corregir contrato. |
-| 12 | INFO | RF10: el panel marca rojo desde 48 h exactas; el requisito dice «más de 48 h». RNF2/RNF3 sin evidencia de pruebas a escala real. | Documentar. |
+| 12 | INFO | RF10: el panel marca rojo desde 48 h exactas; el requisito dice «más de 48 h». RNF2/RNF3 sin evidencia de pruebas a escala real. | Corregido (T-037) |
 
 ## 3. Cumplimiento de requisitos (entrega 1)
-RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10: parcial nominal (48 h exactas). No existe RF16. RNF1 cumple (medido). RNF2: acotado cumple, escala real sin medir. RNF3: sin evidencia. RNF4 cumple (bcrypt, costo 12). RNF5: probable (≈4 clics). Restricciones 4a–4e, 5 y 6 (Ley 1581: consentimiento y supresión) cumplen.
+RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10 cumple. No existe RF16. RNF1 cumple (medido). RNF2: acotado cumple, escala real sin medir. RNF3: sin evidencia. RNF4 cumple (bcrypt, costo 12). RNF5: probable (≈4 clics). Restricciones 4a–4e, 5 y 6 (Ley 1581: consentimiento y supresión) cumplen.
 
 ## 4. Riesgos aceptados y pendientes documentados
 - Suplantación al registrarse con un correo habilitado aún sin cuenta (hallazgo 1): mitigada solo con límite y mensaje uniforme; la solución completa (código de invitación de un solo uso) queda como trabajo futuro.

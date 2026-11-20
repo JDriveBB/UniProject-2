@@ -41,10 +41,11 @@ public class ServicioPanel {
             + "GROUP BY e.id_equipo, e.nombre_equipo, ha.id_hito_equipo, ha.orden, ha.nombre_hito, ha.avance_hito "
             + "ORDER BY e.nombre_equipo, e.id_equipo";
 
+    // RF10: más de 48 h
     private static final String BLOQUEADAS = "SELECT he.id_equipo, t.id_tarea, t.titulo, t.fecha_bloqueo FROM tarea t "
             + "JOIN hito_equipo he ON he.id_hito_equipo = t.id_hito_equipo JOIN equipo e ON e.id_equipo = he.id_equipo "
             + "WHERE e.id_proyecto = :proyecto AND t.bloqueada_por_dependencia AND t.estado <> 'COMPLETADA' "
-            + "AND t.fecha_bloqueo <= :limite ORDER BY t.fecha_bloqueo, t.id_tarea";
+            + "AND t.fecha_bloqueo < :limite ORDER BY t.fecha_bloqueo, t.id_tarea";
 
     private final Permisos permisos;
     private final DetectorInactividad detector;

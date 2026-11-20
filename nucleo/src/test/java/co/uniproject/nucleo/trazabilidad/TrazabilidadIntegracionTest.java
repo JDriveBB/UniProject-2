@@ -4,12 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.uniproject.nucleo.ApiIntegracionBase;
 import co.uniproject.nucleo.comun.FechasDominio;
+import co.uniproject.nucleo.notificaciones.programador.DetectorInactividad;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
+import co.uniproject.nucleo.seguridad.permisos.Permisos;
 import co.uniproject.nucleo.trazabilidad.servicio.PanelEquipo;
 import co.uniproject.nucleo.trazabilidad.servicio.PanelProyecto;
 import co.uniproject.nucleo.trazabilidad.servicio.ServicioPanel;
+import co.uniproject.nucleo.trazabilidad.servicio.TareaBloqueada;
 import java.net.http.HttpResponse;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -20,6 +26,12 @@ class TrazabilidadIntegracionTest extends ApiIntegracionBase {
 
     @Autowired
     private ServicioPanel servicioPanel;
+
+    @Autowired
+    private Permisos permisos;
+
+    @Autowired
+    private DetectorInactividad detector;
 
     private record Escenario(
             long idProyecto,
@@ -153,6 +165,55 @@ class TrazabilidadIntegracionTest extends ApiIntegracionBase {
         assertThat(b.enRojo()).isFalse();
         assertThat(b.integrantesInactivos()).isEmpty();
         assertThat(b.tareasBloqueadas()).isEmpty();
+    }
+
+    @Test
+    void elPanelSoloMarcaTareasBloqueadasPorMasDe48Horas() {
+        // Reloj fijo para probar el borde exacto de 48 h sin depender de los milisegundos de ejecución.
+        Instant ahora = Instant.parse("2026-11-20T12:00:00Z");
+        ServicioPanel panelFijo = new ServicioPanel(permisos, detector, jdbc, Clock.fixed(ahora, ZoneOffset.UTC));
+        LocalDate hoy = LocalDate.now(FechasDominio.ZONA);
+        String docente = correoUnico("doc");
+        long idDocente = crearUsuario("Docente Borde", docente, "DOCENTE");
+        long proyecto = jdbc.sql("INSERT INTO proyecto (id_docente, nombre, fecha_inicio, fecha_fin) "
+                        + "VALUES (:d, 'Proyecto Borde 48h', :i, :f) RETURNING id_proyecto")
+                .param("d", idDocente)
+                .param("i", hoy.minusDays(30))
+                .param("f", hoy.plusDays(60))
+                .query(Long.class)
+                .single();
+        long hito = hito(proyecto, "Hito 1", 1);
+        long equipoExacto = equipo(proyecto, "Equipo exacto");
+        long equipoExcedido = equipo(proyecto, "Equipo excedido");
+        long heExacto = hitoEquipo(hito, equipoExacto);
+        long heExcedido = hitoEquipo(hito, equipoExcedido);
+        jdbc.sql("INSERT INTO tarea (id_hito_equipo, titulo, horas_estimadas, bloqueada_por_dependencia, "
+                        + "fecha_bloqueo) VALUES (:he, 'Bloqueada 48h exactas', 2, true, :fb)")
+                .param("he", heExacto)
+                .param("fb", OffsetDateTime.ofInstant(ahora.minus(Duration.ofHours(48)), ZoneOffset.UTC))
+                .update();
+        jdbc.sql("INSERT INTO tarea (id_hito_equipo, titulo, horas_estimadas, bloqueada_por_dependencia, "
+                        + "fecha_bloqueo) VALUES (:he, 'Bloqueada 48h y 1m', 2, true, :fb)")
+                .param("he", heExcedido)
+                .param(
+                        "fb",
+                        OffsetDateTime.ofInstant(
+                                ahora.minus(Duration.ofHours(48).plusMinutes(1)), ZoneOffset.UTC))
+                .update();
+
+        PanelProyecto panel = panelFijo.panel(
+                new UsuarioAutenticado(idDocente, "Docente Borde", docente, RolPlataforma.DOCENTE), proyecto);
+        assertThat(panel.equipos())
+                .extracting(PanelEquipo::nombreEquipo)
+                .containsExactly("Equipo exacto", "Equipo excedido");
+        PanelEquipo exacto = panel.equipos().get(0);
+        PanelEquipo excedido = panel.equipos().get(1);
+        assertThat(exacto.tareasBloqueadas()).isEmpty();
+        assertThat(exacto.enRojo()).isFalse();
+        assertThat(excedido.tareasBloqueadas())
+                .extracting(TareaBloqueada::titulo)
+                .containsExactly("Bloqueada 48h y 1m");
+        assertThat(excedido.enRojo()).isTrue();
     }
 
     private long hito(long proyecto, String nombre, int orden) {
