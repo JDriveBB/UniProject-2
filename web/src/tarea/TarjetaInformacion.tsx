@@ -6,8 +6,23 @@ import { Boton } from '../componentes/Boton';
 import { Insignia } from '../componentes/Insignia';
 import { Tarjeta } from '../componentes/Tarjeta';
 import { decimalEsCo, fechaDia } from '../formato';
-import { BLOQUEADA, PRERREQUISITO } from '../tablero/marcas';
+import { BLOQUEADA } from '../tablero/marcas';
 import { textoRiesgo, type Prerrequisito } from './vista';
+
+/** Muestra solo los prerrequisitos, o la marca de bloqueo si no pudieron cargarse. */
+function listaDependencias(prerrequisitos: Prerrequisito[], bloqueada: boolean) {
+  if (prerrequisitos.length > 0) {
+    return prerrequisitos.map((p) => (
+      <Insignia key={p.idTarea} tono={p.tono}>
+        {p.texto}
+      </Insignia>
+    ));
+  }
+  if (bloqueada) {
+    return <Insignia tono={BLOQUEADA.tono}>{BLOQUEADA.texto}</Insignia>;
+  }
+  return <span className="texto-secundario">Ninguna tarea.</span>;
+}
 
 export interface PropsTarjetaInformacion {
   tarea: TareaVista;
@@ -68,6 +83,12 @@ export function TarjetaInformacion({
             <dd className="dato-tarea__valor">Sí · si se atrasa, se atrasa el hito</dd>
           </div>
         )}
+        {tarea.esPrerrequisitoCritico && (
+          <div className="dato-tarea">
+            <dt className="dato-tarea__etiqueta">Prerrequisito crítico</dt>
+            <dd className="dato-tarea__valor">Sí · el hito no se puede enviar a revisión sin ella</dd>
+          </div>
+        )}
       </dl>
       {tarea.descripcion !== null && tarea.descripcion !== '' && (
         <p className="dato-tarea__descripcion">{tarea.descripcion}</p>
@@ -75,17 +96,7 @@ export function TarjetaInformacion({
       <div className="caja-dependencias">
         <div className="caja-dependencias__lista">
           <span className="caja-dependencias__titulo">Bloqueada por:</span>
-          {tarea.bloqueada && <Insignia tono={BLOQUEADA.tono}>{BLOQUEADA.texto}</Insignia>}
-          {prerrequisitos.length > 0 ? (
-            prerrequisitos.map((p) => (
-              <Insignia key={p.idTarea} tono={p.tono}>
-                {p.texto}
-              </Insignia>
-            ))
-          ) : (
-            <span className="texto-secundario">Ninguna tarea.</span>
-          )}
-          {tarea.esPrerrequisitoCritico && <Insignia tono={PRERREQUISITO.tono}>{PRERREQUISITO.texto}</Insignia>}
+          {listaDependencias(prerrequisitos, tarea.bloqueada)}
         </div>
         {puedeGestionar && (
           <Boton id={idBoton} variante="suave" onClick={alEstablecer}>
