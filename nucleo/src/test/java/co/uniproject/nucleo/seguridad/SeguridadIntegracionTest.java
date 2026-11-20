@@ -1,5 +1,8 @@
 package co.uniproject.nucleo.seguridad;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import co.uniproject.nucleo.ApiIntegracionBase;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,8 +21,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SeguridadIntegracionTest {
@@ -58,7 +59,7 @@ class SeguridadIntegracionTest {
     /** Cliente con cookies propias: guarda Set-Cookie y manda X-XSRF-TOKEN como lo hará el SPA. */
     static final class Navegador {
 
-        private final HttpClient cliente = HttpClient.newHttpClient();
+        private final HttpClient cliente = ApiIntegracionBase.clienteHttp();
         private final Map<String, String> cookies = new LinkedHashMap<>();
         private final String base;
 
@@ -88,15 +89,22 @@ class SeguridadIntegracionTest {
         }
 
         private HttpResponse<String> enviar(String metodo, String ruta, String json) {
-            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + ruta)).method(metodo,
-                    json == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(json));
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + ruta))
+                    .timeout(ApiIntegracionBase.ESPERA_HTTP)
+                    .method(
+                            metodo,
+                            json == null
+                                    ? HttpRequest.BodyPublishers.noBody()
+                                    : HttpRequest.BodyPublishers.ofString(json));
             if (json != null) {
                 b.header("Content-Type", "application/json");
             }
             if (!cookies.isEmpty()) {
-                b.header("Cookie", cookies.entrySet().stream()
-                        .map(e -> e.getKey() + "=" + e.getValue())
-                        .collect(Collectors.joining("; ")));
+                b.header(
+                        "Cookie",
+                        cookies.entrySet().stream()
+                                .map(e -> e.getKey() + "=" + e.getValue())
+                                .collect(Collectors.joining("; ")));
             }
             if (cookies.containsKey("XSRF-TOKEN")) {
                 b.header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"));
@@ -172,7 +180,9 @@ class SeguridadIntegracionTest {
 
     @Test
     void docenteSeRegistraEntraYSale() {
-        assertThat(comoAdmin().post("/api/admin/docentes", "{\"email\":\"docente.registro@u.edu.co\"}").statusCode())
+        assertThat(comoAdmin()
+                        .post("/api/admin/docentes", "{\"email\":\"docente.registro@u.edu.co\"}")
+                        .statusCode())
                 .isEqualTo(201);
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
@@ -184,12 +194,14 @@ class SeguridadIntegracionTest {
         assertThat(repetido.statusCode()).isEqualTo(409);
         assertThat(repetido.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
 
-        HttpResponse<String> errada = n.post("/api/sesion/login",
-                "{\"email\":\"docente.registro@u.edu.co\",\"contrasena\":\"OtraClave2026\"}");
+        HttpResponse<String> errada = n.post(
+                "/api/sesion/login", "{\"email\":\"docente.registro@u.edu.co\",\"contrasena\":\"OtraClave2026\"}");
         assertThat(errada.statusCode()).isEqualTo(401);
         assertThat(errada.body()).contains("\"codigo\":\"CREDENCIALES_INVALIDAS\"");
-        assertThat(n.post("/api/sesion/login",
-                "{\"email\":\"docente.registro@u.edu.co\",\"contrasena\":\"ClaveDocente2026\"}").statusCode())
+        assertThat(n.post(
+                                "/api/sesion/login",
+                                "{\"email\":\"docente.registro@u.edu.co\",\"contrasena\":\"ClaveDocente2026\"}")
+                        .statusCode())
                 .isEqualTo(200);
         n.pedirCsrf();
         assertThat(n.get("/api/sesion/yo").body()).contains("\"nombre\":\"Docente Registro\"");
@@ -198,10 +210,14 @@ class SeguridadIntegracionTest {
         assertThat(prohibido.statusCode()).isEqualTo(403);
         assertThat(prohibido.body()).contains("\"codigo\":\"ACCESO_DENEGADO\"");
         long id = jdbc.sql("SELECT id_usuario FROM usuario WHERE email = 'docente.registro@u.edu.co'")
-                .query(Long.class).single();
+                .query(Long.class)
+                .single();
         assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE accion = 'ACCESO_DENEGADO' "
-                        + "AND id_usuario_accion = :id AND valor_nuevo = 'GET /api/admin/docentes'")
-                .param("id", id).query(Integer.class).single()).isEqualTo(1);
+                                + "AND id_usuario_accion = :id AND valor_nuevo = 'GET /api/admin/docentes'")
+                        .param("id", id)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
 
         assertThat(n.post("/api/sesion/logout", null).statusCode()).isEqualTo(204);
         assertThat(n.get("/api/sesion/yo").statusCode()).isEqualTo(401);
@@ -216,15 +232,16 @@ class SeguridadIntegracionTest {
         assertThat(noHabilitado.statusCode()).isEqualTo(409);
         assertThat(noHabilitado.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
         // Mismo cuerpo que el de una cuenta existente: no revela si el correo tiene cuenta.
-        HttpResponse<String> conCuenta = n.post("/api/cuentas/registro",
-                registro("X", "admin@uniproject.test", "ClaveNadie2026", true));
+        HttpResponse<String> conCuenta =
+                n.post("/api/cuentas/registro", registro("X", "admin@uniproject.test", "ClaveNadie2026", true));
         assertThat(conCuenta.statusCode()).isEqualTo(409);
         assertThat(conCuenta.body()).isEqualTo(noHabilitado.body());
         HttpResponse<String> sinAutorizacion =
                 n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "ClaveNadie2026", false));
         assertThat(sinAutorizacion.statusCode()).isEqualTo(400);
         assertThat(sinAutorizacion.body()).contains("\"codigo\":\"VALIDACION\"");
-        assertThat(n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "corta", true)).statusCode())
+        assertThat(n.post("/api/cuentas/registro", registro("X", "nadie@u.edu.co", "corta", true))
+                        .statusCode())
                 .isEqualTo(400);
         assertThat(n.post("/api/cuentas/registro", "no es json").body()).contains("\"codigo\":\"CUERPO_INVALIDO\"");
     }
@@ -232,27 +249,38 @@ class SeguridadIntegracionTest {
     @Test
     void estudianteYMonitorSeRegistranPorProyecto() {
         jdbc.sql("INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol_plataforma) "
-                + "VALUES (9101, 'Docente SQL', 'docente.sql@u.edu.co', '!', 'DOCENTE')").update();
-        jdbc.sql("INSERT INTO proyecto (id_proyecto, id_docente, nombre, fecha_inicio, fecha_fin, usa_monitores) VALUES "
-                + "(9201, 9101, 'P1', DATE '2026-08-03', DATE '2026-11-27', true), "
-                + "(9202, 9101, 'P2', DATE '2026-08-03', DATE '2026-11-27', true)").update();
+                        + "VALUES (9101, 'Docente SQL', 'docente.sql@u.edu.co', '!', 'DOCENTE')")
+                .update();
+        jdbc.sql(
+                        "INSERT INTO proyecto (id_proyecto, id_docente, nombre, fecha_inicio, fecha_fin, usa_monitores) VALUES "
+                                + "(9201, 9101, 'P1', DATE '2026-08-03', DATE '2026-11-27', true), "
+                                + "(9202, 9101, 'P2', DATE '2026-08-03', DATE '2026-11-27', true)")
+                .update();
         jdbc.sql("INSERT INTO correo_habilitado (id_proyecto, email, rol_plataforma, id_habilitado_por) VALUES "
-                + "(9201, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), (9202, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), "
-                + "(9201, 'mon.uno@u.edu.co', 'MONITOR', 9101), "
-                + "(9201, 'ambiguo@u.edu.co', 'ESTUDIANTE', 9101), (9202, 'ambiguo@u.edu.co', 'MONITOR', 9101)").update();
+                        + "(9201, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), (9202, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), "
+                        + "(9201, 'mon.uno@u.edu.co', 'MONITOR', 9101), "
+                        + "(9201, 'ambiguo@u.edu.co', 'ESTUDIANTE', 9101), (9202, 'ambiguo@u.edu.co', 'MONITOR', 9101)")
+                .update();
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
 
-        assertThat(n.post("/api/cuentas/registro", registro("Est Uno", "est.uno@u.edu.co", "ClaveEst2026", true)).body())
+        assertThat(n.post("/api/cuentas/registro", registro("Est Uno", "est.uno@u.edu.co", "ClaveEst2026", true))
+                        .body())
                 .contains("\"rol\":\"ESTUDIANTE\"");
-        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado c JOIN usuario u ON u.id_usuario = c.id_usuario_registrado "
-                + "WHERE c.email = 'est.uno@u.edu.co' AND u.email = c.email AND c.fecha_uso IS NOT NULL")
-                .query(Integer.class).single()).isEqualTo(2);
+        assertThat(jdbc.sql(
+                                "SELECT count(*) FROM correo_habilitado c JOIN usuario u ON u.id_usuario = c.id_usuario_registrado "
+                                        + "WHERE c.email = 'est.uno@u.edu.co' AND u.email = c.email AND c.fecha_uso IS NOT NULL")
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(2);
 
-        assertThat(n.post("/api/cuentas/registro", registro("Mon Uno", "mon.uno@u.edu.co", "ClaveMon20260", true)).body())
+        assertThat(n.post("/api/cuentas/registro", registro("Mon Uno", "mon.uno@u.edu.co", "ClaveMon20260", true))
+                        .body())
                 .contains("\"rol\":\"MONITOR\"");
         assertThat(jdbc.sql("SELECT count(*) FROM monitor_proyecto mp JOIN usuario u ON u.id_usuario = mp.id_monitor "
-                + "WHERE mp.id_proyecto = 9201 AND u.email = 'mon.uno@u.edu.co'").query(Integer.class).single())
+                                + "WHERE mp.id_proyecto = 9201 AND u.email = 'mon.uno@u.edu.co'")
+                        .query(Integer.class)
+                        .single())
                 .isEqualTo(1);
 
         HttpResponse<String> ambiguo =
@@ -269,15 +297,22 @@ class SeguridadIntegracionTest {
     void contrasenasConBcrypt12YAuditoriaSinSecretos() {
         comoAdmin();
         String hash = jdbc.sql("SELECT password_hash FROM usuario WHERE email = 'admin@uniproject.test'")
-                .query(String.class).single();
+                .query(String.class)
+                .single();
         assertThat(hash).matches("^\\$2[aby]\\$12\\$[./A-Za-z0-9]{53}$");
         assertThat(jdbc.sql("SELECT count(*) FROM usuario WHERE rol_plataforma = 'ADMINISTRADOR'")
-                .query(Integer.class).single()).isEqualTo(1);
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
         assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE accion = 'LOGIN_EXITOSO'")
-                .query(Integer.class).single()).isPositive();
+                        .query(Integer.class)
+                        .single())
+                .isPositive();
         assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE coalesce(valor_anterior, '') "
-                        + "|| coalesce(valor_nuevo, '') || coalesce(campo_modificado, '') ~* '(clave|@)'")
-                .query(Integer.class).single()).isZero();
+                                + "|| coalesce(valor_nuevo, '') || coalesce(campo_modificado, '') ~* '(clave|@)'")
+                        .query(Integer.class)
+                        .single())
+                .isZero();
     }
 
     @Test

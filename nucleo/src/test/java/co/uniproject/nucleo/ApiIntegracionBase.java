@@ -1,5 +1,7 @@
 package co.uniproject.nucleo;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -7,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -24,8 +27,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Base de las pruebas HTTP del dominio: PostgreSQL y RabbitMQ reales, un solo contexto de Spring para todas las
@@ -74,8 +75,9 @@ public abstract class ApiIntegracionBase {
 
     /** Crea un usuario con la contraseña CLAVE directamente en la BD. rol: ADMINISTRADOR, DOCENTE, ESTUDIANTE o MONITOR. */
     protected long crearUsuario(String nombre, String email, String rol) {
-        return jdbc.sql("INSERT INTO usuario (nombre, email, password_hash, rol_plataforma, autoriza_tratamiento_datos, "
-                        + "fecha_autorizacion) VALUES (:nombre, :email, :hash, :rol, true, now()) RETURNING id_usuario")
+        return jdbc.sql(
+                        "INSERT INTO usuario (nombre, email, password_hash, rol_plataforma, autoriza_tratamiento_datos, "
+                                + "fecha_autorizacion) VALUES (:nombre, :email, :hash, :rol, true, now()) RETURNING id_usuario")
                 .param("nombre", nombre)
                 .param("email", email)
                 .param("hash", HASH_CLAVE)
@@ -85,16 +87,18 @@ public abstract class ApiIntegracionBase {
     }
 
     protected long idUsuario(String email) {
-        return jdbc.sql("SELECT id_usuario FROM usuario WHERE email = :email").param("email", email)
-                .query(Long.class).single();
+        return jdbc.sql("SELECT id_usuario FROM usuario WHERE email = :email")
+                .param("email", email)
+                .query(Long.class)
+                .single();
     }
 
     /** Navegador con sesión iniciada (contraseña CLAVE) y cookie CSRF vigente. */
     protected Navegador sesion(String email) {
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
-        HttpResponse<String> r = n.post("/api/sesion/login",
-                "{\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE + "\"}");
+        HttpResponse<String> r =
+                n.post("/api/sesion/login", "{\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE + "\"}");
         assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
         n.pedirCsrf();
         return n;
@@ -102,20 +106,33 @@ public abstract class ApiIntegracionBase {
 
     /** Primer valor numérico del campo en un JSON, p. ej. numero(cuerpo, "idProyecto"). */
     protected static long numero(String json, String campo) {
-        Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*(\\d+)").matcher(json);
+        Matcher m = Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*(\\d+)")
+                .matcher(json);
         assertThat(m.find()).as("campo %s en %s", campo, json).isTrue();
         return Long.parseLong(m.group(1));
     }
 
     /** true si el JSON tiene "campo": valor exacto (12 no casa con 123). */
     protected static boolean tieneValor(String json, String campo, long valor) {
-        return Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*" + valor + "(?!\\d)").matcher(json).find();
+        return Pattern.compile("\"" + Pattern.quote(campo) + "\"\\s*:\\s*" + valor + "(?!\\d)")
+                .matcher(json)
+                .find();
+    }
+
+    public static final Duration ESPERA_HTTP = Duration.ofSeconds(30);
+
+    // HTTP/1.1 sin upgrade h2c y con tiempo límite de conexión para evitar bloqueos en pruebas (P-14).
+    public static HttpClient clienteHttp() {
+        return HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     /** Cliente con cookies propias: guarda Set-Cookie y manda X-XSRF-TOKEN como lo hará el SPA. */
     public static final class Navegador {
 
-        private final HttpClient cliente = HttpClient.newHttpClient();
+        private final HttpClient cliente = clienteHttp();
         private final Map<String, String> cookies = new LinkedHashMap<>();
         private final String base;
 
@@ -144,16 +161,20 @@ public abstract class ApiIntegracionBase {
         }
 
         /** multipart/form-data con un solo archivo, como lo manda el navegador. */
-        public HttpResponse<String> postArchivo(String ruta, String campo, String nombreArchivo, String tipo,
-                                                byte[] contenido) {
+        public HttpResponse<String> postArchivo(
+                String ruta, String campo, String nombreArchivo, String tipo, byte[] contenido) {
             String limite = "limite" + UUID.randomUUID().toString().replace("-", "");
             ByteArrayOutputStream cuerpo = new ByteArrayOutputStream();
-            cuerpo.writeBytes(("--" + limite + "\r\nContent-Disposition: form-data; name=\"" + campo
-                    + "\"; filename=\"" + nombreArchivo + "\"\r\nContent-Type: " + tipo + "\r\n\r\n")
+            cuerpo.writeBytes(("--" + limite + "\r\nContent-Disposition: form-data; name=\"" + campo + "\"; filename=\""
+                            + nombreArchivo + "\"\r\nContent-Type: " + tipo + "\r\n\r\n")
                     .getBytes(StandardCharsets.UTF_8));
             cuerpo.writeBytes(contenido);
             cuerpo.writeBytes(("\r\n--" + limite + "--\r\n").getBytes(StandardCharsets.UTF_8));
-            return enviar("POST", ruta, "multipart/form-data; boundary=" + limite, cuerpo.toByteArray(),
+            return enviar(
+                    "POST",
+                    ruta,
+                    "multipart/form-data; boundary=" + limite,
+                    cuerpo.toByteArray(),
                     HttpResponse.BodyHandlers.ofString());
         }
 
@@ -167,21 +188,32 @@ public abstract class ApiIntegracionBase {
         }
 
         private HttpResponse<String> enviar(String metodo, String ruta, String json) {
-            return enviar(metodo, ruta, json == null ? null : "application/json",
-                    json == null ? null : json.getBytes(StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+            return enviar(
+                    metodo,
+                    ruta,
+                    json == null ? null : "application/json",
+                    json == null ? null : json.getBytes(StandardCharsets.UTF_8),
+                    HttpResponse.BodyHandlers.ofString());
         }
 
-        private <T> HttpResponse<T> enviar(String metodo, String ruta, String tipo, byte[] cuerpo,
-                                           HttpResponse.BodyHandler<T> manejador) {
-            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + ruta)).method(metodo,
-                    cuerpo == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(cuerpo));
+        private <T> HttpResponse<T> enviar(
+                String metodo, String ruta, String tipo, byte[] cuerpo, HttpResponse.BodyHandler<T> manejador) {
+            HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + ruta))
+                    .timeout(ESPERA_HTTP)
+                    .method(
+                            metodo,
+                            cuerpo == null
+                                    ? HttpRequest.BodyPublishers.noBody()
+                                    : HttpRequest.BodyPublishers.ofByteArray(cuerpo));
             if (tipo != null) {
                 b.header("Content-Type", tipo);
             }
             if (!cookies.isEmpty()) {
-                b.header("Cookie", cookies.entrySet().stream()
-                        .map(e -> e.getKey() + "=" + e.getValue())
-                        .collect(Collectors.joining("; ")));
+                b.header(
+                        "Cookie",
+                        cookies.entrySet().stream()
+                                .map(e -> e.getKey() + "=" + e.getValue())
+                                .collect(Collectors.joining("; ")));
             }
             if (cookies.containsKey("XSRF-TOKEN")) {
                 b.header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"));
