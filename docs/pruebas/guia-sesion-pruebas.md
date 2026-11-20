@@ -50,7 +50,7 @@ Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProjec
 | `hugo@demo.uniproject.test` | Hugo Lara | ESTUDIANTE | Sin equipo | Cuenta de sacrificio: límites de login, recuperación y supresión. |
 | `admin@demo.uniproject.test` | Administrador (pruebas) | ADMINISTRADOR | — | Habilitación de docentes en `/admin/docentes`. |
 
-*Correos habilitados sin cuenta registrada:* `ines@demo.uniproject.test` (para probar registro) y `jorge@demo.uniproject.test` (para probar retiro de invitación).
+*Correos habilitados sin cuenta registrada:* `ines@demo.uniproject.test` (para probar registro abriendo el enlace de invitación copiado por el docente desde «Correos habilitados sin cuenta») y `jorge@demo.uniproject.test` (para probar retiro de invitación).
 
 ---
 
@@ -127,16 +127,18 @@ Las contraseñas de todas las cuentas se encuentran en `%LOCALAPPDATA%\UniProjec
 
 | # | Flujo | Pasos (cuenta y pantalla) | Resultado esperado | Debe negar |
 |---|---|---|---|---|
-| A1 | Habilitar docente | Ingresar a `/admin/docentes`, en «Habilitar docente» escribir `docente2@demo.uniproject.test` y pulsar `Habilitar`. | Correo añadido a la tabla con estado «Pendiente de registro». | Habilitar formatos de correo inválidos o duplicados. |
-| A2 | Registro y aislamiento | En ventana de incógnito ir a `/registro`, registrar `docente2@` e ingresar. | Acceso concedido; lista de proyectos vacía; sin acceso al proyecto demo ni por URL directa. | Eliminar la cuenta administradora desde `/perfil`; acceder a vistas de docente (`/panel`, `/proyectos/nuevo`). |
+| A1 | Habilitar docente | Ingresar a `/admin/docentes`, en «Habilitar docente» escribir `docente2@demo.uniproject.test`, pulsar `Habilitar` y luego pulsar `Copiar enlace` en su fila. | Correo añadido a la tabla con estado «Pendiente de registro»; al copiar, muestra confirmación con fecha de vencimiento y el enlace de un solo uso seleccionable. | Habilitar formatos de correo inválidos o duplicados; generar enlace para una cuenta ya creada. |
+| A2 | Registro y aislamiento | En ventana de incógnito abrir el enlace copiado en A1 (`/registro?codigo=...`), registrar `docente2@` e ingresar. | Acceso concedido; lista de proyectos vacía; sin acceso al proyecto demo ni por URL directa. | Eliminar la cuenta administradora desde `/perfil`; acceder a vistas de docente (`/panel`, `/proyectos/nuevo`); reutilizar el mismo enlace después de crear la cuenta. |
 
 ### 6.6 Visitante y Hugo
 
 | # | Flujo | Pasos (cuenta y pantalla) | Resultado esperado | Debe negar |
 |---|---|---|---|---|
 | V1 | Ruta protegida | Sin sesión abierta, intentar navegar a `/proyectos`, `/mis-tareas` o `/perfil`. | Redirección automática a la pantalla de `/ingresar`. | Acceder a cualquier pantalla interna o dato sin autenticación. |
-| V2 | Registro de usuario | En `/registro`, intentar registrar correo no autorizado; luego registrarse con `ines@demo.uniproject.test`. | Rechazo ante correo no habilitado; registro exitoso con mensaje de bienvenida para Inés. | Registrarse con correos no habilitados previamente. |
+| V2 | Registro de usuario | Como docente en `/proyectos/{idProyecto}`, pulsar `Copiar enlace` en `ines@demo.uniproject.test`; en ventana de incógnito abrir ese enlace (`/registro?codigo=...`), probar primero con otro correo y luego registrarse con `ines@demo.uniproject.test`. | Rechazo genérico (`REGISTRO_NO_DISPONIBLE`) si el correo no coincide con la invitación; registro exitoso con redirección a `/ingresar` y aviso de cuenta creada para Inés. | Registrarse con un correo distinto al del enlace o no habilitado previamente. |
 | V3 | Usuario sin equipo (Hugo) | Iniciar sesión como Hugo e ingresar a `/mis-tareas`, `/tablero` y `/ruta-critica`. | Vistas limpias con avisos de estado vacío («Sin tareas», «Sin equipo»), sin errores 500. | Realizar acciones de equipo o crear tareas sin pertenecer a un equipo. |
+| V4 | Abrir `/registro` sin enlace | Sin sesión abierta, navegar directamente a `/registro` (o a `/registro?codigo=invalido`) o pulsar «Crear cuenta» desde `/ingresar`. | No se muestra el formulario; muestra «Para crear tu cuenta necesitas el enlace de invitación que te envió tu docente.» y el enlace a iniciar sesión. | Mostrar el formulario o permitir enviar el registro sin código válido. |
+| V5 | Enlace ya usado o regenerado | 1) Abrir el enlace ya usado por Inés en V2 e intentar crear otra cuenta. 2) Como docente o administrador, generar dos enlaces seguidos para un correo pendiente e intentar registrarse con el primer enlace. | Ambos intentos se rechazan con `409 REGISTRO_NO_DISPONIBLE` y el mensaje genérico del núcleo, sin revelar si el enlace fue usado, venció o fue reemplazado. | Reutilizar un enlace consumido o registrar con un enlace anterior tras regenerarlo. |
 
 ---
 

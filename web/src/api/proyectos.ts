@@ -2,6 +2,7 @@ import { api } from './cliente';
 import type {
   CorreoHabilitadoVista,
   CriterioVista,
+  EnlaceRegistro,
   EquipoVista,
   EstudianteProyectoVista,
   HitoVista,
@@ -123,4 +124,9 @@ export function listarCorreos(idProyecto: number): Promise<CorreoHabilitadoVista
 /** retirarCorreo: 204. Solo habilitaciones pendientes; 409 HABILITACION_USADA si ya creó su cuenta; 404 si no existe en el proyecto. */
 export function retirarCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<void> {
   return api.borrar<void>(`/api/proyectos/${idProyecto}/correos/${idCorreoHabilitado}`);
+}
+
+/** generarEnlaceCorreo: 200 (Cache-Control: no-store). Solo habilitaciones pendientes; 409 HABILITACION_USADA; 404 si no existe en el proyecto. */
+export function generarEnlaceCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<EnlaceRegistro> {
+  return api.post<EnlaceRegistro>(`/api/proyectos/${idProyecto}/correos/${idCorreoHabilitado}/enlace`);
 }

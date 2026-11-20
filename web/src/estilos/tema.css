@@ -2663,6 +2663,7 @@ select.campo__entrada {
   display: flex;
   flex-direction: column;
   gap: var(--espacio-2);
+  min-width: 0;
 }
 
 .correo-pendiente {
@@ -2671,6 +2672,7 @@ select.campo__entrada {
   align-items: center;
   justify-content: space-between;
   gap: var(--espacio-3);
+  min-width: 0;
   padding: var(--relleno-opcion);
   border-radius: var(--radio);
   background: var(--color-fondo);
@@ -2692,6 +2694,33 @@ select.campo__entrada {
 .correo-pendiente__fecha {
   font-size: var(--tamano-pequeno);
   color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+
+.correo-pendiente__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--separacion-botones);
+}
+
+.enlace-generado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  min-width: 0;
+}
+
+.enlace-generado .alerta {
+  overflow-wrap: break-word;
+}
+
+.enlace-generado .campo__entrada {
+  width: 100%;
+  min-width: 0;
+}
+
+.tabla--docentes .boton {
   white-space: nowrap;
 }
 

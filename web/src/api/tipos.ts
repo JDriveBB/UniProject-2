@@ -15,12 +15,13 @@ export interface UsuarioSesion {
   telegramVinculado: boolean;
 }
 
-/** POST /api/cuentas/registro. contrasena: 10 a 72 bytes; autorizaTratamientoDatos debe ser true (Ley 1581). */
+/** POST /api/cuentas/registro. contrasena: 10 a 72 bytes; autorizaTratamientoDatos debe ser true (Ley 1581); codigo: 43 caracteres del enlace de invitación. */
 export interface SolicitudRegistro {
   nombre: string;
   email: string;
   contrasena: string;
   autorizaTratamientoDatos: boolean;
+  codigo: string;
 }
 
 /** POST /api/admin/docentes. */
@@ -36,6 +37,12 @@ export interface CorreoHabilitadoVista {
   idProyecto: number | null;
   fechaHabilitacion: string;
   registrado: boolean;
+}
+
+/** POST /api/proyectos/{id}/correos/{id}/enlace y /api/admin/docentes/{id}/enlace. El código es secreto: no se guarda ni se registra. */
+export interface EnlaceRegistro {
+  codigo: string;
+  venceEn: string;
 }
 
 /* ===== Bloque 26b: proyectos, hitos, rúbricas, equipos y bandeja (docs/openapi/openapi.yaml) ===== */

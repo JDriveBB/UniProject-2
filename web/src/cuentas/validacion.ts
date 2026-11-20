@@ -81,13 +81,14 @@ export function hayErrores(errores: object): boolean {
   return Object.keys(errores).length > 0;
 }
 
-/** Cuerpo de POST /api/cuentas/registro. Recorta nombre y correo (26a-4); la contraseña va tal cual. */
-export function solicitudDeRegistro(d: DatosRegistro): SolicitudRegistro {
+/** Cuerpo de POST /api/cuentas/registro. Recorta nombre, correo y código (26a-4, T-041); la contraseña va tal cual. */
+export function solicitudDeRegistro(d: DatosRegistro, codigo: string): SolicitudRegistro {
   return {
     nombre: d.nombre.trim(),
     email: d.email.trim(),
     contrasena: d.contrasena,
     autorizaTratamientoDatos: d.autoriza,
+    codigo: codigo.trim(),
   };
 }
 
@@ -97,6 +98,7 @@ const ETIQUETAS_REGISTRO: ReadonlyArray<readonly [string, string]> = [
   ['email', 'Correo electrónico'],
   ['contrasena', 'Contraseña'],
   ['autorizaTratamientoDatos', 'Autorización de tratamiento de datos'],
+  ['codigo', 'Enlace de invitación'],
 ];
 
 /**
@@ -107,9 +109,9 @@ const ETIQUETAS_REGISTRO: ReadonlyArray<readonly [string, string]> = [
 export function mensajeErrorRegistro(error: unknown): string {
   if (error instanceof ErrorApi && error.estado === 400 && error.codigo === 'VALIDACION') {
     const detalles = error.detalles;
-    const campos = ETIQUETAS_REGISTRO
-      .filter(([campo]) => detalles.some((d) => d.startsWith(campo + ':')))
-      .map(([, etiqueta]) => etiqueta);
+    const campos = ETIQUETAS_REGISTRO.filter(([campo]) => detalles.some((d) => d.startsWith(campo + ':'))).map(
+      ([, etiqueta]) => etiqueta,
+    );
     return campos.length > 0 ? 'Revisa estos campos: ' + campos.join(', ') : error.message;
   }
   if (error instanceof ErrorApi && error.estado === 409) {

@@ -1,6 +1,7 @@
 import { api } from './cliente';
 import type {
   CorreoHabilitadoVista,
+  EnlaceRegistro,
   SolicitudHabilitarCorreo,
   SolicitudRecuperacion,
   SolicitudRegistro,
@@ -22,6 +23,11 @@ export function listarDocentesHabilitados(): Promise<CorreoHabilitadoVista[]> {
 export function habilitarDocente(email: string): Promise<CorreoHabilitadoVista> {
   const solicitud: SolicitudHabilitarCorreo = { email };
   return api.post<CorreoHabilitadoVista>('/api/admin/docentes', solicitud);
+}
+
+/** generarEnlaceDocente: solo ADMINISTRADOR; 409 HABILITACION_USADA si ya creó su cuenta; 404 si no existe. */
+export function generarEnlaceDocente(idCorreoHabilitado: number): Promise<EnlaceRegistro> {
+  return api.post<EnlaceRegistro>(`/api/admin/docentes/${idCorreoHabilitado}/enlace`);
 }
 
 /** 202 → undefined, exista o no la cuenta; 400 VALIDACION; 429 DEMASIADAS_SOLICITUDES. */

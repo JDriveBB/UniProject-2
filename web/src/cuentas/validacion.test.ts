@@ -62,19 +62,24 @@ describe('validación del registro', () => {
     });
   });
 
-  it('la solicitud recorta nombre y correo y no toca la contraseña', () => {
+  it('la solicitud recorta nombre, correo y código y no toca la contraseña', () => {
+    const codigo = 'A'.repeat(20) + '-_' + 'b'.repeat(21);
     expect(
-      solicitudDeRegistro({
-        ...validos,
-        nombre: '  Ana María Pérez ',
-        email: ' Ana.Perez@uninorte.edu.co ',
-        contrasena: ' clave con espacios ',
-      }),
+      solicitudDeRegistro(
+        {
+          ...validos,
+          nombre: '  Ana María Pérez ',
+          email: ' Ana.Perez@uninorte.edu.co ',
+          contrasena: ' clave con espacios ',
+        },
+        `  ${codigo} `,
+      ),
     ).toEqual({
       nombre: 'Ana María Pérez',
       email: 'Ana.Perez@uninorte.edu.co',
       contrasena: ' clave con espacios ',
       autorizaTratamientoDatos: true,
+      codigo,
     });
   });
 });
@@ -92,8 +97,11 @@ describe('errores de la API en registro y alta de docentes', () => {
       'contrasena: size must be between 10 and 72',
       'email: must be a well-formed email address',
       'email: must not be blank',
+      'codigo: must not be blank',
     ]);
-    expect(mensajeErrorRegistro(error)).toBe('Revisa estos campos: Correo electrónico, Contraseña');
+    expect(mensajeErrorRegistro(error)).toBe(
+      'Revisa estos campos: Correo electrónico, Contraseña, Enlace de invitación',
+    );
   });
 
   it('VALIDACION sin campos conocidos y los demás errores usan el texto general', () => {
@@ -102,7 +110,11 @@ describe('errores de la API en registro y alta de docentes', () => {
     );
     expect(
       mensajeErrorRegistro(
-        new ErrorApi(400, 'CONTRASENA_INVALIDA', 'La contraseña debe tener al menos 10 caracteres y no más de 72 bytes'),
+        new ErrorApi(
+          400,
+          'CONTRASENA_INVALIDA',
+          'La contraseña debe tener al menos 10 caracteres y no más de 72 bytes',
+        ),
       ),
     ).toBe('La contraseña debe tener al menos 10 caracteres y no más de 72 bytes');
     expect(
