@@ -1,0 +1,55 @@
+# Puerta de calidad de UniProject en GitHub Actions (sin secretos).
+name: Calidad
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+# Cancela corridas previas de la misma rama o pull request.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      # Historial completo para comparar archivos modificados respecto de main.
+      - name: Descargar código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # En pull requests el checkout queda separado; se crea main local para scripts/formatear.py.
+      - name: Asegurar rama local main
+        run: git show-ref --verify --quiet refs/heads/main || git branch main origin/main
+
+      - name: Configurar Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Corre formato, dependencias/build/pruebas web y mvnw verify con Testcontainers.
+      - name: Ejecutar puerta de calidad
+        run: python scripts/verificar.py
