@@ -1,0 +1,44 @@
+========================================================================
+UniProject - Prueba de carga RNF2 (modulo de evaluacion)
+========================================================================
+Fecha UTC        : 2026-11-20T07:38:21.686Z
+Imagen k6        : grafana/k6:2.3.0
+URL base         : http://host.docker.internal:18080
+Escenario        : ramping-vus (VUS_MAX=500, 1m -> 3m -> 30s)
+Duracion real    : 277.2 s
+Resultado global : CUMPLE RNF2
+
+--- Resumen general ---
+Solicitudes HTTP : 56861 (205.16 req/s)
+Fallos HTTP      : 0.02 % (fallidas=12, exitosas=56849)
+Checks 200       : 99.98 % (ok=56834, fallo=12)
+VUs maximos      : 500
+Iteraciones      : 17759
+
+--- Latencia por endpoint evaluado (umbral RNF2: p(95) < 3000 ms y max < 3000 ms) ---
+* panel_docente: min=0.0 ms, avg=2.7 ms, med=2.5 ms, p(90)=3.2 ms, p(95)=3.9 ms [CUMPLE], p(99)=8.3 ms, max=48.8 ms [CUMPLE]
+* entregas_hito: min=1.2 ms, avg=2.3 ms, med=2.2 ms, p(90)=2.8 ms, p(95)=3.1 ms [CUMPLE], p(99)=4.2 ms, max=74.9 ms [CUMPLE]
+* proyecto_detalle: min=0.0 ms, avg=3.8 ms, med=3.6 ms, p(90)=4.7 ms, p(95)=5.3 ms [CUMPLE], p(99)=7.4 ms, max=45.9 ms [CUMPLE]
+* evaluacion_hito: min=0.9 ms, avg=2.5 ms, med=2.3 ms, p(90)=2.9 ms, p(95)=3.3 ms [CUMPLE], p(99)=4.3 ms, max=35.6 ms [CUMPLE]
+* total_evaluacion: min=0.0 ms, avg=2.9 ms, med=2.5 ms, p(90)=3.9 ms, p(95)=4.4 ms [CUMPLE], p(99)=6.2 ms, max=74.9 ms [CUMPLE]
+
+--- Detalle de checks ---
+* entregas_hito: estado 200: ok=17765, fallo=0
+* panel_docente: estado 200: ok=3554, fallo=4
+* proyecto_detalle: estado 200: ok=17754, fallo=8
+* evaluacion_hito: estado 200: ok=17761, fallo=0
+
+--- Umbrales evaluados ---
+* [CUMPLE] http_req_duration{endpoint:entregas_hito} -> p(95)<3000
+* [CUMPLE] http_req_duration{endpoint:entregas_hito} -> max<3000
+* [CUMPLE] checks -> rate>0.99
+* [CUMPLE] http_req_duration{fase:evaluacion} -> p(95)<3000
+* [CUMPLE] http_req_duration{fase:evaluacion} -> max<3000
+* [CUMPLE] http_req_duration{endpoint:evaluacion_hito} -> p(95)<3000
+* [CUMPLE] http_req_duration{endpoint:evaluacion_hito} -> max<3000
+* [CUMPLE] http_req_failed -> rate<0.01
+* [CUMPLE] http_req_duration{endpoint:panel_docente} -> p(95)<3000
+* [CUMPLE] http_req_duration{endpoint:panel_docente} -> max<3000
+* [CUMPLE] http_req_duration{endpoint:proyecto_detalle} -> max<3000
+* [CUMPLE] http_req_duration{endpoint:proyecto_detalle} -> p(95)<3000
+========================================================================

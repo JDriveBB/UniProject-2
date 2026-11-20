@@ -1,0 +1,28 @@
+{
+  "requisito": "RNF5: máximo 4 clics para crear una tarea con dependencia desde el tablero del equipo",
+  "cuenta": "diego@demo.uniproject.test",
+  "clics": 4,
+  "pasos": [
+    "Nueva tarea",
+    "Bloqueada por",
+    "Primera tarea de la lista",
+    "Guardar"
+  ],
+  "cumple": true,
+  "peticiones": [
+    {
+      "ruta": "/api/sesion/login",
+      "estado": 200
+    },
+    {
+      "ruta": "/api/hitos-equipo/4/tareas",
+      "estado": 201
+    },
+    {
+      "ruta": "/api/tareas/12/dependencias",
+      "estado": 200
+    }
+  ],
+  "segundos": 1.5,
+  "tarea": "Prueba RNF5 07:05:08"
+}

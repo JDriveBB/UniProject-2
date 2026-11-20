@@ -1,0 +1,11 @@
+{
+  "requisito": "RNF3: disponibilidad mínima de 99,5 % en semanas pico",
+  "fecha": "2026-11-20T07:11:53+00:00",
+  "duracion_s": 359.0,
+  "sondeos": 360,
+  "sondeos_caidos": 7,
+  "disponibilidad_en_la_ventana_pct": 98.06,
+  "segundos_sin_servicio": 6.9,
+  "reinicios_docker": "1",
+  "presupuesto_semanal_99_5_min": 50.4
+}

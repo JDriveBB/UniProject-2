@@ -132,6 +132,7 @@ Al arrancar el núcleo con el perfil `demo` en `UNIPROJECT_PERFILES` y una contr
 - **Pruebas de integración con Testcontainers:** `nucleo` y `agente-telegram` levantan contenedores reales de PostgreSQL 18.6 y RabbitMQ 4.3.7 (`ApiIntegracionBase`, `PostgresPrueba`) para verificar migraciones Flyway, permisos, outbox transaccional con `SKIP LOCKED`, reintentos diferidos, idempotencia y flujos HTTP con cookies de sesión y CSRF (requiere Docker Desktop activo).
 - **`ContratoOpenApiTest`:** valida que las operaciones `@*Mapping` expuestas bajo `/api/**` coincidan exactamente con las definidas en [docs/openapi/openapi.yaml](docs/openapi/openapi.yaml) y que el contrato documente `RespuestaError` y `CSRF_INVALIDO` sin exponer rutas internas ni datos personales.
 - **Sesión de pruebas manual:** descrita en [docs/pruebas/guia-sesion-pruebas.md](docs/pruebas/guia-sesion-pruebas.md) y apoyada por `infra/pruebas/sesion-pruebas.ps1`, que levanta un entorno aislado (`uniproject-pruebas`) con datos precargados para recorrer los casos por rol, Telegram real, reportes PDF, límites de tasa, recuperación y supresión de cuenta.
+- **Evidencias de RNF1–RNF5:** mediciones sobre la sesión de pruebas en [docs/pruebas/evidencias-rnf.md](docs/pruebas/evidencias-rnf.md) (500 usuarios simultáneos con k6 en `p95 = 4,4 ms`, recuperación automática en ≈ 7 s tras caída del núcleo, creación de tarea con dependencia en 4 clics, ruta crítica de 150 tareas en 140–176 ms y `BCryptPasswordEncoder(12)`).
 
 ## Estructura del repositorio
 

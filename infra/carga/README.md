@@ -98,3 +98,42 @@ Al finalizar, `handleSummary` deja dos archivos en la carpeta de salida e imprim
 ## 5. Advertencia sobre la medición en un PC personal
 
 Cuando esta prueba se corre en un computador personal, el generador de carga (`k6`) y el servidor (`nucleo`, PostgreSQL y RabbitMQ) compiten por los mismos núcleos de CPU, memoria y disco. Los resultados obtenidos en un PC local son una **evidencia indicativa** útil para detectar regresiones o cuellos de botella evidentes, pero no sustituyen una prueba en infraestructura dedicada con servidor y cliente separados.
+
+---
+
+# Prueba de disponibilidad RNF3 — Recuperación ante caída (`rnf3_disponibilidad.py`)
+
+Guion reproducible en Python (sin dependencias externas) para evaluar la recuperación automática exigida por **RNF3** (`Archivos_contexto/entrega1.md`):
+
+> **RNF3. Disponibilidad:** uptime mínimo de 99,5 % durante las semanas pico (8 y 16).
+
+## 1. Qué hace y qué caída provoca
+
+El guion [rnf3_disponibilidad.py](rnf3_disponibilidad.py):
+
+1. Sondea `http://127.0.0.1:18080/actuator/health` cada **1 segundo** (con timeout de `2 s`) esperando respuesta HTTP `200` con `"UP"`, durante una ventana configurable (`--minutos`, por defecto `6` min).
+2. **Provoca una caída real del núcleo:** al alcanzar `--caida-en` segundos desde el inicio (por defecto `60` s), ejecuta `docker exec uniproject-pruebas-nucleo-1 kill -TERM 1`, enviando `SIGTERM` al proceso `java` (PID 1 del contenedor del núcleo).
+3. El proceso termina con código distinto de `0` y Docker lo reinicia automáticamente sin intervención humana gracias a la política `restart: unless-stopped` definida en [infra/docker-compose.yml](../docker-compose.yml). No modifica ni borra datos en PostgreSQL ni en la outbox.
+4. Al terminar la ventana, consulta `docker inspect --format '{{.RestartCount}}'` sobre `uniproject-pruebas-nucleo-1` y escribe dos archivos en la carpeta de salida (además de imprimir el resumen en JSON):
+   - **`rnf3-muestras.json`**: serie temporal de sondeos (`t`, `arriba`) y marca de la caída provocada.
+   - **`rnf3-resultado.json`**: duración medida, total de sondeos, sondeos caídos, disponibilidad porcentual en la ventana, segundos sin servicio, contador de reinicios de Docker y el presupuesto semanal equivalente al 99,5 % (`50,4` minutos por semana).
+
+## 2. Cómo correrlo
+
+Requisitos previos: **Docker Desktop** activo, **Python 3** y la sesión de pruebas levantada en `http://127.0.0.1:18080` (`.\infra\pruebas\sesion-pruebas.ps1 -Accion Levantar`).
+
+Desde la raíz del repositorio:
+
+```powershell
+python infra/carga/rnf3_disponibilidad.py <carpeta-de-salida> [--minutos 6] [--caida-en 60]
+```
+
+Por ejemplo, con los parámetros por defecto (6 minutos, caída provocada al segundo 60):
+
+```powershell
+python infra/carga/rnf3_disponibilidad.py C:\ruta\resultados-rnf3
+```
+
+## 3. Alcance de la prueba
+
+Esta prueba mide el **tiempo de recuperación automática tras una caída real del proceso del núcleo** en el entorno Docker Compose local (`restart: unless-stopped` y arranque con migraciones Flyway); **no** sustituye una medición continua de semanas reales (semanas 8 y 16) en producción ni evalúa caídas de infraestructura externa.
