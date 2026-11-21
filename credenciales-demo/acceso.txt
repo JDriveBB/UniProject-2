@@ -1,0 +1,23 @@
+UniProject - acceso a la demo (sesión de pruebas)
+Datos de prueba: correos inventados y contraseña aleatoria. Solo funcionan en la sesión de pruebas local.
+
+URL: http://127.0.0.1:18080
+Levantar: desde app/, powershell -ExecutionPolicy Bypass -File infra\pruebas\sesion-pruebas.ps1 -Accion Levantar
+Contraseña (todas las cuentas, también admin): Demo2e79acb4858fd1dceed7
+
+Cuentas:
+docente@demo.uniproject.test   Laura Méndez   DOCENTE
+ana@demo.uniproject.test       Ana Rojas      líder Equipo Alfa
+bruno@demo.uniproject.test     Bruno Díaz     Equipo Alfa
+camila@demo.uniproject.test    Camila Torres  Equipo Alfa
+diego@demo.uniproject.test     Diego Pérez    líder Equipo Beta
+elena@demo.uniproject.test     Elena Gómez    Equipo Beta
+felipe@demo.uniproject.test    Felipe Ruiz    Equipo Beta
+monitor@demo.uniproject.test   Gabriela Soto  MONITOR
+hugo@demo.uniproject.test      Hugo Lara      estudiante sin equipo
+admin@demo.uniproject.test     ADMINISTRADOR
+
+Correos habilitados sin cuenta (para probar el registro): ines@demo.uniproject.test, jorge@demo.uniproject.test
+
+Para usar esta contraseña en otro computador: crear %LOCALAPPDATA%\UniProject\sesion-pruebas\credenciales.txt con la línea
+DEMO_CONTRASENA=<la contraseña de arriba> y correr -Accion Reiniciar -SinConfirmar.
