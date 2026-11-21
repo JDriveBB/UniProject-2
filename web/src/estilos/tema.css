@@ -94,9 +94,37 @@
   --relleno-boton: 10px 18px;
   --relleno-boton-ingreso: 14px 18px;
   --relleno-insignia: 4px 10px;
-  --sombra: 0 8px 24px rgba(0, 0, 0, 0.06);
-  --sombra-enlace-hover: 0 2px 8px rgba(22, 40, 80, 0.08); /* tarjetas de resumen que son enlace, al pasar el mouse */
   --foco: 0 0 0 2px var(--color-superficie), 0 0 0 4px var(--color-primario);
+  /* Profundidad y movimiento suave (T-049). Sombras en capas teñidas de la marca (#162850 = rgb 22 40 80):
+     nivel 1 en reposo (tarjetas, tablas), nivel 2 al pasar el mouse y en menús, nivel 3 en modales. */
+  --sombra-1: 0 1px 2px rgba(22, 40, 80, 0.06), 0 2px 8px rgba(22, 40, 80, 0.06);
+  --sombra-2: 0 2px 6px rgba(22, 40, 80, 0.07), 0 12px 32px rgba(22, 40, 80, 0.1);
+  --sombra-3: 0 4px 10px rgba(22, 40, 80, 0.16), 0 18px 44px rgba(22, 40, 80, 0.26);
+  /* Botones: sombra mínima en reposo, halo teñido del propio color al pasar el mouse y hundimiento al presionar. */
+  --sombra-boton: 0 1px 2px rgba(22, 40, 80, 0.12);
+  --sombra-boton-primario-hover: 0 1px 2px rgba(22, 40, 80, 0.12), 0 4px 12px rgba(40, 92, 219, 0.28);
+  --sombra-boton-peligro-hover: 0 1px 2px rgba(22, 40, 80, 0.12), 0 4px 12px rgba(204, 38, 38, 0.24);
+  --sombra-presion: inset 0 1px 2px rgba(22, 40, 80, 0.2);
+  /* Derivados para el estado presionado (más oscuros que el hover; texto blanco con más contraste). */
+  --color-primario-presion: color-mix(in srgb, var(--color-primario-hover) 82%, var(--color-marca-fondo));
+  --color-peligro-presion: color-mix(in srgb, var(--color-peligro-hover) 85%, var(--color-texto));
+  /* Cinta fina del azul de acción en el borde superior de la barra (sombra interior: no ocupa espacio). */
+  --cinta-barra: inset 0 3px 0 var(--color-primario);
+  --grosor-indicador: 2px;
+  --separacion-indicador: 3px;
+  --curva-suave: cubic-bezier(0.23, 1, 0.32, 1);
+  --duracion-hover: 160ms;
+  --duracion-estampa: 220ms;
+  --duracion-modal: 240ms;
+  --duracion-entrada: 380ms;
+  --duracion-llenado: 560ms;
+  --curva-llenado: cubic-bezier(0.77, 0, 0.175, 1);
+  --paso-escalonado: 40ms;
+  --retraso-cargando: 160ms;
+  --elevacion-hover: 2px;
+  --escala-estampa: 0.96;
+  --escala-modal: 0.98;
+  --desplazamiento-menu: -4px;
   /* Ingreso, registro y formularios (bloque 26a, Figma P01a/P01b) */
   --ancho-panel-marca: 620px;
   --ancho-tarjeta-acceso: 400px;
@@ -272,12 +300,50 @@ h3 {
 
 a {
   color: var(--color-primario);
+  text-underline-offset: 0.2em;
 }
 
 :focus-visible {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow: var(--foco);
+}
+
+/* Entradas de contenido (T-049): sin movimiento solo cambia la opacidad; el desplazamiento y la escala van en
+   @media (prefers-reduced-motion: no-preference). «backwards» deja el estado final sin transformar al terminar. */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes entrar {
+    from {
+      opacity: 0;
+      translate: 0 var(--desplazamiento-entrada);
+    }
+  }
+
+  @keyframes estampar {
+    from {
+      opacity: 0;
+      scale: var(--escala-estampa);
+    }
+  }
+
+  @keyframes desplegar {
+    from {
+      opacity: 0;
+      translate: 0 var(--desplazamiento-menu);
+    }
+  }
+
+  @keyframes llenar-avance {
+    from {
+      scale: 0 1;
+    }
+  }
 }
 
 @media (forced-colors: active) {
@@ -324,6 +390,12 @@ a {
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tarjeta);
   padding: var(--espacio-5);
+  box-shadow: var(--sombra-1);
+}
+
+/* Una tarjeta dentro de otra no suma sombra. */
+.tarjeta .tarjeta {
+  box-shadow: none;
 }
 
 .tarjeta__cabecera {
@@ -363,9 +435,10 @@ a {
   border-radius: var(--radio);
   background: var(--color-superficie);
   color: var(--color-texto);
+  caret-color: var(--color-primario);
   transition:
-    border-color var(--duracion-rapida) ease-out,
-    box-shadow var(--duracion-rapida) ease-out;
+    border-color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
 }
 
 .campo__entrada:hover:not(:disabled):not(:focus):not([readonly]):not([aria-invalid='true']) {
@@ -404,24 +477,26 @@ select.campo__entrada {
   text-decoration: none;
   cursor: pointer;
   transition:
-    background-color var(--duracion-rapida) ease-out,
-    border-color var(--duracion-rapida) ease-out,
-    color var(--duracion-rapida) ease-out,
-    box-shadow var(--duracion-rapida) ease-out;
-}
-
-.boton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+    background-color var(--duracion-hover) var(--curva-suave),
+    border-color var(--duracion-hover) var(--curva-suave),
+    color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
 }
 
 .boton--primario {
   background: var(--color-primario);
   color: var(--color-texto-sobre-primario);
+  box-shadow: var(--sombra-boton);
 }
 
 .boton--primario:hover:not(:disabled) {
   background: var(--color-primario-hover);
+  box-shadow: var(--sombra-boton-primario-hover);
+}
+
+.boton--primario:active:not(:disabled) {
+  background: var(--color-primario-presion);
+  box-shadow: var(--sombra-presion);
 }
 
 .boton--secundario {
@@ -432,26 +507,51 @@ select.campo__entrada {
 
 .boton--secundario:hover:not(:disabled) {
   background: var(--color-secundario-hover);
-  border-color: var(--color-borde);
+  border-color: var(--color-texto);
+  box-shadow: var(--sombra-1);
+}
+
+.boton--secundario:active:not(:disabled) {
+  box-shadow: var(--sombra-presion);
 }
 
 .boton--peligro {
   background: var(--color-peligro);
   color: var(--color-texto-sobre-primario);
+  box-shadow: var(--sombra-boton);
 }
 
 .boton--peligro:hover:not(:disabled) {
   background: var(--color-peligro-hover);
+  box-shadow: var(--sombra-boton-peligro-hover);
+}
+
+.boton--peligro:active:not(:disabled) {
+  background: var(--color-peligro-presion);
+  box-shadow: var(--sombra-presion);
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* El anillo de foco gana a las sombras de reposo, hover y presión (más especificidad y va después). */
+.boton:focus-visible,
+.boton:focus-visible:hover:not(:disabled),
+.boton:focus-visible:active:not(:disabled) {
+  box-shadow: var(--foco);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .boton {
     transition:
-      background-color var(--duracion-rapida) ease-out,
-      border-color var(--duracion-rapida) ease-out,
-      color var(--duracion-rapida) ease-out,
-      box-shadow var(--duracion-rapida) ease-out,
-      scale var(--duracion-presion) ease-out;
+      background-color var(--duracion-hover) var(--curva-suave),
+      border-color var(--duracion-hover) var(--curva-suave),
+      color var(--duracion-hover) var(--curva-suave),
+      box-shadow var(--duracion-hover) var(--curva-suave),
+      scale var(--duracion-presion) var(--curva-salida);
   }
 
   .boton:active:not(:disabled) {
@@ -470,6 +570,41 @@ select.campo__entrada {
   padding: var(--espacio-3) var(--espacio-4);
   border-radius: var(--radio);
   border: 1px solid transparent;
+}
+
+/* Alertas, avisos dentro de modales y confirmaciones en línea aparecen con un fundido (T-049). */
+.alerta,
+.aviso-modal,
+.confirmacion {
+  opacity: 1;
+  transition: opacity var(--duracion-modal) var(--curva-suave);
+}
+
+@starting-style {
+  .alerta,
+  .aviso-modal,
+  .confirmacion {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .alerta,
+  .aviso-modal,
+  .confirmacion {
+    transition:
+      opacity var(--duracion-modal) var(--curva-suave),
+      translate var(--duracion-modal) var(--curva-suave);
+  }
+
+  @starting-style {
+    .alerta,
+    .aviso-modal,
+    .confirmacion {
+      opacity: 0;
+      translate: 0 var(--desplazamiento-menu);
+    }
+  }
 }
 
 .alerta--error {
@@ -499,6 +634,8 @@ select.campo__entrada {
   font-size: var(--tamano-insignia);
   font-weight: var(--peso-medio);
   white-space: nowrap;
+  animation: aparecer var(--duracion-estampa) var(--curva-suave) backwards;
+  transition: box-shadow var(--duracion-hover) var(--curva-suave);
 }
 
 .insignia--neutro {
@@ -532,6 +669,8 @@ select.campo__entrada {
   gap: var(--espacio-2);
   padding: var(--espacio-6);
   color: var(--color-texto-secundario);
+  /* Aparece con un breve retraso: una carga rápida no deja un destello del indicador. */
+  animation: aparecer var(--duracion-entrada) var(--curva-suave) var(--retraso-cargando) backwards;
 }
 
 .cargando__indicador {
@@ -574,14 +713,18 @@ select.campo__entrada {
   white-space: nowrap;
 }
 
+/* Enlaces de texto: el subrayado existe siempre en transparente y toma el color del texto al pasar el mouse. */
 .enlace-fuerte {
   color: var(--color-primario);
   font-weight: var(--peso-seminegrita);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--duracion-rapida) var(--curva-suave);
 }
 
 .enlace-fuerte:hover {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 
 /* Ingreso y registro: panel de marca a la izquierda y tarjeta centrada a la derecha. */
@@ -641,7 +784,7 @@ select.campo__entrada {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-tarjeta-ingreso);
-  box-shadow: var(--sombra);
+  box-shadow: var(--sombra-2);
 }
 
 .tarjeta-acceso,
@@ -699,6 +842,31 @@ select.campo__entrada {
   font-size: var(--tamano-boton-ingreso);
 }
 
+/* Entrada de ingreso y registro (T-049): el texto de marca y luego la tarjeta, escalonados. */
+.acceso__marca > *,
+.tarjeta-acceso {
+  animation: aparecer var(--duracion-entrada) var(--curva-suave) var(--retraso, 0ms) backwards;
+}
+
+.acceso__marca > :nth-child(2) {
+  --retraso: var(--paso-escalonado);
+}
+
+.acceso__marca > :nth-child(3) {
+  --retraso: calc(2 * var(--paso-escalonado));
+}
+
+.tarjeta-acceso {
+  --retraso: calc(3 * var(--paso-escalonado));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .acceso__marca > *,
+  .tarjeta-acceso {
+    animation-name: entrar;
+  }
+}
+
 /* 960px: las variables CSS no valen dentro de @media. */
 @media (max-width: 960px) {
   .acceso {
@@ -751,6 +919,14 @@ select.campo__entrada {
   border: var(--borde-casilla) solid var(--color-borde);
   border-radius: var(--radio-casilla);
   background: var(--color-superficie);
+  transition:
+    background-color var(--duracion-hover) var(--curva-suave),
+    border-color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
+}
+
+.casilla__etiqueta:hover .casilla__entrada:not(:disabled):not(:checked):not([aria-invalid='true']) + .casilla__marca {
+  border-color: var(--color-texto-secundario);
 }
 
 .casilla__entrada:checked + .casilla__marca {
@@ -768,6 +944,13 @@ select.campo__entrada {
   border: solid var(--color-texto-sobre-primario);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+  animation: aparecer var(--duracion-estampa) var(--curva-suave) backwards;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .casilla__entrada:checked + .casilla__marca::after {
+    animation-name: estampar;
+  }
 }
 
 .casilla__entrada:focus-visible + .casilla__marca {
@@ -787,6 +970,13 @@ select.campo__entrada {
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tabla);
   background: var(--color-superficie);
+  box-shadow: var(--sombra-1);
+}
+
+/* Dentro de una tarjeta o de un modal la tabla no suma sombra. */
+.tarjeta .tabla-contenedor,
+.modal .tabla-contenedor {
+  box-shadow: none;
 }
 
 .tabla {
@@ -812,6 +1002,16 @@ select.campo__entrada {
   font-weight: var(--peso-regular);
   border-bottom: 1px solid var(--color-borde-tabla);
   font-variant-numeric: tabular-nums;
+  transition: background-color var(--duracion-hover) var(--curva-suave);
+}
+
+/* Fila bajo el mouse con fondo suave; solo con mouse y con la tabla en columnas (no en modo tarjeta). */
+@media (hover: hover) {
+  @container (width >= 600px) {
+    .tabla tbody tr:hover > :is(th, td):not(.tabla__vacia) {
+      background: var(--color-fondo);
+    }
+  }
 }
 
 .tabla tbody tr:last-child th,
@@ -834,6 +1034,44 @@ select.campo__entrada {
   display: flex;
   flex-direction: column;
   gap: var(--espacio-5);
+}
+
+/* Entrada de cada pantalla (T-049): los bloques aparecen escalonados (40 ms, hasta el sexto). Nada cambia de
+   lugar: el desplazamiento es una transformación que termina en cero y solo existe mientras dura la animación. */
+.pagina > * {
+  --retraso: 0ms;
+  animation: aparecer var(--duracion-entrada) var(--curva-suave) var(--retraso) backwards;
+}
+
+.pagina > :nth-child(2) {
+  --retraso: var(--paso-escalonado);
+}
+
+.pagina > :nth-child(3) {
+  --retraso: calc(2 * var(--paso-escalonado));
+}
+
+.pagina > :nth-child(4) {
+  --retraso: calc(3 * var(--paso-escalonado));
+}
+
+.pagina > :nth-child(5) {
+  --retraso: calc(4 * var(--paso-escalonado));
+}
+
+.pagina > :nth-child(n + 6) {
+  --retraso: calc(5 * var(--paso-escalonado));
+}
+
+/* El indicador de carga conserva su retraso propio (sin destello en cargas rápidas). */
+.pagina > .cargando {
+  --retraso: var(--retraso-cargando);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pagina > * {
+    animation-name: entrar;
+  }
 }
 
 /* Párrafos sueltos de una página: la separación la da el gap de .pagina, no el margen del navegador. */
@@ -905,6 +1143,7 @@ select.campo__entrada {
   padding: var(--relleno-barra);
   background: var(--color-marca-fondo);
   color: var(--color-texto-sobre-marca);
+  box-shadow: var(--cinta-barra), var(--sombra-1);
 }
 
 .barra :focus-visible {
@@ -947,16 +1186,55 @@ select.campo__entrada {
   font-weight: var(--peso-regular);
   color: var(--color-texto-sobre-marca-secundario);
   text-decoration: none;
-  transition: color var(--duracion-rapida) ease-out;
+  position: relative;
+  transition: color var(--duracion-hover) var(--curva-suave);
+}
+
+/* Indicador bajo el texto (T-049): asoma al pasar el mouse y queda entero en el enlace activo. Es absoluto,
+   así que no ocupa espacio; se ubica desde el centro para quedar justo bajo el texto con cualquier alto. */
+.barra__enlace::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: calc(50% + 0.75em + var(--separacion-indicador));
+  height: var(--grosor-indicador);
+  border-radius: var(--radio-avance);
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duracion-hover) var(--curva-suave);
 }
 
 .barra__enlace:hover {
   color: var(--color-texto-sobre-marca);
 }
 
+.barra__enlace:hover::after {
+  opacity: 0.45;
+}
+
 .barra__enlace--activo {
   font-weight: var(--peso-seminegrita);
   color: var(--color-texto-sobre-marca);
+}
+
+.barra__enlace--activo::after,
+.barra__enlace--activo:hover::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .barra__enlace::after {
+    scale: 0.4 1;
+    transition:
+      opacity var(--duracion-hover) var(--curva-suave),
+      scale var(--duracion-hover) var(--curva-suave);
+  }
+
+  .barra__enlace:hover::after,
+  .barra__enlace--activo::after {
+    scale: 1;
+  }
 }
 
 .barra__contador {
@@ -967,6 +1245,14 @@ select.campo__entrada {
   font-size: var(--tamano-contador);
   font-weight: var(--peso-negrita);
   line-height: 1.2;
+  animation: aparecer var(--duracion-estampa) var(--curva-suave) backwards;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .insignia,
+  .barra__contador {
+    animation-name: estampar;
+  }
 }
 
 /* Campana de notificaciones: solo en celular (ahí reemplaza a la palabra, que sigue para lectores de pantalla). */
@@ -992,6 +1278,11 @@ select.campo__entrada {
 .barra__rol {
   font-size: var(--tamano-rol-barra);
   color: var(--color-texto-sobre-marca-secundario);
+  transition: color var(--duracion-hover) var(--curva-suave);
+}
+
+.barra__usuario:hover .barra__rol {
+  color: var(--color-texto-sobre-marca);
 }
 
 .barra__salir {
@@ -1002,11 +1293,17 @@ select.campo__entrada {
   font-size: var(--tamano-base);
   color: var(--color-texto-sobre-marca-secundario);
   cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition:
+    color var(--duracion-hover) var(--curva-suave),
+    text-decoration-color var(--duracion-hover) var(--curva-suave);
 }
 
 .barra__salir:hover {
   color: var(--color-texto-sobre-marca);
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 
 @media (max-width: 600px) {
@@ -1215,6 +1512,15 @@ select.campo__entrada {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    background-color var(--duracion-hover) var(--curva-suave),
+    border-color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
+}
+
+.fila-hito:hover:not(.fila-hito--seleccionada):not(.fila-hito--error) {
+  background: var(--color-secundario-hover);
+  border-color: var(--color-borde);
 }
 
 .fila-hito--seleccionada {
@@ -1302,10 +1608,14 @@ select.campo__entrada {
   font-weight: var(--peso-medio);
   color: var(--color-primario);
   cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--duracion-rapida) var(--curva-suave);
 }
 
 .boton-texto:hover:not(:disabled) {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 
 .boton-texto:disabled {
@@ -1477,6 +1787,42 @@ select.campo__entrada {
   margin-top: auto;
 }
 
+/* La rejilla de proyectos entra tarjeta por tarjeta (hasta la sexta) en lugar de en bloque. */
+.pagina > .rejilla-proyectos {
+  animation: none;
+}
+
+.rejilla-proyectos > * {
+  --retraso: var(--paso-escalonado);
+  animation: aparecer var(--duracion-entrada) var(--curva-suave) var(--retraso) backwards;
+}
+
+.rejilla-proyectos > :nth-child(2) {
+  --retraso: calc(2 * var(--paso-escalonado));
+}
+
+.rejilla-proyectos > :nth-child(3) {
+  --retraso: calc(3 * var(--paso-escalonado));
+}
+
+.rejilla-proyectos > :nth-child(4) {
+  --retraso: calc(4 * var(--paso-escalonado));
+}
+
+.rejilla-proyectos > :nth-child(5) {
+  --retraso: calc(5 * var(--paso-escalonado));
+}
+
+.rejilla-proyectos > :nth-child(n + 6) {
+  --retraso: calc(6 * var(--paso-escalonado));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rejilla-proyectos > * {
+    animation-name: entrar;
+  }
+}
+
 @media (max-width: 359px) {
   .tarjeta-proyecto__cifras {
     grid-template-columns: minmax(0, 1fr);
@@ -1574,12 +1920,13 @@ select.campo__entrada {
   text-decoration: none;
   white-space: nowrap;
   transition:
-    color var(--duracion-rapida) ease-out,
-    border-bottom-color var(--duracion-rapida) ease-out;
+    color var(--duracion-hover) var(--curva-suave),
+    border-bottom-color var(--duracion-hover) var(--curva-suave);
 }
 
 .pestana:hover {
   color: var(--color-texto);
+  border-bottom-color: var(--color-borde);
 }
 
 .pestana--activa,
@@ -1599,6 +1946,7 @@ select.campo__entrada {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra-1);
 }
 
 .resumen-hito__dato {
@@ -1657,6 +2005,20 @@ select.campo__entrada {
   background: var(--color-avance-exito);
 }
 
+/* El relleno se llena desde la izquierda al aparecer (T-049). Reglas separadas: un seudoelemento que el navegador
+   no conoce invalidaría la lista entera. Donde el navegador no anima el relleno, la barra se ve igual, sin llenado. */
+@media (prefers-reduced-motion: no-preference) {
+  .avance__barra::-webkit-progress-value {
+    transform-origin: left center;
+    animation: llenar-avance var(--duracion-llenado) var(--curva-llenado) backwards;
+  }
+
+  .avance__barra::-moz-progress-bar {
+    transform-origin: left center;
+    animation: llenar-avance var(--duracion-llenado) var(--curva-llenado) backwards;
+  }
+}
+
 .avance__texto {
   font-size: var(--tamano-pequeno);
   font-weight: var(--peso-medio);
@@ -1673,10 +2035,25 @@ select.campo__entrada {
   color: var(--color-primario);
   border-radius: var(--radio-casilla);
   cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--duracion-rapida) var(--curva-suave);
 }
 
 .leyenda-marcas__resumen:hover {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
+/* Al abrir la leyenda, la lista se despliega con un fundido (y un desplazamiento corto si se permite movimiento). */
+.leyenda-marcas[open] > .leyenda-marcas__lista {
+  animation: aparecer var(--duracion-modal) var(--curva-suave) backwards;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .leyenda-marcas[open] > .leyenda-marcas__lista {
+    animation-name: desplegar;
+  }
 }
 
 .leyenda-marcas__lista {
@@ -1787,13 +2164,17 @@ select.campo__entrada {
 
 .enlace-tarea {
   color: var(--color-texto);
-  text-decoration: none;
-  transition: color var(--duracion-rapida) ease-out;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition:
+    color var(--duracion-rapida) var(--curva-suave),
+    text-decoration-color var(--duracion-rapida) var(--curva-suave);
 }
 
 .enlace-tarea:hover {
   color: var(--color-primario);
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 
 /* Tablero en celular: debe ir después de las reglas base de P04 para ganarles. */
@@ -1824,11 +2205,12 @@ select.campo__entrada {
   background: var(--color-superficie);
   color: var(--color-texto);
   overflow-y: auto;
+  box-shadow: var(--sombra-3);
 }
 
 .modal[open] {
   opacity: 1;
-  transition: opacity var(--duracion-media) var(--curva-salida);
+  transition: opacity var(--duracion-modal) var(--curva-suave);
 }
 
 @starting-style {
@@ -1842,7 +2224,7 @@ select.campo__entrada {
 }
 
 .modal[open]::backdrop {
-  transition: background-color var(--duracion-media) ease-out;
+  transition: background-color var(--duracion-modal) var(--curva-suave);
 }
 
 @starting-style {
@@ -1851,16 +2233,19 @@ select.campo__entrada {
   }
 }
 
+/* Con movimiento: sube 8 px y crece de 0,98 a 1 desde el centro (un modal no nace de un botón). */
 @media (prefers-reduced-motion: no-preference) {
   .modal[open] {
     transition:
-      opacity var(--duracion-media) var(--curva-salida),
-      translate var(--duracion-media) var(--curva-salida);
+      opacity var(--duracion-modal) var(--curva-suave),
+      translate var(--duracion-modal) var(--curva-suave),
+      scale var(--duracion-modal) var(--curva-suave);
   }
 
   @starting-style {
     .modal[open] {
       translate: 0 var(--desplazamiento-entrada);
+      scale: var(--escala-modal);
     }
   }
 }
@@ -1915,6 +2300,11 @@ select.campo__entrada {
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio);
   background: var(--color-superficie);
+  transition: border-color var(--duracion-hover) var(--curva-suave);
+}
+
+.selector:hover:not(.selector--abierto):not(:focus-within):not(.selector--error) {
+  border-color: var(--color-texto-secundario);
 }
 
 .selector--abierto,
@@ -1966,6 +2356,39 @@ select.campo__entrada {
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio);
   background: var(--color-superficie);
+  box-shadow: var(--sombra-2);
+  opacity: 1;
+  transition: opacity var(--duracion-hover) var(--curva-suave);
+}
+
+@starting-style {
+  .selector__lista {
+    opacity: 0;
+  }
+}
+
+/* Con movimiento: la lista baja 4 px desde el selector y el chevron gira al abrir. */
+@media (prefers-reduced-motion: no-preference) {
+  .selector__lista {
+    transition:
+      opacity var(--duracion-hover) var(--curva-suave),
+      translate var(--duracion-hover) var(--curva-suave);
+  }
+
+  @starting-style {
+    .selector__lista {
+      opacity: 0;
+      translate: 0 var(--desplazamiento-menu);
+    }
+  }
+
+  .selector__flecha {
+    transition: rotate var(--duracion-hover) var(--curva-suave);
+  }
+
+  .selector--abierto .selector__flecha {
+    rotate: 180deg;
+  }
 }
 
 /* Lista de equipos para elegir (sin Figma, provisional). */
@@ -1993,19 +2416,20 @@ select.campo__entrada {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra-1);
 }
 
 .dato-resumen--enlace {
   color: inherit;
   text-decoration: none;
   transition:
-    border-color var(--duracion-rapida) ease-out,
-    box-shadow var(--duracion-rapida) ease-out;
+    border-color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
 }
 
 .dato-resumen--enlace:hover {
   border-color: var(--color-primario);
-  box-shadow: var(--sombra-enlace-hover);
+  box-shadow: var(--sombra-2);
 }
 
 .dato-resumen__etiqueta {
@@ -2140,6 +2564,11 @@ select.campo__entrada {
 
 .boton--suave:hover:not(:disabled) {
   border-color: var(--color-primario);
+  box-shadow: var(--sombra-1);
+}
+
+.boton--suave:active:not(:disabled) {
+  box-shadow: var(--sombra-presion);
 }
 
 /* Barra de avance en el detalle */
@@ -2399,12 +2828,17 @@ select.campo__entrada {
 
 .evidencia__enlace {
   color: var(--color-texto);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition:
+    color var(--duracion-rapida) var(--curva-suave),
+    text-decoration-color var(--duracion-rapida) var(--curva-suave);
 }
 
 .evidencia__enlace:hover {
   color: var(--color-primario);
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 
 .evidencia__descargar {
@@ -3015,19 +3449,59 @@ select.campo__entrada {
   background: var(--color-superficie);
   border: 1px solid var(--color-borde-tabla);
   border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra-1);
 }
 
 .resumen-panel__dato--enlace {
   color: inherit;
   text-decoration: none;
   transition:
-    border-color var(--duracion-rapida) ease-out,
-    box-shadow var(--duracion-rapida) ease-out;
+    border-color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
 }
 
 .resumen-panel__dato--enlace:hover {
   border-color: var(--color-primario);
-  box-shadow: var(--sombra-enlace-hover);
+  box-shadow: var(--sombra-2);
+}
+
+/* Tarjetas que son enlace (T-049): el anillo de foco convive con su sombra; con mouse y movimiento permitido se
+   elevan 2 px. El seudoelemento cubre el hueco que deja la elevación para que el borde inferior no titile. */
+.dato-resumen--enlace:focus-visible,
+.resumen-panel__dato--enlace:focus-visible {
+  box-shadow: var(--foco), var(--sombra-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) {
+    .dato-resumen--enlace,
+    .resumen-panel__dato--enlace {
+      position: relative;
+      transition:
+        border-color var(--duracion-hover) var(--curva-suave),
+        box-shadow var(--duracion-hover) var(--curva-suave),
+        translate var(--duracion-hover) var(--curva-suave);
+    }
+
+    .dato-resumen--enlace::after,
+    .resumen-panel__dato--enlace::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      top: 100%;
+      height: var(--elevacion-hover);
+    }
+
+    .dato-resumen--enlace:hover,
+    .resumen-panel__dato--enlace:hover {
+      translate: 0 calc(-1 * var(--elevacion-hover));
+    }
+
+    .dato-resumen--enlace:active,
+    .resumen-panel__dato--enlace:active {
+      translate: 0 0;
+    }
+  }
 }
 
 .resumen-panel__etiqueta {
@@ -3297,9 +3771,10 @@ select.campo__entrada {
   border-left: var(--borde-no-leida) solid var(--color-borde-tabla);
   border-radius: var(--radio);
   background: var(--color-superficie);
+  box-shadow: var(--sombra-1);
   transition:
-    background-color var(--duracion-media) ease-out,
-    border-left-color var(--duracion-media) ease-out;
+    background-color var(--duracion-media) var(--curva-suave),
+    border-left-color var(--duracion-media) var(--curva-suave);
 }
 
 .notificacion--no-leida {
@@ -3740,6 +4215,7 @@ select.campo__entrada {
     border-radius: 0;
     background: transparent;
     overflow-x: visible;
+    box-shadow: none;
   }
 
   .tabla-contenedor .tabla:not(:has(.tabla__vacia)) {
@@ -3823,10 +4299,10 @@ select.campo__entrada {
   border: 1px solid var(--color-borde-tabla);
   border-left: var(--borde-aviso) solid var(--color-exito);
   border-radius: var(--radio-tarjeta);
-  box-shadow: var(--sombra);
+  box-shadow: var(--sombra-2);
   pointer-events: auto;
   opacity: 1;
-  transition: opacity var(--duracion-media) var(--curva-salida);
+  transition: opacity var(--duracion-modal) var(--curva-suave);
 }
 
 @starting-style {
@@ -3858,8 +4334,8 @@ select.campo__entrada {
   line-height: 1;
   cursor: pointer;
   transition:
-    background-color var(--duracion-rapida) ease-out,
-    color var(--duracion-rapida) ease-out;
+    background-color var(--duracion-rapida) var(--curva-suave),
+    color var(--duracion-rapida) var(--curva-suave);
 }
 
 .aviso__cerrar:hover {
@@ -3871,8 +4347,8 @@ select.campo__entrada {
   .aviso {
     translate: 0 0;
     transition:
-      opacity var(--duracion-media) var(--curva-salida),
-      translate var(--duracion-media) var(--curva-salida);
+      opacity var(--duracion-modal) var(--curva-suave),
+      translate var(--duracion-modal) var(--curva-suave);
   }
 
   @starting-style {
@@ -3984,9 +4460,9 @@ select.campo__entrada {
   font-weight: var(--peso-seminegrita);
   line-height: 1;
   transition:
-    border-color var(--duracion-rapida) ease-out,
-    background-color var(--duracion-rapida) ease-out,
-    color var(--duracion-rapida) ease-out;
+    border-color var(--duracion-rapida) var(--curva-suave),
+    background-color var(--duracion-rapida) var(--curva-suave),
+    color var(--duracion-rapida) var(--curva-suave);
 }
 
 .ayuda__boton:hover .ayuda__icono,
@@ -4007,7 +4483,7 @@ select.campo__entrada {
   border-radius: var(--radio);
   background: var(--color-superficie);
   color: var(--color-texto);
-  box-shadow: var(--sombra);
+  box-shadow: var(--sombra-2);
   font-size: var(--tamano-pequeno);
   font-weight: var(--peso-regular);
   line-height: 1.5;
@@ -4015,7 +4491,7 @@ select.campo__entrada {
   white-space: normal;
   overflow-wrap: break-word;
   opacity: 1;
-  transition: opacity var(--duracion-rapida) ease-out;
+  transition: opacity var(--duracion-hover) var(--curva-suave);
 }
 
 .ayuda__panel[hidden] {
@@ -4025,6 +4501,22 @@ select.campo__entrada {
 @starting-style {
   .ayuda__panel:not([hidden]) {
     opacity: 0;
+  }
+}
+
+/* Con movimiento: el panel baja 4 px desde el botón «?». */
+@media (prefers-reduced-motion: no-preference) {
+  .ayuda__panel {
+    transition:
+      opacity var(--duracion-hover) var(--curva-suave),
+      translate var(--duracion-hover) var(--curva-suave);
+  }
+
+  @starting-style {
+    .ayuda__panel:not([hidden]) {
+      opacity: 0;
+      translate: 0 var(--desplazamiento-menu);
+    }
   }
 }
 
@@ -4054,8 +4546,8 @@ select.campo__entrada {
   background: var(--color-superficie);
   cursor: text;
   transition:
-    border-color var(--duracion-rapida) ease-out,
-    box-shadow var(--duracion-rapida) ease-out;
+    border-color var(--duracion-hover) var(--curva-suave),
+    box-shadow var(--duracion-hover) var(--curva-suave);
 }
 
 .campo-fichas:hover:not(.campo-fichas--deshabilitado):not(:focus-within):not(.campo-fichas--error) {
@@ -4103,6 +4595,14 @@ select.campo__entrada {
   font-size: var(--tamano-pequeno);
   font-weight: var(--peso-medio);
   line-height: 1.3;
+  animation: aparecer var(--duracion-estampa) var(--curva-suave) backwards;
+}
+
+/* Cada correo agregado «estampa» al entrar como ficha. */
+@media (prefers-reduced-motion: no-preference) {
+  .ficha {
+    animation-name: estampar;
+  }
 }
 
 .ficha--error {
@@ -4132,8 +4632,8 @@ select.campo__entrada {
   line-height: 1;
   cursor: pointer;
   transition:
-    background-color var(--duracion-rapida) ease-out,
-    color var(--duracion-rapida) ease-out;
+    background-color var(--duracion-rapida) var(--curva-suave),
+    color var(--duracion-rapida) var(--curva-suave);
 }
 
 .ficha__quitar:hover:not(:disabled) {
@@ -4265,6 +4765,9 @@ select.campo__entrada {
   line-height: 1.3;
   text-align: start;
   cursor: pointer;
+  transition:
+    background-color var(--duracion-hover) var(--curva-suave),
+    border-color var(--duracion-hover) var(--curva-suave);
 }
 
 .sugerencia:hover:not(:disabled) {
@@ -4297,9 +4800,9 @@ select.campo__entrada {
 @media (prefers-reduced-motion: no-preference) {
   .sugerencia {
     transition:
-      background-color var(--duracion-rapida) ease-out,
-      border-color var(--duracion-rapida) ease-out,
-      scale var(--duracion-presion) ease-out;
+      background-color var(--duracion-hover) var(--curva-suave),
+      border-color var(--duracion-hover) var(--curva-suave),
+      scale var(--duracion-presion) var(--curva-salida);
   }
 
   .sugerencia:active:not(:disabled) {
@@ -4310,5 +4813,31 @@ select.campo__entrada {
 @media (pointer: coarse) {
   .sugerencia {
     min-block-size: var(--tamano-tactil);
+  }
+}
+
+/* ===== Renovación visual (T-049): ajustes que van después de las reglas base ===== */
+/* Celular: los enlaces de la barra tienen relleno lateral; el indicador se ciñe al texto. */
+@media (max-width: 600px) {
+  .barra__nav .barra__enlace::after,
+  .barra__derecha > .barra__enlace::after {
+    inset-inline: var(--espacio-2);
+  }
+}
+
+/* Alto contraste: las sombras desaparecen solas; el indicador del enlace activo se dibuja con el color del sistema. */
+@media (forced-colors: active) {
+  .barra__enlace::after {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+
+  .barra__enlace:hover::after {
+    opacity: 0;
+  }
+
+  .barra__enlace--activo::after,
+  .barra__enlace--activo:hover::after {
+    opacity: 1;
   }
 }
