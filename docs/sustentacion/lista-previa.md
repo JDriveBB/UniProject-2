@@ -83,7 +83,7 @@ Abrir **cuatro perfiles de navegador independientes o ventanas con sesión aisla
 - [ ] **README en GitHub:** pestaña del repositorio abierta mostrando la insignia de CI `Calidad` en verde (y el flujo `.github/workflows/calidad.yml`).
 - [ ] **Evidencias de RNF y auditoría:** pestañas o editor listos con:
   - `docs/pruebas/evidencias/rnf2-resumen.txt` (prueba de carga k6, 500 VUs).
-  - `docs/pruebas/evidencias-rnf.md` (RNF1–RNF5) y `docs/diseno/07-trazabilidad.md` §7.1 (conteo de 611 pruebas automáticas).
+  - `docs/pruebas/evidencias-rnf.md` (RNF1–RNF5) y `docs/diseno/07-trazabilidad.md` §7.1 (conteo de 615 pruebas automáticas).
   - `docs/pruebas/evidencias/rnf3-resultado.json` y `rnf5-resultado.json` (+ capturas `rnf5-0-tablero.png` a `rnf5-5-creada.png`).
 - [ ] **Archivo PDF pequeño (< 1 MB)** ubicado a la mano en el escritorio/carpeta de pruebas para el bloque 11–14.
 
@@ -95,7 +95,7 @@ Abrir **cuatro perfiles de navegador independientes o ventanas con sesión aisla
 |---|---|
 | **Falla internet o la Bot API de Telegram (o aparece `409`)** | No reiniciar el stack durante la presentación. Abrir `/notificaciones` (bandeja interna P10) en la ventana de Diego/Laura para mostrar que la misma notificación se guardó en PostgreSQL en la transacción del negocio, explicar la tolerancia a fallos con outbox + RabbitMQ (`docs/diseno/01-arquitectura.md` §1.4) y mostrar el video/captura de respaldo del bot enviando el mensaje. |
 | **No ha coincidido el múltiplo de 5 min para alertas periódicas (`RF4`/`RF6`)** | Mostrar la notificación instantánea de `tarea.reasignada` (**RF11**, entregada por la outbox cada `2 s`) y luego la de `hito.evaluado` (**RF8**), explicando que el programador horario corre en producción cada hora y cada 5 min en pruebas; verificar ambos avisos en `/notificaciones`. |
-| **Falla internet para abrir GitHub y la insignia de CI** | Mostrar la captura local de GitHub Actions en verde junto con `docs/diseno/07-trazabilidad.md` §7.1 (611 pruebas) y `docs/pruebas/informe-auditoria-final.md` §1. |
+| **Falla internet para abrir GitHub y la insignia de CI** | Mostrar la captura local de GitHub Actions en verde junto con `docs/diseno/07-trazabilidad.md` §7.1 (615 pruebas) y `docs/pruebas/informe-auditoria-final.md` §1. |
 | **Falla Docker o se congela una pantalla web** | Cambiar de inmediato al **video de respaldo** pregrabado y a las capturas en `docs/pruebas/evidencias/`, manteniendo el ritmo de narración con `UniProject-diseno.pdf`. |
 | **Se cierra sesión por error en una ventana o se cruzan cookies** | Verificar que las cuatro cuentas estén en perfiles distintos y siempre en `http://127.0.0.1:18080`; volver a iniciar sesión leyendo el archivo `credenciales.txt` en la pantalla no proyectada. |
 
