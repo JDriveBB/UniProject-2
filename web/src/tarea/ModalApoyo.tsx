@@ -74,7 +74,9 @@ export function ModalApoyo({ idTarea, nombre, alCerrar, alGuardar }: PropsModalA
         disabled={guardando}
         onChange={(e) => setMensaje(e.target.value)}
       />
-      <p className="texto-ayuda">La solicitud queda registrada en la tarea para el líder del equipo.</p>
+      <p className="texto-ayuda">
+        La solicitud queda registrada en el historial del equipo, donde tu líder puede verla.
+      </p>
     </Modal>
   );
 }
