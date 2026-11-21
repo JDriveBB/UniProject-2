@@ -4233,10 +4233,13 @@ select.campo__entrada {
 .sugerencias__lista {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: var(--espacio-1) var(--espacio-2);
   min-width: 0;
+  max-block-size: 12rem;
+  overflow-y: auto;
   margin: 0;
-  padding: 0;
+  padding: var(--espacio-1);
   list-style: none;
 }
 

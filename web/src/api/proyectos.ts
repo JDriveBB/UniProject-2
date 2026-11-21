@@ -4,6 +4,7 @@ import type {
   CriterioVista,
   EnlaceRegistro,
   EquipoVista,
+  EstudianteDisponibleVista,
   EstudianteProyectoVista,
   HitoVista,
   MonitorVista,
@@ -88,6 +89,11 @@ export function invitarAlEquipo(idEquipo: number, email: string): Promise<Estudi
 /** listarEstudiantes (D-11, D-12): estudiantes habilitados con su equipo o invitación. Solo el docente dueño (403). */
 export function listarEstudiantes(idProyecto: number): Promise<EstudianteProyectoVista[]> {
   return api.get<EstudianteProyectoVista[]>(`/api/proyectos/${idProyecto}/estudiantes`);
+}
+
+/** listarEstudiantesDisponibles (T-046): cuentas de estudiante sin equipo ni habilitación en el proyecto. Solo el docente dueño (403). */
+export function listarEstudiantesDisponibles(idProyecto: number): Promise<EstudianteDisponibleVista[]> {
+  return api.get<EstudianteDisponibleVista[]>(`/api/proyectos/${idProyecto}/estudiantes-disponibles`);
 }
 
 /** cambiarLider: 409 NO_ES_MIEMBRO. */

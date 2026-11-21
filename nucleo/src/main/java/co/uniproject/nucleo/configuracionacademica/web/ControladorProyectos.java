@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.configuracionacademica.web;
 
 import co.uniproject.nucleo.configuracionacademica.servicio.EquipoVista;
+import co.uniproject.nucleo.configuracionacademica.servicio.EstudianteDisponibleVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.EstudianteProyectoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.HitoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.MonitorVista;
@@ -138,6 +139,13 @@ public class ControladorProyectos {
     public List<EstudianteProyectoVista> listarEstudiantes(
             @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
         return correos.estudiantes(usuario, idProyecto);
+    }
+
+    /** T-046: cuentas de ESTUDIANTE sin equipo ni habilitación en el proyecto. Solo el docente dueño. */
+    @GetMapping("/{idProyecto}/estudiantes-disponibles")
+    public List<EstudianteDisponibleVista> listarEstudiantesDisponibles(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
+        return correos.disponibles(usuario, idProyecto);
     }
 
     @GetMapping("/{idProyecto}/monitores")

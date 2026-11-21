@@ -13,14 +13,14 @@ export interface PropsCampoCorreos {
   alCambiar: (fichas: Ficha[]) => void;
   ayuda?: string;
   deshabilitado?: boolean;
-  /** D-11: estudiantes sin equipo ni invitación; se eligen con un clic (hasta 6, filtrados por lo escrito). */
+  /** D-11, T-046: estudiantes sin equipo en el proyecto; se eligen con un clic (filtrados por lo escrito). */
   sugerencias?: Sugerencia[];
 }
 
 /**
  * Campo de correos con fichas tipo "Para:" de Gmail: valida al confirmar cada ficha, admite pegar
  * listas separadas por espacios, comas, punto y coma o saltos de línea, y asocia errores al input. Con
- * sugerencias, muestra debajo hasta 6 botones que agregan ese correo como ficha.
+ * sugerencias, muestra debajo botones (con desplazamiento si son muchos) que agregan ese correo como ficha.
  */
 export function CampoCorreos({
   id,

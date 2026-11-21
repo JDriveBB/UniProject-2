@@ -1,5 +1,11 @@
 import { ErrorApi } from '../api/cliente';
-import type { EquipoVista, EstudianteProyectoVista, ResultadoHabilitacion, SolicitudCorreos } from '../api/tipos';
+import type {
+  EquipoVista,
+  EstudianteDisponibleVista,
+  EstudianteProyectoVista,
+  ResultadoHabilitacion,
+  SolicitudCorreos,
+} from '../api/tipos';
 import { CAMPOS_CORREO, mensajeErrorApi } from './errores';
 import { separarCorreos } from './correos';
 
@@ -100,13 +106,37 @@ export async function agregarEstudiante(
   };
 }
 
-/** Sugerencias del campo de fichas (D-11): estudiantes habilitados sin equipo ni invitación, con o sin cuenta. */
+/**
+ * Sugerencias del campo de fichas (D-11, T-046): estudiantes habilitados sin equipo ni invitación más las cuentas
+ * de estudiante sin equipo en el proyecto, sin repetir correos y ordenados por nombre (o correo si falta).
+ */
 export function sugerenciasDe(
   estudiantes: EstudianteProyectoVista[],
+  disponibles: EstudianteDisponibleVista[] = [],
 ): Pick<EstudianteProyectoVista, 'email' | 'nombre' | 'registrado'>[] {
-  return estudiantes
-    .filter((e) => e.idEquipo === null && e.idEquipoInvitado === null)
-    .map(({ email, nombre, registrado }) => ({ email, nombre, registrado }));
+  const vistos = new Set<string>();
+  const resultado: Pick<EstudianteProyectoVista, 'email' | 'nombre' | 'registrado'>[] = [];
+  for (const e of estudiantes) {
+    vistos.add(e.email.toLowerCase());
+    if (e.idEquipo === null && e.idEquipoInvitado === null) {
+      resultado.push({ email: e.email, nombre: e.nombre, registrado: e.registrado });
+    }
+  }
+  for (const d of disponibles) {
+    const clave = d.email.toLowerCase();
+    if (!vistos.has(clave)) {
+      vistos.add(clave);
+      resultado.push({ email: d.email, nombre: d.nombre, registrado: true });
+    }
+  }
+  resultado.sort((a, b) => {
+    const porNombre = (a.nombre ?? a.email).localeCompare(b.nombre ?? b.email, 'es', { sensitivity: 'base' });
+    if (porNombre !== 0) {
+      return porNombre;
+    }
+    return a.email.localeCompare(b.email, 'es', { sensitivity: 'base' });
+  });
+  return resultado;
 }
 
 /** Correos invitados a ese equipo que aún no crean su cuenta (D-12), en el orden de la lista. */

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { agregarMiembro, cambiarLider, habilitarCorreos, invitarAlEquipo, quitarMiembro } from '../api/proyectos';
-import type { EquipoVista, EstudianteProyectoVista, MiembroVista } from '../api/tipos';
+import type { EquipoVista, EstudianteDisponibleVista, EstudianteProyectoVista, MiembroVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
@@ -28,12 +28,14 @@ const API_QUITAR: Pick<ApiQuitar, 'quitarMiembro'> = { quitarMiembro };
 
 /**
  * Una tarjeta de equipo de P03: integrantes, "Líder" o "Designar líder" y "Quitar" (Aclaración 2), invitados sin
- * cuenta (D-12) y "+ Agregar estudiante" (26b-7) con sugerencias de estudiantes sin equipo (D-11).
+ * cuenta (D-12) y "+ Agregar estudiante" (26b-7) con sugerencias de estudiantes sin equipo en el proyecto,
+ * habilitados o con cuenta (D-11, T-046).
  */
 export function TarjetaEquipo({
   idProyecto,
   equipo,
   estudiantes = [],
+  disponibles = [],
   editable,
   alActualizar,
   alHabilitarCorreo,
@@ -42,6 +44,8 @@ export function TarjetaEquipo({
   equipo: EquipoVista;
   /** Estudiantes del proyecto (solo para el docente dueño); vacío si no se cargaron. */
   estudiantes?: EstudianteProyectoVista[];
+  /** Cuentas de estudiante sin equipo ni habilitación en el proyecto (solo para el docente dueño); vacío si no se cargaron. */
+  disponibles?: EstudianteDisponibleVista[];
   editable: boolean;
   alActualizar: (equipo: EquipoVista) => void;
   alHabilitarCorreo?: () => void;
@@ -263,7 +267,7 @@ export function TarjetaEquipo({
               fichas={fichas}
               alCambiar={setFichas}
               deshabilitado={ocupado}
-              sugerencias={sugerenciasDe(estudiantes)}
+              sugerencias={sugerenciasDe(estudiantes, disponibles)}
             />
             <div className="pagina__acciones">
               <Boton type="submit" cargando={ocupado} disabled={!puedeEnviar}>

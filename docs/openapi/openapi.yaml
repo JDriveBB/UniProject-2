@@ -406,6 +406,23 @@ paths:
                 items: {$ref: '#/components/schemas/EstudianteProyectoVista'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/estudiantes-disponibles:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [proyectos]
+      operationId: listarEstudiantesDisponibles
+      summary: 'Cuentas de ESTUDIANTE sin equipo ni habilitación de estudiante en el proyecto (T-046). Solo el docente dueño'
+      responses:
+        '200':
+          description: Estudiantes disponibles (solo correo y nombre), ordenados por nombre y correo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EstudianteDisponibleVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
   /api/proyectos/{idProyecto}/monitores:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
@@ -1485,6 +1502,11 @@ components:
         registrado: {type: boolean}
         idEquipo: {$ref: '#/components/schemas/IdNulo'}
         idEquipoInvitado: {$ref: '#/components/schemas/IdNulo'}
+    EstudianteDisponibleVista:
+      type: object
+      properties:
+        email: {type: string}
+        nombre: {type: string}
     SolicitudLider:
       type: object
       required: [idUsuario]

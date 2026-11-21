@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { crearEquipo, detalleProyecto, listarEstudiantes } from '../api/proyectos';
-import type { EquipoVista, EstudianteProyectoVista } from '../api/tipos';
+import { crearEquipo, detalleProyecto, listarEstudiantes, listarEstudiantesDisponibles } from '../api/proyectos';
+import type { EquipoVista, EstudianteDisponibleVista, EstudianteProyectoVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
@@ -37,6 +37,7 @@ function RejillaEquipos({
   idProyecto,
   equipos,
   estudiantes,
+  disponibles,
   editable,
   alActualizarEquipo,
   alHabilitarCorreo,
@@ -44,6 +45,7 @@ function RejillaEquipos({
   idProyecto: number;
   equipos: EquipoVista[];
   estudiantes: EstudianteProyectoVista[];
+  disponibles: EstudianteDisponibleVista[];
   editable: boolean;
   alActualizarEquipo: (equipo: EquipoVista) => void;
   alHabilitarCorreo: () => void;
@@ -59,6 +61,7 @@ function RejillaEquipos({
           idProyecto={idProyecto}
           equipo={e}
           estudiantes={estudiantes}
+          disponibles={disponibles}
           editable={editable}
           alActualizar={alActualizarEquipo}
           alHabilitarCorreo={alHabilitarCorreo}
@@ -81,6 +84,7 @@ export function TarjetaEquipos({
   const avisar = useAvisos();
   const [versionCorreos, setVersionCorreos] = useState(0);
   const [estudiantes, setEstudiantes] = useState<EstudianteProyectoVista[]>([]);
+  const [disponibles, setDisponibles] = useState<EstudianteDisponibleVista[]>([]);
   const integrantes = claveIntegrantes(equipos);
   const [abierto, setAbierto] = useState(false);
   const [nombre, setNombre] = useState('');
@@ -114,22 +118,26 @@ export function TarjetaEquipos({
     };
   }, [idProyecto, versionCorreos, alActualizarEquipo]);
 
-  /* D-11 y D-12: estudiantes del proyecto (sugerencias e invitados) una vez, y de nuevo al habilitar, invitar,
-     retirar, agregar o quitar integrantes. Solo el docente dueño puede pedirlos. */
+  /* D-11, D-12 y T-046: estudiantes del proyecto (sugerencias e invitados) y cuentas disponibles sin equipo una vez,
+     y de nuevo al habilitar, invitar, retirar, agregar o quitar integrantes. Solo el docente dueño puede pedirlos. */
   useEffect(() => {
     if (!editable || idProyecto === null) {
       return;
     }
     let vigente = true;
-    listarEstudiantes(idProyecto)
-      .then((lista) => {
-        if (vigente) {
-          setEstudiantes(lista);
+    void Promise.allSettled([listarEstudiantes(idProyecto), listarEstudiantesDisponibles(idProyecto)]).then(
+      ([resEstudiantes, resDisponibles]) => {
+        if (!vigente) {
+          return;
         }
-      })
-      .catch(() => {
-        // sin la lista no hay sugerencias ni invitados a la vista; el resto de la tarjeta sigue igual
-      });
+        if (resEstudiantes.status === 'fulfilled') {
+          setEstudiantes(resEstudiantes.value);
+        }
+        if (resDisponibles.status === 'fulfilled') {
+          setDisponibles(resDisponibles.value);
+        }
+      },
+    );
     return () => {
       vigente = false;
     };
@@ -169,6 +177,7 @@ export function TarjetaEquipos({
           idProyecto={idProyecto}
           equipos={equipos}
           estudiantes={estudiantes}
+          disponibles={disponibles}
           editable={editable}
           alActualizarEquipo={alActualizarEquipo}
           alHabilitarCorreo={correoHabilitado}

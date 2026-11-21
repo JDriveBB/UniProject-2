@@ -3,6 +3,7 @@ import { ErrorApi } from '../api/cliente';
 import type {
   CorreoHabilitadoVista,
   EquipoVista,
+  EstudianteDisponibleVista,
   EstudianteProyectoVista,
   ResultadoHabilitacion,
   SolicitudCorreos,
@@ -272,6 +273,33 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
     ]);
     expect(invitadosDe(lista, 3)).toEqual(['ines@u.co']);
     expect(invitadosDe(lista, 9)).toEqual([]);
+  });
+
+  it('sugerenciasDe mezcla disponibles sin repetir, ordena con tildes y usa correo sin nombre', () => {
+    const estudiantes = [
+      estudiante({ email: 'ana@u.co', nombre: 'Ana', registrado: true, idEquipo: 3 }),
+      estudiante({ email: 'diego@u.co', idEquipoInvitado: 3 }),
+      estudiante({ email: 'camila@u.co', nombre: 'Camila Habilitada', registrado: true }),
+      estudiante({ email: 'elena@u.co' }),
+    ];
+    const disponibles: EstudianteDisponibleVista[] = [
+      { email: 'CAMILA@U.CO', nombre: 'Camila Disponible' },
+      { email: 'ANA@U.CO', nombre: 'Ana Con Equipo' },
+      { email: 'juan@u.co', nombre: 'Juan' },
+      { email: 'ingrid@u.co', nombre: 'Íngrid' },
+      { email: 'hugo@u.co', nombre: 'Hugo' },
+      { email: 'pedro.b@u.co', nombre: 'Pedro' },
+      { email: 'pedro.a@u.co', nombre: 'Pedro' },
+    ];
+    expect(sugerenciasDe(estudiantes, disponibles)).toEqual([
+      { email: 'camila@u.co', nombre: 'Camila Habilitada', registrado: true },
+      { email: 'elena@u.co', nombre: null, registrado: false },
+      { email: 'hugo@u.co', nombre: 'Hugo', registrado: true },
+      { email: 'ingrid@u.co', nombre: 'Íngrid', registrado: true },
+      { email: 'juan@u.co', nombre: 'Juan', registrado: true },
+      { email: 'pedro.a@u.co', nombre: 'Pedro', registrado: true },
+      { email: 'pedro.b@u.co', nombre: 'Pedro', registrado: true },
+    ]);
   });
 
   it('claveIntegrantes cambia al agregar o quitar integrantes, no al cambiar el líder', () => {

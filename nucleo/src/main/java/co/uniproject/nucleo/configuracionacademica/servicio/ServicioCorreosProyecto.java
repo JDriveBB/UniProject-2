@@ -182,6 +182,28 @@ public class ServicioCorreosProyecto {
                 .list();
     }
 
+    /**
+     * T-046: cuentas de ESTUDIANTE utilizables de la plataforma sin equipo en este proyecto y sin fila de ESTUDIANTE
+     * en correo_habilitado del proyecto (esas ya las devuelve estudiantes). Solo para el docente dueño. Ordenadas
+     * por nombre y correo.
+     */
+    @Transactional(readOnly = true)
+    public List<EstudianteDisponibleVista> disponibles(UsuarioAutenticado usuario, long idProyecto) {
+        permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
+        return jdbc.sql("SELECT u.email, u.nombre FROM usuario u "
+                        + "WHERE u.rol_plataforma = 'ESTUDIANTE' AND u.fecha_anonimizacion IS NULL "
+                        + "AND u.password_hash <> '!' "
+                        + "AND NOT EXISTS (SELECT 1 FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
+                        + "WHERE e.id_proyecto = :proyecto AND m.id_usuario = u.id_usuario) "
+                        + "AND NOT EXISTS (SELECT 1 FROM correo_habilitado c WHERE c.id_proyecto = :proyecto "
+                        + "AND c.rol_plataforma = 'ESTUDIANTE' "
+                        + "AND (c.id_usuario_registrado = u.id_usuario OR c.email = u.email)) "
+                        + "ORDER BY u.nombre, u.email")
+                .param("proyecto", idProyecto)
+                .query((rs, fila) -> new EstudianteDisponibleVista(rs.getString("email"), rs.getString("nombre")))
+                .list();
+    }
+
     @Transactional(readOnly = true)
     public List<MonitorVista> monitores(UsuarioAutenticado usuario, long idProyecto) {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));

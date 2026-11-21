@@ -8,7 +8,7 @@ export type Ficha = {
   resultado?: string;
 };
 
-/** Estudiante habilitado que se puede elegir con un clic en el campo de fichas (D-11). */
+/** Estudiante que se puede elegir con un clic en el campo de fichas (D-11, T-046). */
 export interface Sugerencia {
   email: string;
   /** null si aún no tiene cuenta. */
@@ -17,7 +17,6 @@ export interface Sugerencia {
 }
 
 export const AVISO_LIMITE_CORREOS = 'Máximo 50 correos por vez.';
-export const MAXIMO_SUGERENCIAS = 6;
 
 /** Textos de correos habilitados sin cuenta: los estudiantes quedan invitados al equipo (D-12). */
 export const TEXTO_HABILITADO_SIN_CUENTA = {
@@ -72,16 +71,15 @@ function normalizar(texto: string): string {
 }
 
 /**
- * Hasta MAXIMO_SUGERENCIAS sugerencias que aún no están en las fichas (sin distinguir mayúsculas) y cuyo nombre o
- * correo contiene el texto escrito (sin distinguir mayúsculas ni tildes). Texto vacío: las primeras.
+ * Sugerencias que aún no están en las fichas (sin distinguir mayúsculas) y cuyo nombre o correo contiene el texto
+ * escrito (sin distinguir mayúsculas ni tildes). Texto vacío: todas, en el orden recibido.
  */
 export function filtrarSugerencias(sugerencias: Sugerencia[], fichas: Ficha[], texto: string): Sugerencia[] {
   const enFichas = new Set(fichas.map((f) => f.correo.toLowerCase()));
   const buscado = normalizar(texto.trim());
   return sugerencias
     .filter((s) => !enFichas.has(s.email.toLowerCase()))
-    .filter((s) => buscado === '' || normalizar(`${s.nombre ?? ''} ${s.email}`).includes(buscado))
-    .slice(0, MAXIMO_SUGERENCIAS);
+    .filter((s) => buscado === '' || normalizar(`${s.nombre ?? ''} ${s.email}`).includes(buscado));
 }
 
 /** Devuelve las fichas sin error de formato. */

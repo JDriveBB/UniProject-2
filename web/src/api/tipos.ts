@@ -167,6 +167,12 @@ export interface EstudianteProyectoVista {
   idEquipoInvitado: number | null;
 }
 
+/** GET /api/proyectos/{id}/estudiantes-disponibles (T-046): cuenta de estudiante sin equipo ni habilitación en el proyecto. */
+export interface EstudianteDisponibleVista {
+  email: string;
+  nombre: string;
+}
+
 /** POST /api/proyectos/{id}/correos (K2): habilita correos de estudiantes o monitores en el proyecto. */
 export interface SolicitudCorreos {
   emails: string[];

@@ -89,9 +89,9 @@ describe('filtrarSugerencias', () => {
     expect(filtrarSugerencias([ines, ana, beto], [], 'nadie')).toEqual([]);
   });
 
-  it('devuelve como máximo 6', () => {
+  it('devuelve todas sin recortar aunque haya muchas', () => {
     const muchas = Array.from({ length: 9 }, (_, i) => ({ email: `e${i}@u.co`, nombre: null, registrado: false }));
-    expect(filtrarSugerencias(muchas, [], '')).toEqual(muchas.slice(0, 6));
+    expect(filtrarSugerencias(muchas, [], '')).toEqual(muchas);
   });
 });
 
