@@ -19,7 +19,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** RF12 (avance), RF13 (encargado o líder) y entrega1 §2.5 (una tarea bloqueada no avanza). */
+/** RF12 (avance), RF13 (encargado o líder) y entrega1 sección 2.5 (una tarea bloqueada no avanza). */
 @Service
 public class ServicioAvance {
 

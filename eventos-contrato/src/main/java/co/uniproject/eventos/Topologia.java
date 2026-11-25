@@ -1,6 +1,6 @@
 package co.uniproject.eventos;
 
-/** Nombres de la topología de RabbitMQ (plan §8.3). Se declaran en infra/rabbitmq/definitions.json, nunca en código. */
+/** Nombres de la topología de RabbitMQ (plan sección 8.3). Se declaran en infra/rabbitmq/definitions.json, nunca en código. */
 public final class Topologia {
     private Topologia() {}
     public static final String EXCHANGE_EVENTOS = "uniproject.eventos";

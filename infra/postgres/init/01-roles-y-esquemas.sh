@@ -1,5 +1,5 @@
 #!/bin/bash
-# Roles de las aplicaciones y esquema del agente (decisiones-tecnicas-java §5).
+# Roles de las aplicaciones y esquema del agente (decisiones-tecnicas-java sección 5).
 # Solo se ejecuta cuando el volumen de datos está vacío. Para repetirlo: dc down -v
 set -euo pipefail
 : "${NUCLEO_DB_PASSWORD:?falta NUCLEO_DB_PASSWORD}"

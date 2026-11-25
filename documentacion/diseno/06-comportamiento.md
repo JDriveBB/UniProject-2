@@ -1,6 +1,6 @@
 # 06. Comportamiento y flujos dinámicos — UniProject
 
-Este documento rehace los diagramas de estados, secuencia, actividades y casos de uso exigidos en `entrega1.md` §2.7 **a partir del comportamiento real verificado en el código fuente**, señalando expresamente las diferencias frente a lo planeado inicialmente.
+Este documento rehace los diagramas de estados, secuencia, actividades y casos de uso exigidos en `entrega1.md` sección 2.7 **a partir del comportamiento real verificado en el código fuente**, señalando expresamente las diferencias frente a lo planeado inicialmente.
 
 ---
 

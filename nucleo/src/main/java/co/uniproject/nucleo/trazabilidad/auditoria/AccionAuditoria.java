@@ -1,6 +1,6 @@
 package co.uniproject.nucleo.trazabilidad.auditoria;
 
-/** Valores de log_auditoria.accion (entrega1 §2.6: reasignaciones, solicitudes de ayuda, cambios de estado, accesos). */
+/** Valores de log_auditoria.accion (entrega1 sección 2.6: reasignaciones, solicitudes de ayuda, cambios de estado, accesos). */
 public enum AccionAuditoria {
     LOGIN_EXITOSO,
     LOGIN_FALLIDO,

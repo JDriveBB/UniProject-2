@@ -83,7 +83,7 @@ export function filtrarPorHito<T extends Pick<EntradaHistorial, 'entidad' | 'idR
   idHitoEquipo: number,
   tareas: Pick<TareaVista, 'idTarea'>[],
 ): T[] {
-  // shortcut: las tareas ya borradas no están en el tablero y sus cambios no salen en este filtro; si se necesita, filtrar en el núcleo (§15).
+  // shortcut: las tareas ya borradas no están en el tablero y sus cambios no salen en este filtro; si se necesita, filtrar en el núcleo (sección 15).
   const idsTareas = new Set(tareas.map((t) => t.idTarea));
   return entradas.filter((e) => {
     if (e.entidad === 'hito_equipo' && e.idRegistro === idHitoEquipo) {

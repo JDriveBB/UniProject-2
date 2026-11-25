@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Botones "Vincular Telegram" y "Desvincular" del perfil (D5, D7, plan §8.8). */
+/** Botones "Vincular Telegram" y "Desvincular" del perfil (D5, D7, plan sección 8.8). */
 @RestController
 @RequestMapping("/api/perfil/telegram")
 public class ControladorPerfilTelegram {

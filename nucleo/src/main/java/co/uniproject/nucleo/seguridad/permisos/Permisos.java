@@ -3,7 +3,7 @@ package co.uniproject.nucleo.seguridad.permisos;
 import co.uniproject.nucleo.comun.error.AccesoDenegadoException;
 
 /**
- * Reglas de acceso del dominio (entrega1 §2.1 restricción 4a y 4b, RF13, RF14). Un id inexistente responde false
+ * Reglas de acceso del dominio (entrega1 sección 2.1 restricción 4a y 4b, RF13, RF14). Un id inexistente responde false
  * (403, no 404: no se revela qué ids existen). El administrador no tiene acceso académico.
  */
 public interface Permisos {
@@ -52,7 +52,7 @@ public interface Permisos {
     /** Líder del equipo: crear tareas del hito y marcar prerrequisitos críticos. */
     boolean puedeGestionarHitoEquipo(long idUsuario, long idHitoEquipo);
 
-    /** Cualquier miembro del equipo (entrega1 §2.2). RF7 lo valida el servicio. */
+    /** Cualquier miembro del equipo (entrega1 sección 2.2). RF7 lo valida el servicio. */
     boolean puedeEnviarHito(long idUsuario, long idHitoEquipo);
 
     /** Docente dueño del proyecto del hito (RF8). */

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Lo que el usuario hace desde su perfil (D5, D7). La vinculación termina en Telegram (/interno, plan §8.8); aquí se
+ * Lo que el usuario hace desde su perfil (D5, D7). La vinculación termina en Telegram (/interno, plan sección 8.8); aquí se
  * audita la petición del código (nunca el código) y la desvinculación (restricción 4e, Ley 1581).
  */
 @Service

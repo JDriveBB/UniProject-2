@@ -1,6 +1,6 @@
 package co.uniproject.agente.destinatarios;
 
-/** Qué plantilla recibe cada destinatario. El nombre del archivo es clave + sufijo (plan §8.6). */
+/** Qué plantilla recibe cada destinatario. El nombre del archivo es clave + sufijo (plan sección 8.6). */
 public enum Variante {
     UNICA(""), NUEVO("-nuevo"), ANTERIOR("-anterior");
 

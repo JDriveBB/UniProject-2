@@ -20,7 +20,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * Errores de la API del dominio en un solo formato (RespuestaError). No aplica a /interno/**: el controlador interno
- * de Telegram está fuera de basePackages y conserva sus códigos. Los 403 quedan en log_auditoria (entrega1 §2.6).
+ * de Telegram está fuera de basePackages y conserva sus códigos. Los 403 quedan en log_auditoria (entrega1 sección 2.6).
  */
 @RestControllerAdvice(basePackages = {
         "co.uniproject.nucleo.comun",

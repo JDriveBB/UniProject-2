@@ -95,7 +95,7 @@ public class EnviadorTelegramOkHttp implements EnviadorTelegram {
     }
 
     /**
-     * Motivo de un 400 de la Bot API (decisiones-tecnicas-java §11). Solo el chat es culpa del destinatario;
+     * Motivo de un 400 de la Bot API (decisiones-tecnicas-java sección 11). Solo el chat es culpa del destinatario;
      * lo demás (HTML, botón o un 400 que no se reconoce) es del mensaje y va a fallidos, donde queda visible.
      * Devuelve una etiqueta fija: la descripción de Telegram no se registra (trae la URL del botón).
      */

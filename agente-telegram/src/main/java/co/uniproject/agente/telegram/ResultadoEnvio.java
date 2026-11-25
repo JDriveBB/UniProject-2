@@ -1,6 +1,6 @@
 package co.uniproject.agente.telegram;
 
-/** Resultado de un envío (plan §8.5; decisiones-tecnicas-java §4). */
+/** Resultado de un envío (plan sección 8.5; decisiones-tecnicas-java sección 4). */
 public enum ResultadoEnvio {
     /** Telegram aceptó el mensaje. */
     ENVIADO,

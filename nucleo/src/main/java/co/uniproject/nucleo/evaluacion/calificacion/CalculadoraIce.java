@@ -11,7 +11,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Índice de Contribución Efectiva y nota individual sugerida (entrega1 §2.5 y §2.6; plan-dominio C1). Java puro.
+ * Índice de Contribución Efectiva y nota individual sugerida (entrega1 sección 2.5 y sección 2.6; plan-dominio C1). Java puro.
  * aporte_i = Σ horas_estimadas × f (f = 1 a tiempo, 0,5 tarde); ICE_i = aporte_i · n / Σ aporte (todos 1 si Σ = 0);
  * nota_i = min(5, grupal · (1 − α + α · ICE_i)) con α = 0,5. Es una sugerencia: la nota final la fija el docente.
  */

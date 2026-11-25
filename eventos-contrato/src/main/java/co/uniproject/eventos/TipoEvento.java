@@ -4,7 +4,7 @@ import co.uniproject.eventos.datos.*;
 import java.util.Arrays;
 import java.util.Optional;
 
-/** Los seis eventos de UniProject (plan §5) y los dos de cuenta (bloque 28). La clave es también la clave de enrutamiento en uniproject.eventos. */
+/** Los seis eventos de UniProject (plan sección 5) y los dos de cuenta (bloque 28). La clave es también la clave de enrutamiento en uniproject.eventos. */
 public enum TipoEvento {
     TAREA_RUTA_CRITICA_RIESGO("tarea.ruta_critica.riesgo", TareaRutaCriticaRiesgo.class),
     EQUIPO_INACTIVIDAD("equipo.inactividad", EquipoInactividad.class),

@@ -1,4 +1,4 @@
-# UniProject — Docker Compose (plan §8.9; decisiones-tecnicas-java §5).
+# UniProject — Docker Compose (plan sección 8.9; decisiones-tecnicas-java sección 5).
 # Las variables UNIPROJECT_PUERTO_*, UNIPROJECT_PUBLICAR_WEB, UNIPROJECT_ETIQUETA_IMAGEN y UNIPROJECT_PROGRAMADOR_CRON*
 # son opcionales; sin ellas todo queda como antes. Las usa infra/pruebas/sesion-pruebas.ps1.
 # Desde la raíz del repositorio:

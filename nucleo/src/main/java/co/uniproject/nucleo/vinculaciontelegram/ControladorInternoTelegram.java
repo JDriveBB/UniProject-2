@@ -55,7 +55,7 @@ public class ControladorInternoTelegram {
     }
 
     /**
-     * Dos confirmaciones simultáneas del mismo chat (decisiones-tecnicas-java §12): la segunda choca con
+     * Dos confirmaciones simultáneas del mismo chat (decisiones-tecnicas-java sección 12): la segunda choca con
      * UNIQUE (usuario.telegram_chat_id) y su transacción se deshace, así que el código sigue sin usar.
      * Conflicto transitorio: 409 sin cuerpo y una línea de log sin datos (ni chat, ni código, ni Detail).
      */

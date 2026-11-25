@@ -16,7 +16,7 @@ Fecha: 2026-11-18 · Base: commit `e0a6b1e` (rama `main`) · Entorno: stack de p
 | RNF2 con k6 (2026-11-20, 500 VUs en evaluación, 277 s) | 56 861 GET (205 req/s), p95 4,4 ms, p99 6,2 ms, máximo 74,9 ms; 12 fallos locales de conexión (0,02 %, 0 ms) → CUMPLE RNF2 ([evidencias-rnf.md](evidencias-rnf.md), [rnf2-resumen.txt](evidencias/rnf2-resumen.txt)) |
 | RNF3 recuperación ante caída (2026-11-20, `SIGTERM` al PID 1) | Docker reinicia solo (`restart: unless-stopped`, 1 reinicio) y responde en ≈ 7 s (7 de 360 sondeos fallidos en 6 min; [evidencias-rnf.md](evidencias-rnf.md), [rnf3-resultado.json](evidencias/rnf3-resultado.json)) |
 | RNF5 usabilidad (2026-11-20, Puppeteer como Diego en Beta) | 4 clics (`POST .../tareas` 201 + `POST .../dependencias` 200) en 1,5 s ([evidencias-rnf.md](evidencias-rnf.md), [rnf5-resultado.json](evidencias/rnf5-resultado.json)) |
-| Auditoría de código backend (66 endpoints) y frontend/contratos (RF/RNF) | ver §2 y §3 |
+| Auditoría de código backend (66 endpoints) y frontend/contratos (RF/RNF) | ver sección 2 y sección 3 |
 | No ejecutado | E2E en suite automática (exige token de Telegram vacío), prueba real del bot (requiere interacción humana), RNF2 distribuido entre máquinas distintas y RNF3 durante semanas pico reales (8 y 16) |
 
 ## 2. Hallazgos y decisión del usuario (2026-11-18)
@@ -36,12 +36,12 @@ Fecha: 2026-11-18 · Base: commit `e0a6b1e` (rama `main`) · Entorno: stack de p
 | 12 | INFO | RF10: el panel marca rojo desde 48 h exactas; el requisito dice «más de 48 h». RNF2/RNF3 sin evidencia de pruebas a escala real. | Corregido (T-037); evidencias RNF2/RNF3 añadidas el 2026-11-20 ([evidencias-rnf.md](evidencias-rnf.md)). |
 
 ## 3. Cumplimiento de requisitos (entrega 1)
-RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10 cumple. No existe RF16. RNF1 cumple (medido en §1). RNF2 cumple (medido con k6, 500 VUs en entorno local; [evidencias-rnf.md](evidencias-rnf.md), [rnf2-resumen.txt](evidencias/rnf2-resumen.txt)). RNF3 cumple (medido como recuperación automática ante caída en ≈ 7 s; [evidencias-rnf.md](evidencias-rnf.md), [rnf3-resultado.json](evidencias/rnf3-resultado.json)). RNF4 cumple (bcrypt, costo 12). RNF5 cumple (medido en 4 clics en 1,5 s; [evidencias-rnf.md](evidencias-rnf.md), [rnf5-resultado.json](evidencias/rnf5-resultado.json)). Restricciones 4a–4e, 5 y 6 (Ley 1581: consentimiento y supresión) cumplen.
+RF1–RF9 y RF11–RF15 cumplen (pantalla y endpoint). RF10 cumple. No existe RF16. RNF1 cumple (medido en sección 1). RNF2 cumple (medido con k6, 500 VUs en entorno local; [evidencias-rnf.md](evidencias-rnf.md), [rnf2-resumen.txt](evidencias/rnf2-resumen.txt)). RNF3 cumple (medido como recuperación automática ante caída en ≈ 7 s; [evidencias-rnf.md](evidencias-rnf.md), [rnf3-resultado.json](evidencias/rnf3-resultado.json)). RNF4 cumple (bcrypt, costo 12). RNF5 cumple (medido en 4 clics en 1,5 s; [evidencias-rnf.md](evidencias-rnf.md), [rnf5-resultado.json](evidencias/rnf5-resultado.json)). Restricciones 4a–4e, 5 y 6 (Ley 1581: consentimiento y supresión) cumplen.
 
 ## 4. Riesgos aceptados y pendientes documentados
 - Ítems de los hallazgos 8 y 9.
 - Alcance de las mediciones RNF2 y RNF3: ejecutadas en un único PC local (cliente k6 y servidor en la misma máquina) y como recuperación ante caída de proceso (6 min), no como prueba distribuida ni de semanas pico reales ([evidencias-rnf.md](evidencias-rnf.md)).
-- Anonimización tras supresión de cuenta (Ley 1581): la anonimización de URL de evidencias `ENLACE` quedó resuelta en T-042 (ver §5); quedan como límites conocidos los títulos/descripciones de tareas creadas como líder y lo ya publicado en RabbitMQ o cola de fallidos.
+- Anonimización tras supresión de cuenta (Ley 1581): la anonimización de URL de evidencias `ENLACE` quedó resuelta en T-042 (ver sección 5); quedan como límites conocidos los títulos/descripciones de tareas creadas como líder y lo ya publicado en RabbitMQ o cola de fallidos.
 
 ## 5. Estado de las correcciones (2026-11-18)
 Auditoría posterior a las correcciones (revisor, 2026-11-18): aprobado, sin hallazgos altos ni regresiones; 1 media y 3 bajas que cubre el bloque 44 (ver tabla).

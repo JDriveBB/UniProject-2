@@ -52,7 +52,7 @@ public class ServicioDependencias {
         this.reloj = reloj;
     }
 
-    /** Caso de uso "Establecer dependencias" (entrega1 §2.7) con su flujo alterno de dependencia circular. */
+    /** Caso de uso "Establecer dependencias" (entrega1 sección 2.7) con su flujo alterno de dependencia circular. */
     @Transactional
     public ResultadoDependenciasVista agregar(UsuarioAutenticado usuario, long idTarea, SolicitudDependencias solicitud) {
         permisos.exigir(permisos.puedeGestionarTarea(usuario.idUsuario(), idTarea));

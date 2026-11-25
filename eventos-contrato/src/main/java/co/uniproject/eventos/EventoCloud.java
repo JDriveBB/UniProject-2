@@ -7,7 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Evento CloudEvents 1.0 en modo estructurado (plan §8.2). */
+/** Evento CloudEvents 1.0 en modo estructurado (plan sección 8.2). */
 public record EventoCloud(String specversion, UUID id, String source, String type,
                           Instant time, String datacontenttype, DatosEvento data) {
 

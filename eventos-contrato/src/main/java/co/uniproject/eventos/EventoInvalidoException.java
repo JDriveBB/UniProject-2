@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 
 /**
  * El evento no es JSON, no tiene un type conocido o no cumple su JSON Schema. Error permanente.
- * El mensaje se sanea al construirse (decisiones-tecnicas-java §12): el type y los errores del esquema vienen
+ * El mensaje se sanea al construirse (decisiones-tecnicas-java sección 12): el type y los errores del esquema vienen
  * del cuerpo recibido y el consumidor registra getMessage(); sin controles ni saltos de línea no se pueden
  * falsificar líneas de log.
  */

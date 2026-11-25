@@ -1,18 +1,18 @@
 # Evidencias de requisitos no funcionales (RNF1–RNF5) — UniProject
 
-Este documento consolida la evidencia medida y verificada en código para los cinco requisitos no funcionales de la entrega 1 (`entrega1.md` §2.4).
+Este documento consolida la evidencia medida y verificada en código para los cinco requisitos no funcionales de la entrega 1 (`entrega1.md` sección 2.4).
 
 - **Entorno de las mediciones (RNF2, RNF3 y RNF5):** ejecutadas el `2026-11-20` en un PC personal (Windows 11, Docker Desktop) contra el stack de pruebas aislado (`infra/pruebas/sesion-pruebas.ps1 -Accion Levantar`, proyecto `uniproject-pruebas`, `http://127.0.0.1:18080`, datos demo).
-- **Medición de RNF1:** ejecutada el `2026-11-18` sobre el mismo stack de pruebas (`http://127.0.0.1:18080`, commit base `e0a6b1e`) y documentada en [`informe-auditoria-final.md`](informe-auditoria-final.md) §1, respaldada además por pruebas automáticas en backend y frontend.
+- **Medición de RNF1:** ejecutada el `2026-11-18` sobre el mismo stack de pruebas (`http://127.0.0.1:18080`, commit base `e0a6b1e`) y documentada en [`informe-auditoria-final.md`](informe-auditoria-final.md) sección 1, respaldada además por pruebas automáticas en backend y frontend.
 - **Verificación de RNF4:** comprobada en la configuración de seguridad y en las pruebas de integración con PostgreSQL real (Testcontainers).
 
 ---
 
 ## Tabla resumen
 
-| RNF | Meta (`entrega1.md` §2.4) | Resultado medido / verificado | Cumple | Evidencia principal |
+| RNF | Meta (`entrega1.md` sección 2.4) | Resultado medido / verificado | Cumple | Evidencia principal |
 |---|---|---|---|---|
-| **RNF1. Rendimiento** | Ruta crítica de hasta 150 tareas en ≤ 2 s en el cliente | Servidor: **`15–30 ms`**; grafo renderizado en cliente: **`140–176 ms`** | **Sí** | [`informe-auditoria-final.md`](informe-auditoria-final.md) §1 |
+| **RNF1. Rendimiento** | Ruta crítica de hasta 150 tareas en ≤ 2 s en el cliente | Servidor: **`15–30 ms`**; grafo renderizado en cliente: **`140–176 ms`** | **Sí** | [`informe-auditoria-final.md`](informe-auditoria-final.md) sección 1 |
 | **RNF2. Concurrencia** | 500 usuarios simultáneos en evaluación con respuesta ≤ 3 s | 500 VUs (277 s), 56 861 `GET` (205 req/s): **`p95 = 4,4 ms`**, **`p99 = 6,2 ms`**, **máx `74,9 ms`**; 12 fallos de conexión local (`0,02 %`, `0 ms`) | **Sí** (entorno local) | [`rnf2-resumen.txt`](evidencias/rnf2-resumen.txt) |
 | **RNF3. Disponibilidad** | Uptime mínimo de 99,5 % en semanas pico (8 y 16) | Caída por `SIGTERM` al PID 1 del núcleo: recuperación automática en **`≈ 7 s`** (`7` de `360` sondeos fallidos en 6 min, `1` reinicio Docker; presupuesto 99,5 % = `50,4 min/semana`) + diseño tolerante a fallos | **Sí** (recuperación medida; ver alcance) | [`rnf3-resultado.json`](evidencias/rnf3-resultado.json) |
 | **RNF4. Seguridad** | Contraseñas de todos los actores con hash bcrypt y costo ≥ 12 | `new BCryptPasswordEncoder(12)` verificado en código y con prefijo `$2[aby]$12$` en PostgreSQL real | **Sí** | [`ConfiguracionSeguridad.java`](../../nucleo/src/main/java/co/uniproject/nucleo/seguridad/ConfiguracionSeguridad.java#L85-L89) |
@@ -27,17 +27,17 @@ Este documento consolida la evidencia medida y verificada en código para los ci
   - En el servidor, [`MotorDependencias.java`](../../nucleo/src/main/java/co/uniproject/nucleo/ejecucion/dependencias/MotorDependencias.java) ejecuta el cálculo CPM en memoria en tiempo lineal $O(V + E)$ (orden topológico de Kahn y pasadas adelante/atrás) y [`ControladorHitosEquipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/ejecucion/web/ControladorHitosEquipo.java) lo expone en `GET /api/hitos-equipo/{idHitoEquipo}/ruta-critica`.
   - En el cliente, [`disposicion.ts`](../../web/src/tablero/disposicion.ts) (`disponerRed`) ubica los nodos por niveles en $O(V + E)$ y [`RutaCritica.tsx`](../../web/src/paginas/RutaCritica.tsx) renderiza el grafo en SVG nativo sin librerías externas.
 - **Método y cómo repetirlo:**
-  - **Medición en el stack de pruebas (`2026-11-18`):** registrada en [`informe-auditoria-final.md`](informe-auditoria-final.md) §1 al consultar y renderizar en navegador un hito con **150 tareas con dependencias** contra el stack de pruebas (`http://127.0.0.1:18080`, commit `e0a6b1e`; no hay un guion separado en `infra/pruebas/` para RNF1). Para observarlo de nuevo: levantar la sesión de pruebas (`.\infra\pruebas\sesion-pruebas.ps1 -Accion Levantar`), poblar un hito con 150 tareas encadenadas y abrir `/hitos/{idHitoEquipo}/ruta-critica` midiendo en DevTools el tiempo de la petición y del renderizado SVG.
+  - **Medición en el stack de pruebas (`2026-11-18`):** registrada en [`informe-auditoria-final.md`](informe-auditoria-final.md) sección 1 al consultar y renderizar en navegador un hito con **150 tareas con dependencias** contra el stack de pruebas (`http://127.0.0.1:18080`, commit `e0a6b1e`; no hay un guion separado en `infra/pruebas/` para RNF1). Para observarlo de nuevo: levantar la sesión de pruebas (`.\infra\pruebas\sesion-pruebas.ps1 -Accion Levantar`), poblar un hito con 150 tareas encadenadas y abrir `/hitos/{idHitoEquipo}/ruta-critica` midiendo en DevTools el tiempo de la petición y del renderizado SVG.
   - **Pruebas automáticas reproducibles en el repositorio:**
     ```powershell
     ./mvnw -pl nucleo test -Dtest=MotorDependenciasTest#cientoCincuentaTareasEnMenosDeDosSegundos
     npm --prefix web test -- src/tablero/disposicion.test.ts
     ```
 - **Resultado:**
-  - Medición sobre stack real ([`informe-auditoria-final.md`](informe-auditoria-final.md) §1): **`15–30 ms`** en servidor y **`140–176 ms`** en renderizado del grafo en el cliente (límite: **`2000 ms`**).
+  - Medición sobre stack real ([`informe-auditoria-final.md`](informe-auditoria-final.md) sección 1): **`15–30 ms`** en servidor y **`140–176 ms`** en renderizado del grafo en el cliente (límite: **`2000 ms`**).
   - Pruebas automáticas: [`MotorDependenciasTest.java`](../../nucleo/src/test/java/co/uniproject/nucleo/ejecucion/dependencias/MotorDependenciasTest.java) afirma la ejecución completa de `rutaCritica` y `evaluarRiesgo` sobre 150 tareas en `< 2 s`; [`disposicion.test.ts`](../../web/src/tablero/disposicion.test.ts) dispone 150 tareas en 15 niveles con 1400 dependencias en `< 100 ms`.
 - **Veredicto:** **Cumple RNF1**.
-- **Evidencia:** [`informe-auditoria-final.md`](informe-auditoria-final.md) §1, [`MotorDependenciasTest.java`](../../nucleo/src/test/java/co/uniproject/nucleo/ejecucion/dependencias/MotorDependenciasTest.java) y [`disposicion.test.ts`](../../web/src/tablero/disposicion.test.ts).
+- **Evidencia:** [`informe-auditoria-final.md`](informe-auditoria-final.md) sección 1, [`MotorDependenciasTest.java`](../../nucleo/src/test/java/co/uniproject/nucleo/ejecucion/dependencias/MotorDependenciasTest.java) y [`disposicion.test.ts`](../../web/src/tablero/disposicion.test.ts).
 
 ---
 

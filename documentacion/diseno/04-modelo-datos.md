@@ -519,7 +519,7 @@ El agente de Telegram opera con el rol `uniproject_agente` sobre el esquema excl
 
 ## 4.9. Diferencias frente al modelo de 19 tablas de la entrega 1
 
-En `entrega1.md` §2.7 se planteaba un modelo relacional de **19 tablas**, que posteriormente se amplió a **20 tablas** en el diagrama previo al desarrollo ([`Archivos_contexto/diagrama-bd-actual.md`](../contexto/diagrama-bd-actual.md), cuyo título conservaba el rótulo «19 tablas»). En el sistema construido existen hoy **30 tablas de aplicación** (**29 en el esquema `public`** del núcleo y **1 en el esquema `agente`** del bot de Telegram):
+En `entrega1.md` sección 2.7 se planteaba un modelo relacional de **19 tablas**, que posteriormente se amplió a **20 tablas** en el diagrama previo al desarrollo ([`Archivos_contexto/diagrama-bd-actual.md`](../contexto/diagrama-bd-actual.md), cuyo título conservaba el rótulo «19 tablas»). En el sistema construido existen hoy **30 tablas de aplicación** (**29 en el esquema `public`** del núcleo y **1 en el esquema `agente`** del bot de Telegram):
 
 | Cambio respecto a la entrega 1 / diagrama vigente | Qué se añadió o modificó | Por qué se cambió |
 |---|---|---|

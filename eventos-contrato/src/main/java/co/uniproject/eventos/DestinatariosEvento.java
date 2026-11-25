@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Quién recibe cada evento (plan §5 y §8.6, RF6). Una sola regla para la bandeja del núcleo (decisión N1) y para el
+ * Quién recibe cada evento (plan sección 5 y sección 8.6, RF6). Una sola regla para la bandeja del núcleo (decisión N1) y para el
  * agente de Telegram: incluye a quien no vinculó Telegram (chatId null) y no repite personas (gana la primera aparición).
  */
 public final class DestinatariosEvento {

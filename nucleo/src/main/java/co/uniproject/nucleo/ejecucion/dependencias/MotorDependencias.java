@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Motor de dependencias (entrega1 §2.6; RF3, RF9, restricción 4d, RNF1). Java puro: sin Spring ni base de datos.
+ * Motor de dependencias (entrega1 sección 2.6; RF3, RF9, restricción 4d, RNF1). Java puro: sin Spring ni base de datos.
  * Recibe las tareas ya cargadas (las de un hito o las de un proyecto) y no guarda estado. O(tareas + dependencias).
  */
 public final class MotorDependencias {
@@ -161,7 +161,7 @@ public final class MotorDependencias {
         return List.copyOf(resultado);
     }
 
-    /** entrega1 §2.6: una tarea está bloqueada si alguno de sus prerrequisitos no está al 100 %. Ordenado por id. */
+    /** entrega1 sección 2.6: una tarea está bloqueada si alguno de sus prerrequisitos no está al 100 %. Ordenado por id. */
     public static Set<Long> bloqueadas(Collection<TareaPlan> tareas) {
         Map<Long, TareaPlan> porId = indexar(tareas);
         Set<Long> resultado = new TreeSet<>();
@@ -177,7 +177,7 @@ public final class MotorDependencias {
     }
 
     /**
-     * Caso de uso "Establecer dependencias" (entrega1 §2.7): un candidato es cíclico si es la propia tarea o si
+     * Caso de uso "Establecer dependencias" (entrega1 sección 2.7): un candidato es cíclico si es la propia tarea o si
      * depende, directa o recursivamente, de ella. Los demás se aceptan (no se influyen entre sí).
      */
     public static ResultadoDependencias agregarPrerrequisitos(

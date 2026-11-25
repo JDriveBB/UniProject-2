@@ -4,7 +4,7 @@ import co.uniproject.eventos.datos.DatosEvento;
 import java.util.UUID;
 
 /**
- * Puerta de entrada a la outbox (plan §7.2 y §8.1). Los servicios de negocio la llaman DENTRO de su transacción:
+ * Puerta de entrada a la outbox (plan sección 7.2 y sección 8.1). Los servicios de negocio la llaman DENTRO de su transacción:
  * el evento queda guardado en evento_saliente si y solo si el cambio de negocio se confirma.
  */
 public interface RegistroEventos {
