@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { registrarCuenta } from '../api/cuentas';
@@ -7,7 +7,7 @@ import { Boton } from '../componentes/Boton';
 import { Campo } from '../componentes/Campo';
 import { Casilla } from '../componentes/Casilla';
 import { MarcoAcceso } from '../componentes/MarcoAcceso';
-import { codigoDeLaUrl } from '../cuentas/enlace';
+import { codigoDeLaUbicacion } from '../cuentas/enlace';
 import { hayErrores, mensajeErrorRegistro, solicitudDeRegistro, validarRegistro } from '../cuentas/validacion';
 import type { DatosRegistro, ErroresRegistro } from '../cuentas/validacion';
 import { rutas } from '../rutas';
@@ -18,18 +18,30 @@ const VACIO: DatosRegistro = { nombre: '', email: '', contrasena: '', confirmaci
 /** P01b. Solo crea la cuenta con un enlace de invitación válido (T-041); no inicia sesión (decisión 26a-5). */
 export function Registro() {
   const { sesion } = useSesion();
-  const { search } = useLocation();
+  const { hash, search } = useLocation();
   const navegar = useNavigate();
   const [datos, setDatos] = useState<DatosRegistro>(VACIO);
   const [intentado, setIntentado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [codigo, setCodigo] = useState<string | null>(() => codigoDeLaUbicacion(hash, search));
+
+  // El código vive solo en el estado: se borra de la URL (historial) sin recargar.
+  useEffect(() => {
+    if (hash === '' && search === '') {
+      return;
+    }
+    const nuevo = codigoDeLaUbicacion(hash, search);
+    if (nuevo !== null) {
+      setCodigo(nuevo);
+    }
+    window.history.replaceState(window.history.state, '', rutas.registro());
+  }, [hash, search]);
 
   if (sesion.estado === 'autenticado') {
     return <Navigate to="/" replace />;
   }
 
-  const codigo = codigoDeLaUrl(search);
   const errores: ErroresRegistro = intentado ? validarRegistro(datos) : {};
 
   function cambiar<K extends keyof DatosRegistro>(campo: K, valor: DatosRegistro[K]) {
