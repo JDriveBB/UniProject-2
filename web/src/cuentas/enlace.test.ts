@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ErrorApi } from '../api/cliente';
 import {
+  codigoDeLaUbicacion,
   codigoDeLaUrl,
   copiarAlPortapapeles,
   enlaceDeRegistro,
@@ -12,13 +13,22 @@ const C43 = 'A'.repeat(20) + '-_' + 'b'.repeat(21);
 
 describe('enlace de invitación para registro', () => {
   it('arma la URL de registro usando URLSearchParams', () => {
-    expect(enlaceDeRegistro('http://localhost:8080', C43)).toBe(`http://localhost:8080/registro?codigo=${C43}`);
+    expect(enlaceDeRegistro('http://localhost:8080', C43)).toBe(`http://localhost:8080/registro#codigo=${C43}`);
     expect(enlaceDeRegistro('https://uniproject.edu.co/', C43)).toBe(
-      `https://uniproject.edu.co/registro?codigo=${C43}`,
+      `https://uniproject.edu.co/registro#codigo=${C43}`,
     );
     expect(enlaceDeRegistro('http://localhost:8080', 'a+b/c=')).toBe(
-      'http://localhost:8080/registro?codigo=a%2Bb%2Fc%3D',
+      'http://localhost:8080/registro#codigo=a%2Bb%2Fc%3D',
     );
+  });
+
+  it('lee el código de la ubicación: fragmento, query antigua, vacío o malformado', () => {
+    expect(codigoDeLaUbicacion(`#codigo=${C43}`, '')).toBe(C43);
+    expect(codigoDeLaUbicacion('', `?codigo=${C43}`)).toBe(C43);
+    expect(codigoDeLaUbicacion(`#codigo=${C43}`, `?codigo=${'z'.repeat(43)}`)).toBe(C43);
+    expect(codigoDeLaUbicacion('', '')).toBeNull();
+    expect(codigoDeLaUbicacion('#codigo=corto', '?codigo=%')).toBeNull();
+    expect(codigoDeLaUbicacion(`#codigo=${C43}x`, '')).toBeNull();
   });
 
   it('extrae el código válido de la query de la URL o devuelve null', () => {
@@ -47,13 +57,13 @@ describe('enlace de invitación para registro', () => {
   it('copiarAlPortapapeles devuelve true al copiar y false si falta o falla', async () => {
     let escrito = '';
     expect(
-      await copiarAlPortapapeles('https://ejemplo/registro?codigo=1', {
+      await copiarAlPortapapeles('https://ejemplo/registro#codigo=1', {
         async writeText(texto) {
           escrito = texto;
         },
       }),
     ).toBe(true);
-    expect(escrito).toBe('https://ejemplo/registro?codigo=1');
+    expect(escrito).toBe('https://ejemplo/registro#codigo=1');
 
     expect(await copiarAlPortapapeles('x', undefined)).toBe(false);
     expect(
@@ -77,7 +87,7 @@ describe('enlace de invitación para registro', () => {
       ok: true,
       enlace: {
         email: 'ana@uninorte.edu.co',
-        url: `http://localhost:8080/registro?codigo=${C43}`,
+        url: `http://localhost:8080/registro#codigo=${C43}`,
         texto:
           'Enlace copiado. Vence el 20/12/2026. Envíalo solo a ana@uninorte.edu.co: sirve una vez y el anterior deja de servir.',
       },
@@ -94,7 +104,7 @@ describe('enlace de invitación para registro', () => {
       ok: true,
       enlace: {
         email: 'ana@uninorte.edu.co',
-        url: `http://localhost:8080/registro?codigo=${C43}`,
+        url: `http://localhost:8080/registro#codigo=${C43}`,
         texto:
           'Copia el enlace de abajo. Vence el 20/12/2026. Envíalo solo a ana@uninorte.edu.co: sirve una vez y el anterior deja de servir.',
       },

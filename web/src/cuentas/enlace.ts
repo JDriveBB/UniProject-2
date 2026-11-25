@@ -2,7 +2,7 @@ import { ErrorApi } from '../api/cliente';
 import type { EnlaceRegistro } from '../api/tipos';
 import { fechaCorta } from '../formato';
 import { rutas } from '../rutas';
-import { PATRON_CODIGO } from './recuperacion';
+import { PATRON_CODIGO, codigoDelFragmento } from './recuperacion';
 
 export interface Portapapeles {
   writeText(texto: string): Promise<void>;
@@ -16,14 +16,14 @@ export interface EnlaceCopiado {
 
 export type ResultadoEnlace = { ok: true; enlace: EnlaceCopiado } | { ok: false; mensaje: string; recargar: boolean };
 
-/** Construye la URL completa de registro codificando el código con URLSearchParams. */
+/** Construye la URL completa de registro con el código en el fragmento (#codigo=), que no viaja al servidor ni en el Referer. */
 export function enlaceDeRegistro(origen: string, codigo: string): string {
   const base = origen.replace(/\/+$/, '');
   const params = new URLSearchParams({ codigo });
-  return `${base}${rutas.registro()}?${params.toString()}`;
+  return `${base}${rutas.registro()}#${params.toString()}`;
 }
 
-/** Lee `codigo` de la query de `/registro`; devuelve null si falta o no tiene 43 caracteres Base64 URL. */
+/** Lee `codigo` de la query (formato antiguo `?codigo=`) de `/registro`; devuelve null si falta o no tiene 43 caracteres Base64 URL. */
 export function codigoDeLaUrl(search: string): string | null {
   const limpio = search.startsWith('?') ? search.slice(1) : search;
   try {
@@ -36,6 +36,11 @@ export function codigoDeLaUrl(search: string): string | null {
     // No lanza
   }
   return null;
+}
+
+/** Lee el código de la ubicación: primero el fragmento, y si no hay, la query del formato antiguo. */
+export function codigoDeLaUbicacion(hash: string, search: string): string | null {
+  return codigoDelFragmento(hash) ?? codigoDeLaUrl(search);
 }
 
 /** Mensaje de confirmación tras generar el enlace de invitación, indicando si se copió al portapapeles. */
