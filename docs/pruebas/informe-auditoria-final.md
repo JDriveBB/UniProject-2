@@ -61,3 +61,19 @@ Auditoría posterior a las correcciones (revisor, 2026-11-18): aprobado, sin hal
 - Destino distinto de `tarea.reasignada` para el encargado anterior (bandeja `/tareas/{id}`, Telegram `/mis-tareas`): no corregido; exige guardar el papel del destinatario en la notificación o consultar el encargado actual. Gravedad baja.
 - Si hay un `<dialog>` abierto, el aviso de sesión terminada queda detrás hasta cerrarlo.
 - La supresión no anonimiza la retroalimentación escrita por el docente (`evaluacion_hito.retroalimentacion_general`, `calificacion_criterio.retroalimentacion`): es texto sobre los estudiantes, no dato del titular.
+
+## 6. Revisión de los cambios del 18 al 21/11 y cierre (2026-11-25)
+Se revisaron los 55 commits del compañero Santy Baza Perez (registro por invitación de un solo uso, panel, riesgo por horas de trabajo, supresión de URL de evidencias, CI, k6, documentos). Veredicto del revisor: aprobado, sin hallazgos altos.
+
+| Pendiente | Resolución |
+|---|---|
+| Código de invitación en la query de la URL (MEDIA) | Bloque 47: viaja en el fragmento `#codigo=` y se borra de la URL al leerlo (acepta enlaces antiguos) |
+| CHECK de V9 aceptaba selector sin hash | Bloque 46: migración V10 |
+| Interbloqueo con dos registros simultáneos del mismo correo (500) | Bloque 46: un solo orden de candados; el conflicto responde 409 uniforme |
+| `RefrescoRiesgo` no revalidaba el estado tras el candado | Bloque 46 |
+| Destino distinto de `tarea.reasignada` (bandeja vs Telegram) | Bloque 46: se calcula al leer la bandeja según el encargado actual |
+| Cookie de sesión sin `secure` | Bloque 46: configurable con `UNIPROJECT_COOKIE_SECURE` (por defecto `false`; `true` bajo HTTPS) |
+| Acciones de CI fijadas por etiqueta | Fijadas por SHA |
+| `credenciales-demo/acceso.txt` versionado con la contraseña de la demo | Sacado del repositorio y añadido a `.gitignore`; **la contraseña sigue en el historial de GitHub: tratarla como expuesta y cambiarla** |
+
+Riesgos aceptados (sin cambio de código): `estudiantes-disponibles` lista correo y nombre de cuentas de estudiante sin equipo a cualquier docente dueño de un proyecto; el docente o el administrador conoce el código de invitación y podría crear la cuenta del estudiante; la retroalimentación escrita por el docente no se anonimiza en la supresión; `/interno/**` en el puerto público (protegido por token), código de vinculación de Telegram en claro, 403 sin límite en `log_auditoria`, `conOtroRol`, edición de rúbrica mientras se evalúa, rol del núcleo dueño de la BD; IP vista detrás de Docker Desktop (verificar en el despliegue real).
