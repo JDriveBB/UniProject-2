@@ -1,6 +1,6 @@
 # Prueba de carga RNF2 — Módulo de evaluación
 
-Guion reproducible de [k6](https://k6.io/) ejecutado dentro de un contenedor de Docker (`grafana/k6:2.3.0`) para evaluar el requerimiento no funcional **RNF2** (`Archivos_contexto/entrega1.md`):
+Guion reproducible de [k6](https://k6.io/) ejecutado dentro de un contenedor de Docker (`grafana/k6:2.3.0`) para evaluar el requerimiento no funcional **RNF2** (`documentacion/contexto/entrega1.md`):
 
 > **RNF2. Concurrencia:** 500 usuarios simultáneos interactuando en los módulos de evaluación sin que el tiempo de respuesta del servidor supere 3 segundos.
 
@@ -103,7 +103,7 @@ Cuando esta prueba se corre en un computador personal, el generador de carga (`k
 
 # Prueba de disponibilidad RNF3 — Recuperación ante caída (`rnf3_disponibilidad.py`)
 
-Guion reproducible en Python (sin dependencias externas) para evaluar la recuperación automática exigida por **RNF3** (`Archivos_contexto/entrega1.md`):
+Guion reproducible en Python (sin dependencias externas) para evaluar la recuperación automática exigida por **RNF3** (`documentacion/contexto/entrega1.md`):
 
 > **RNF3. Disponibilidad:** uptime mínimo de 99,5 % durante las semanas pico (8 y 16).
 

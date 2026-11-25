@@ -1,8 +1,8 @@
 # 05. Modelo del dominio y casos de uso — UniProject
 
-Este documento recoge los diagramas de clases reales de cada módulo de **UniProject** (entidades JPA, enumeraciones, servicios de aplicación y componentes de dominio puro) junto con el diagrama general de casos de uso y su correspondencia con los requerimientos funcionales de [`Archivos_contexto/entrega1.md`](../../Archivos_contexto/entrega1.md).
+Este documento recoge los diagramas de clases reales de cada módulo de **UniProject** (entidades JPA, enumeraciones, servicios de aplicación y componentes de dominio puro) junto con el diagrama general de casos de uso y su correspondencia con los requerimientos funcionales de [`Archivos_contexto/entrega1.md`](../contexto/entrega1.md).
 
-> **Por qué las entidades JPA usan atributos `Long` planos en lugar de asociaciones:** por la decisión arquitectónica DA-08 ([`03-decisiones.md`](03-decisiones.md) y [`decisiones-tecnicas-java.md`](../../Archivos_contexto/decisiones-tecnicas-java.md) §13), ninguna entidad de `nucleo` declara `@ManyToOne`, `@OneToMany` ni `@ManyToMany`. Cada clave foránea se mapea como un atributo `Long` explícito y las claves compuestas usan `@IdClass` (`MiembroEquipoId`, `MonitorProyectoId`, `DependenciaTareaId`, `CalificacionCriterioId`). Con `spring.jpa.open-in-view: false`, esto evita cargas perezosas imprevistas, consultas N+1 y acoplamiento entre módulos; las consultas compuestas se ejecutan en SQL fijo mediante `JdbcClient`.
+> **Por qué las entidades JPA usan atributos `Long` planos en lugar de asociaciones:** por la decisión arquitectónica DA-08 ([`03-decisiones.md`](03-decisiones.md) y [`decisiones-tecnicas-java.md`](../contexto/decisiones-tecnicas-java.md) §13), ninguna entidad de `nucleo` declara `@ManyToOne`, `@OneToMany` ni `@ManyToMany`. Cada clave foránea se mapea como un atributo `Long` explícito y las claves compuestas usan `@IdClass` (`MiembroEquipoId`, `MonitorProyectoId`, `DependenciaTareaId`, `CalificacionCriterioId`). Con `spring.jpa.open-in-view: false`, esto evita cargas perezosas imprevistas, consultas N+1 y acoplamiento entre módulos; las consultas compuestas se ejecutan en SQL fijo mediante `JdbcClient`.
 
 ---
 
@@ -947,7 +947,7 @@ flowchart LR
     SYS --> CU15
 ```
 
-El diagrama refleja los cinco actores humanos reales (incluyendo `ADMINISTRADOR`, añadido frente a [`Archivos_contexto/entrega1.md`](../../Archivos_contexto/entrega1.md) §2.2) más el programador horario y el bot de Telegram como actor secundario. El **Líder de equipo** hereda los permisos de **Estudiante** y suma las operaciones de gestión sobre tareas (`puedeGestionarTarea`, `puedeGestionarHitoEquipo`).
+El diagrama refleja los cinco actores humanos reales (incluyendo `ADMINISTRADOR`, añadido frente a [`Archivos_contexto/entrega1.md`](../contexto/entrega1.md) §2.2) más el programador horario y el bot de Telegram como actor secundario. El **Líder de equipo** hereda los permisos de **Estudiante** y suma las operaciones de gestión sobre tareas (`puedeGestionarTarea`, `puedeGestionarHitoEquipo`).
 
 ### Trazabilidad rápida de requerimientos funcionales (RF1–RF15)
 
