@@ -46,11 +46,22 @@ public class RefrescoRiesgo {
         int recalculados = 0;
         for (long id : hitos) {
             try {
-                tx.executeWithoutResult(s -> {
+                boolean recalculado = tx.execute(s -> {
                     BloqueoHito.bloquear(jdbc, id);
+                    // El hito pudo entregarse entre la consulta y el candado: con el candado tomado se vuelve a leer.
+                    String estado = jdbc.sql("SELECT estado FROM hito_equipo WHERE id_hito_equipo = :he")
+                            .param("he", id)
+                            .query(String.class)
+                            .single();
+                    if (!"EN_CURSO".equals(estado)) {
+                        return false;
+                    }
                     recalculo.recalcular(id);
+                    return true;
                 });
-                recalculados++;
+                if (recalculado) {
+                    recalculados++;
+                }
             } catch (RuntimeException e) {
                 log.warn(
                         "Falló el recálculo de riesgo de un hito: {}",

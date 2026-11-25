@@ -187,6 +187,26 @@ class RefrescoRiesgoIntegracionTest extends ApiIntegracionBase {
         assertThat(nivel(t)).isEqualTo("ALTO");
     }
 
+    @Test
+    void hitoEntregadoMientrasEsperabaElCandadoNoSeRecalcula() throws Exception {
+        long he = hitoEquipo("EN_CURSO", HOY.minusDays(10), LIMITE);
+        long t = tarea(he, "30", 0);
+        try (Connection otra = fuente.getConnection()) {
+            otra.setAutoCommit(false);
+            try (PreparedStatement ps =
+                    otra.prepareStatement("UPDATE hito_equipo SET estado = 'ENVIADO' WHERE id_hito_equipo = ?")) {
+                ps.setLong(1, he);
+                ps.executeUpdate();
+            }
+            CompletableFuture<Integer> refrescando =
+                    CompletableFuture.supplyAsync(() -> refresco().refrescarEnCurso());
+            esperarUnaEspera();
+            otra.commit();
+            refrescando.get(30, TimeUnit.SECONDS);
+        }
+        assertThat(nivel(t)).isEqualTo("BAJO");
+    }
+
     /** Espera acotada a que alguna sesión quede detenida por un candado de fila. */
     private void esperarUnaEspera() throws InterruptedException {
         long limite = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);

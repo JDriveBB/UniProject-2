@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -27,11 +28,12 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -56,8 +58,8 @@ class ServicioCuentasRegistroTest {
         correos = mock(CorreoHabilitadoRepositorio.class);
         equipos = mock(ServicioEquipos.class);
         codigoValido = CodigosRecuperacion.nuevo();
-        when(correos.bloquearPendientePorSelector(any()))
-                .thenReturn(Optional.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
+        when(correos.bloquearPendientes(EMAIL))
+                .thenReturn(List.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
         PasswordEncoder bcrypt = new BCryptPasswordEncoder(4);
         PasswordEncoder contador = new PasswordEncoder() {
             @Override
@@ -141,13 +143,15 @@ class ServicioCuentasRegistroTest {
         // (c) habilitaciones con roles distintos
         encodesTrasConstruir = encodes.get();
         when(correos.bloquearPendientes(EMAIL))
-                .thenReturn(List.of(habilitacion(RolPlataforma.ESTUDIANTE), habilitacion(RolPlataforma.MONITOR)));
+                .thenReturn(List.of(
+                        habilitacionConCodigo(AHORA.plus(Duration.ofDays(1))), habilitacion(RolPlataforma.MONITOR)));
         exigirRechazoUniforme();
         verify(usuarios, never()).saveAndFlush(any());
 
         // (d) habilitación válida pero la BD rechaza el alta
         encodesTrasConstruir = encodes.get();
-        when(correos.bloquearPendientes(EMAIL)).thenReturn(List.of(habilitacion(RolPlataforma.ESTUDIANTE)));
+        when(correos.bloquearPendientes(EMAIL))
+                .thenReturn(List.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
         when(usuarios.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("duplicado"));
         exigirRechazoUniforme();
         verify(equipos, never()).incorporarInvitado(anyLong(), anyLong(), anyLong(), anyLong());
@@ -159,16 +163,16 @@ class ServicioCuentasRegistroTest {
         exigirRechazoUniforme(solicitudCon(EMAIL, "no-es-un-codigo-valido"));
         verify(usuarios, never()).saveAndFlush(any());
 
-        // (f) selector desconocido (bloquearPendientePorSelector vacío)
+        // (f) selector desconocido: ninguna pendiente del correo lo tiene
         encodesTrasConstruir = encodes.get();
-        when(correos.bloquearPendientePorSelector(any())).thenReturn(Optional.empty());
+        when(correos.bloquearPendientes(EMAIL)).thenReturn(List.of(habilitacion(RolPlataforma.ESTUDIANTE)));
         exigirRechazoUniforme();
         verify(usuarios, never()).saveAndFlush(any());
 
         // (g) verificador que no coincide
         encodesTrasConstruir = encodes.get();
-        when(correos.bloquearPendientePorSelector(any()))
-                .thenReturn(Optional.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
+        when(correos.bloquearPendientes(EMAIL))
+                .thenReturn(List.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
         exigirRechazoUniforme(solicitudCon(EMAIL, otroVerificador(codigoValido.texto())));
         verify(usuarios, never()).saveAndFlush(any());
 
@@ -179,15 +183,37 @@ class ServicioCuentasRegistroTest {
 
         // (i) código vencido
         encodesTrasConstruir = encodes.get();
-        when(correos.bloquearPendientePorSelector(any()))
-                .thenReturn(Optional.of(habilitacionConCodigo(AHORA.minusSeconds(1))));
+        when(correos.bloquearPendientes(EMAIL)).thenReturn(List.of(habilitacionConCodigo(AHORA.minusSeconds(1))));
         exigirRechazoUniforme();
         verify(usuarios, never()).saveAndFlush(any());
     }
 
     @Test
+    void conflictoDeCandadosDaElMismoRechazoUniforme() {
+        doThrow(new CannotAcquireLockException("candado")).when(correos).bloquearPendientes(EMAIL);
+        exigirRechazoUniforme();
+        encodesTrasConstruir = encodes.get();
+        doThrow(new DeadlockLoserDataAccessException("interbloqueo", null)).when(correos).bloquearPendientes(EMAIL);
+        exigirRechazoUniforme();
+        verify(usuarios, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void bloqueaLasPendientesDelCorreoYNoBuscaElSelectorPorSeparado() {
+        when(usuarios.saveAndFlush(any(Usuario.class))).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            u.setIdUsuario(42L);
+            return u;
+        });
+
+        assertThat(servicio.registrar(solicitud()).idUsuario()).isEqualTo(42L);
+
+        verify(correos).bloquearPendientes(EMAIL);
+    }
+
+    @Test
     void laInvitacionAUnEquipoSeConsumeAlRegistrarseAunqueNoSePuedaCumplir() {
-        CorreoHabilitado invitada = habilitacion(RolPlataforma.ESTUDIANTE);
+        CorreoHabilitado invitada = habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)));
         invitada.setIdCorreoHabilitado(7L);
         invitada.setIdProyecto(3L);
         invitada.setIdEquipoInvitado(11L);

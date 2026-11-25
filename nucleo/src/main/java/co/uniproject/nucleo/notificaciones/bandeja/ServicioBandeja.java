@@ -23,17 +23,21 @@ public class ServicioBandeja {
 
     @Transactional(readOnly = true)
     public Bandeja bandeja(long idUsuario) {
-        List<NotificacionVista> lista = jdbc.sql("SELECT id_notificacion, tipo, mensaje, entidad_referencia, "
-                        + "id_referencia, fecha_creacion, estado_envio, leida FROM notificacion "
-                        + "WHERE id_destinatario = :usuario ORDER BY fecha_creacion DESC, id_notificacion DESC LIMIT "
+        List<NotificacionVista> lista = jdbc.sql("SELECT n.id_notificacion, n.tipo, n.mensaje, n.entidad_referencia, "
+                        + "n.id_referencia, n.fecha_creacion, n.estado_envio, n.leida, t.id_encargado "
+                        + "FROM notificacion n LEFT JOIN tarea t ON n.tipo = 'tarea.reasignada' "
+                        + "AND n.entidad_referencia = 'tarea' AND t.id_tarea = n.id_referencia "
+                        + "WHERE n.id_destinatario = :usuario ORDER BY n.fecha_creacion DESC, n.id_notificacion DESC LIMIT "
                         + MAXIMO)
                 .param("usuario", idUsuario)
                 .query((rs, fila) -> {
                     String tipo = rs.getString("tipo");
                     String entidad = rs.getString("entidad_referencia");
                     long id = rs.getLong("id_referencia");
+                    long encargado = rs.getLong("id_encargado");
+                    boolean esEncargadoActual = !rs.wasNull() && encargado == idUsuario;
                     return new NotificacionVista(rs.getLong("id_notificacion"), tipo, rs.getString("mensaje"), entidad,
-                            id, enlace(tipo, entidad, id), rs.getObject("fecha_creacion", OffsetDateTime.class).toInstant(),
+                            id, enlace(tipo, entidad, id, esEncargadoActual), rs.getObject("fecha_creacion", OffsetDateTime.class).toInstant(),
                             EstadoEnvioNotificacion.valueOf(rs.getString("estado_envio")), rs.getBoolean("leida"));
                 })
                 .list();
@@ -64,8 +68,14 @@ public class ServicioBandeja {
                 .update();
     }
 
-    /** Misma ruta del SPA a la que lleva el aviso de Telegram (RutasWeb). */
-    static String enlace(String tipo, String entidad, long id) {
+    /**
+     * La fila de tarea.reasignada es igual para el encargado anterior y el nuevo: se distingue al leer. Quien ya no es
+     * el encargado de la tarea (el anterior) va a /mis-tareas, porque /tareas/{id} podría darle 403.
+     */
+    static String enlace(String tipo, String entidad, long id, boolean esEncargadoActual) {
+        if ("tarea.reasignada".equals(tipo) && !esEncargadoActual) {
+            return RutasWeb.misTareas();
+        }
         return switch (entidad) {
             case "tarea" -> RutasWeb.tarea(id);
             case "equipo" -> RutasWeb.tableroEquipo(id);
