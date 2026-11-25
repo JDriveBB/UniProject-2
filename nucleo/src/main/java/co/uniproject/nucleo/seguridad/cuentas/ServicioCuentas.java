@@ -19,12 +19,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -118,21 +120,27 @@ public class ServicioCuentas {
         Instant ahora = Instant.now(reloj);
         CodigosRecuperacion.Partes codigo =
                 CodigosRecuperacion.leer(solicitud.codigo()).orElseThrow(ServicioCuentas::registroNoDisponible);
-        CorreoHabilitado invitacion = correos.bloquearPendientePorSelector(codigo.selector())
-                .orElseThrow(ServicioCuentas::registroNoDisponible);
+        List<CorreoHabilitado> habilitados;
+        CorreoHabilitado invitacion;
+        try {
+            // Orden de candados único: primero todas las pendientes del correo (por id) y la invitación del selector
+            // se busca dentro de ellas; así dos registros simultáneos del mismo correo no se interbloquean.
+            habilitados = correos.bloquearPendientes(email);
+            invitacion = habilitados.stream()
+                    .filter(c -> Arrays.equals(c.getEnlaceSelector(), codigo.selector()))
+                    .findFirst()
+                    .orElseThrow(ServicioCuentas::registroNoDisponible);
+        } catch (PessimisticLockingFailureException e) {
+            throw registroNoDisponible();
+        }
         boolean verificadorValido =
                 CodigosRecuperacion.coincide(codigo.verificador(), invitacion.getEnlaceVerificadorHash());
         if (!verificadorValido
-                || !email.equals(invitacion.getEmail())
                 || invitacion.getEnlaceVenceEn() == null
                 || !invitacion.getEnlaceVenceEn().isAfter(ahora)) {
             throw registroNoDisponible();
         }
         if (usuarios.existsByEmail(email)) {
-            throw registroNoDisponible();
-        }
-        List<CorreoHabilitado> habilitados = correos.bloquearPendientes(email);
-        if (habilitados.isEmpty()) {
             throw registroNoDisponible();
         }
         Set<RolPlataforma> roles =

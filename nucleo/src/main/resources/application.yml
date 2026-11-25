@@ -39,6 +39,7 @@ server:
       cookie:
         http-only: true
         same-site: lax
+        secure: ${UNIPROJECT_COOKIE_SECURE:false}
 
 management:
   endpoints:
