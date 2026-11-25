@@ -1,6 +1,6 @@
 # 07. Matriz de trazabilidad de requisitos — UniProject
 
-Este documento traza cada requerimiento funcional (**RF1–RF15**), requerimiento no funcional (**RNF1–RNF5**) y restricción de diseño y negocio (**§2.1**, incluida la **Ley 1581 de 2012**) definidos en [`Archivos_contexto/entrega1.md`](../contexto/entrega1.md) contra su implementación real en la SPA web ([`web/src/rutas.ts`](../../web/src/rutas.ts)), el contrato REST ([`docs/openapi/openapi.yaml`](../../docs/openapi/openapi.yaml)), los controladores y servicios del backend, las pruebas automáticas del repositorio y la guía de pruebas manuales ([`docs/pruebas/guia-sesion-pruebas.md`](../pruebas/guia-sesion-pruebas.md)), manteniendo estados honestos y coherentes con [`docs/pruebas/informe-auditoria-final.md`](../pruebas/informe-auditoria-final.md).
+Este documento traza cada requerimiento funcional (**RF1–RF15**), requerimiento no funcional (**RNF1–RNF5**) y restricción de diseño y negocio (**§2.1**, incluida la **Ley 1581 de 2012**) definidos en `entrega1.md` contra su implementación real en la SPA web ([`web/src/rutas.ts`](../../web/src/rutas.ts)), el contrato REST ([`docs/openapi/openapi.yaml`](../../docs/openapi/openapi.yaml)), los controladores y servicios del backend, las pruebas automáticas del repositorio y la guía de pruebas manuales ([`docs/pruebas/guia-sesion-pruebas.md`](../pruebas/guia-sesion-pruebas.md)), manteniendo estados honestos y coherentes con [`docs/pruebas/informe-auditoria-final.md`](../pruebas/informe-auditoria-final.md).
 
 ---
 

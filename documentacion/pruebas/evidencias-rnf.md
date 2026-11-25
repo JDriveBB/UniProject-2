@@ -1,6 +1,6 @@
 # Evidencias de requisitos no funcionales (RNF1–RNF5) — UniProject
 
-Este documento consolida la evidencia medida y verificada en código para los cinco requisitos no funcionales de la entrega 1 ([`Archivos_contexto/entrega1.md`](../contexto/entrega1.md) §2.4).
+Este documento consolida la evidencia medida y verificada en código para los cinco requisitos no funcionales de la entrega 1 (`entrega1.md` §2.4).
 
 - **Entorno de las mediciones (RNF2, RNF3 y RNF5):** ejecutadas el `2026-11-20` en un PC personal (Windows 11, Docker Desktop) contra el stack de pruebas aislado (`infra/pruebas/sesion-pruebas.ps1 -Accion Levantar`, proyecto `uniproject-pruebas`, `http://127.0.0.1:18080`, datos demo).
 - **Medición de RNF1:** ejecutada el `2026-11-18` sobre el mismo stack de pruebas (`http://127.0.0.1:18080`, commit base `e0a6b1e`) y documentada en [`informe-auditoria-final.md`](informe-auditoria-final.md) §1, respaldada además por pruebas automáticas en backend y frontend.

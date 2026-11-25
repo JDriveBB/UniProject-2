@@ -56,7 +56,7 @@ flowchart LR
     Agente -- "Vinculación y bloqueos (/interno)" --> Nucleo
 ```
 
-- **Monolito modular y agente independiente:** `nucleo` separa los módulos de [entrega1.md](documentacion/contexto/entrega1.md) §2.6 (`configuracionacademica`, `ejecucion`, `evaluacion`, `trazabilidad`), más `seguridad`, `notificaciones` y `vinculaciontelegram`, sirviendo el SPA desde el mismo origen; `agente-telegram` corre como proceso aparte para aislar fallos de Telegram o del broker.
+- **Monolito modular y agente independiente:** `nucleo` separa los módulos de entrega1.md §2.6 (`configuracionacademica`, `ejecucion`, `evaluacion`, `trazabilidad`), más `seguridad`, `notificaciones` y `vinculaciontelegram`, sirviendo el SPA desde el mismo origen; `agente-telegram` corre como proceso aparte para aislar fallos de Telegram o del broker.
 - **Eventos CloudEvents con contrato JSON Schema:** `eventos-contrato` centraliza `EventoCloud` (1.0), los ocho tipos de `TipoEvento` y `CodecEventos`, que valida contra esquemas JSON Schema draft-07 al serializar y al leer.
 - **Outbox con `SKIP LOCKED`:** `RegistroEventosJdbc` guarda los eventos en `evento_saliente` dentro de la transacción de negocio y `PublicadorOutbox` los publica con `FOR UPDATE SKIP LOCKED` y confirmaciones hacia `uniproject.eventos`, mientras el agente garantiza idempotencia por `(evento_id, usuario_id)` en `agente.evento_procesado`.
 - **Sesión + CSRF:** el frontend usa cookie de sesión (`HttpOnly`, `SameSite=Lax`, 2 h), protección CSRF para SPA (`XSRF-TOKEN` / `X-XSRF-TOKEN`) y `BCryptPasswordEncoder(12)`, mientras `/interno/**` se autentica con token compartido en tiempo constante.
@@ -146,7 +146,7 @@ Al arrancar el núcleo con el perfil `demo` en `UNIPROJECT_PERFILES` y una contr
 ├── infra/               # Docker Compose, inicialización de PostgreSQL/RabbitMQ y script de sesión de pruebas
 ├── docs/                # Contratos OpenAPI y AsyncAPI
 ├── scripts/             # Puerta de calidad (verificar.py) y formateo incremental (formatear.py)
-├── documentacion/       # Diseño visual y de producto, documento de diseño, pruebas, sustentación y requisitos
+├── documentacion/       # Documento de diseño, pruebas, sustentación y diagrama de la base de datos
 ├── .env.example         # Plantilla de nombres de variables de entorno para Compose
 └── pom.xml              # POM padre Maven multi-módulo y configuración del wrapper (mvnw)
 ```
@@ -158,11 +158,6 @@ Al arrancar el núcleo con el perfil `demo` en `UNIPROJECT_PERFILES` y una contr
 - [docs/openapi/openapi.yaml](docs/openapi/openapi.yaml) — Especificación OpenAPI 3.1 de la API REST (`/api/**`).
 - [docs/asyncapi/asyncapi.yaml](docs/asyncapi/asyncapi.yaml) — Especificación AsyncAPI 3.0 de los eventos publicados en RabbitMQ.
 - [documentacion/pruebas/](documentacion/pruebas/) — Documentación de pruebas manuales ([guia-sesion-pruebas.md](documentacion/pruebas/guia-sesion-pruebas.md)).
-- [documentacion/DESIGN.md](documentacion/DESIGN.md) — Sistema de diseño visual («El cuaderno del curso»).
-- [documentacion/PRODUCT.md](documentacion/PRODUCT.md) — Visión del producto, actores y restricciones.
-- [documentacion/contexto/entrega1.md](documentacion/contexto/entrega1.md) — Requisitos funcionales (RF1–RF15), no funcionales (RNF1–RNF5) y casos de uso.
-- [documentacion/contexto/decisiones-tecnicas-java.md](documentacion/contexto/decisiones-tecnicas-java.md) — Decisiones arquitectónicas y versiones fijadas del backend.
-- [documentacion/contexto/plan-notificaciones-uniproject.md](documentacion/contexto/plan-notificaciones-uniproject.md) — Diseño de la arquitectura de notificaciones por eventos.
 
 ## Datos personales (Ley 1581)
 
