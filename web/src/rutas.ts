@@ -29,4 +29,10 @@ export const rutas = {
   rutaCriticaActual: () => '/ruta-critica',
   /* Bloque 26c: tablero en un hito concreto (pestañas de P04 y «Volver al tablero» de P06). */
   tableroEnHito: (idEquipo: number, idHitoEquipo: number) => `/equipos/${idEquipo}/tablero?hito=${idHitoEquipo}`,
+  /* Bloque 51: cursos, inscripción y votación. misCursos, votacionEquipo, inscripcionProyecto y proyecto son contrato con RutasWeb.java (bloque 50). */
+  cursos: () => '/cursos',
+  curso: (idCurso: number) => `/cursos/${idCurso}`,
+  misCursos: () => '/mis-cursos',
+  votacionEquipo: (idEquipo: number) => `/equipos/${idEquipo}/votacion`,
+  inscripcionProyecto: (idProyecto: number) => `/proyectos/${idProyecto}/inscripcion`,
 } as const;

@@ -220,6 +220,16 @@ export const ETIQUETAS_CAMPOS: Readonly<Record<string, string>> = {
   rol: 'Rol',
   idUsuario: 'Integrante',
   autorizaTratamientoDatos: 'Autorización de tratamiento de datos',
+  periodo: 'Periodo',
+  cupo: 'Cupo',
+  prefijo: 'Prefijo',
+  cantidad: 'Cantidad de equipos',
+  idCurso: 'Curso',
+  idsCursos: 'Cursos',
+  horasRonda: 'Horas de la votación',
+  cierreEquipos: 'Cierre de la inscripción',
+  idCandidato: 'Candidato',
+  archivado: 'Archivado',
 };
 
 /** 'criterios[0].nota: must be…' → 'nota'; 'emails[3]: …' → 'emails'. */

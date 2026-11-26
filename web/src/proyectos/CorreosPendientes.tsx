@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { generarEnlaceCorreo, listarCorreos, retirarCorreo } from '../api/proyectos';
-import type { CorreoHabilitadoVista } from '../api/tipos';
+import type { CorreoHabilitadoVista, EnlaceRegistro } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { Boton } from '../componentes/Boton';
 import { Campo } from '../componentes/Campo';
@@ -12,19 +11,34 @@ import { fechaCorta } from '../formato';
 import { etiquetaRol } from '../marco/navegacion';
 import { mensajeErrorApi } from './errores';
 import type { Mensaje } from './errores';
-import { pendientesDe, preguntaRetirarCorreo, retirarHabilitacion } from './quitar';
+import { pendientesDe, retirarHabilitacion } from './quitar';
 
 type EstadoCorreos =
-  { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'listo'; correos: CorreoHabilitadoVista[] };
+  | { estado: 'cargando' }
+  | { estado: 'error'; mensaje: string }
+  | { estado: 'listo'; correos: CorreoHabilitadoVista[] };
 
-/** Correos habilitados sin cuenta (bloque 30, provisional sin Figma): solo el docente dueño; "Copiar enlace" (T-041) y "Retirar" (30f-5, 30f-6). */
+/**
+ * Lista de correos habilitados sin cuenta: sirve para los monitores del proyecto y para el curso. Quien la usa pasa
+ * funciones estables (useCallback). Si generarEnlace es null, no muestra «Copiar enlace».
+ */
 export function CorreosPendientes({
-  idProyecto,
+  titulo,
   version,
+  cargar,
+  generarEnlace,
+  retirar,
+  preguntaRetirar,
+  textoVacio = 'No hay correos pendientes.',
   alCambiarHabilitaciones,
 }: {
-  idProyecto: number;
+  titulo: string;
   version: number;
+  cargar: () => Promise<CorreoHabilitadoVista[]>;
+  generarEnlace: ((idCorreoHabilitado: number) => Promise<EnlaceRegistro>) | null;
+  retirar: (idCorreoHabilitado: number) => Promise<void>;
+  preguntaRetirar: (correo: string) => string;
+  textoVacio?: string;
   alCambiarHabilitaciones?: () => void;
 }) {
   const base = useId();
@@ -39,17 +53,17 @@ export function CorreosPendientes({
   const idTitulo = `${base}-titulo`;
   const idRetirar = (idCorreoHabilitado: number) => `${base}-retirar-${idCorreoHabilitado}`;
 
-  const cargar = useCallback(async () => {
+  const recargar = useCallback(async () => {
     try {
-      setLista({ estado: 'listo', correos: await listarCorreos(idProyecto) });
+      setLista({ estado: 'listo', correos: await cargar() });
     } catch (e) {
       setLista({ estado: 'error', mensaje: mensajeErrorApi(e, []) });
     }
-  }, [idProyecto]);
+  }, [cargar]);
 
   useEffect(() => {
-    void cargar();
-  }, [cargar, version]);
+    void recargar();
+  }, [recargar, version]);
 
   useEffect(() => {
     if (porRetirar === null && volverA.current !== null) {
@@ -59,11 +73,14 @@ export function CorreosPendientes({
   }, [porRetirar, lista, idTitulo]);
 
   async function alCopiarEnlace(c: CorreoHabilitadoVista) {
+    if (generarEnlace === null) {
+      return;
+    }
     setMensaje(null);
     setEnlaceGenerado(null);
     setGenerandoId(c.idCorreoHabilitado);
     const r = await prepararEnlaceInvitacion(
-      () => generarEnlaceCorreo(idProyecto, c.idCorreoHabilitado),
+      () => generarEnlace(c.idCorreoHabilitado),
       c.email,
       window.location.origin,
       (e) => mensajeErrorApi(e, []),
@@ -74,7 +91,7 @@ export function CorreosPendientes({
       return;
     }
     if (r.recargar) {
-      await cargar();
+      await recargar();
       alCambiarHabilitaciones?.();
     }
     setMensaje({ tipo: 'error', texto: r.mensaje });
@@ -84,9 +101,9 @@ export function CorreosPendientes({
     setEnviando(true);
     setMensaje(null);
     setEnlaceGenerado(null);
-    const r = await retirarHabilitacion({ retirarCorreo }, idProyecto, c);
+    const r = await retirarHabilitacion(retirar, c);
     if (r.recargar) {
-      await cargar();
+      await recargar();
       alCambiarHabilitaciones?.();
     }
     setEnviando(false);
@@ -106,13 +123,11 @@ export function CorreosPendientes({
   return (
     <div className="correos-pendientes">
       <h3 id={idTitulo} className="tarjeta__subtitulo" tabIndex={-1}>
-        Correos habilitados sin cuenta
+        {titulo}
       </h3>
       {lista.estado === 'cargando' && <p className="texto-secundario">Cargando…</p>}
       {lista.estado === 'error' && <Alerta tipo="error">{lista.mensaje}</Alerta>}
-      {lista.estado === 'listo' && pendientes.length === 0 && (
-        <p className="texto-secundario">No hay correos pendientes.</p>
-      )}
+      {lista.estado === 'listo' && pendientes.length === 0 && <p className="texto-secundario">{textoVacio}</p>}
       {lista.estado === 'listo' && pendientes.length > 0 && (
         <ul className="lista-pendientes" aria-labelledby={idTitulo}>
           {pendientes.map((c) => {
@@ -125,15 +140,17 @@ export function CorreosPendientes({
                   <span className="correo-pendiente__fecha">{`Habilitado el ${fechaCorta(c.fechaHabilitacion)}`}</span>
                 </div>
                 <div className="correo-pendiente__acciones">
-                  <Boton
-                    variante="secundario"
-                    aria-label={`Copiar enlace de invitación para ${c.email}`}
-                    aria-busy={generandoEste}
-                    disabled={ocupado}
-                    onClick={() => void alCopiarEnlace(c)}
-                  >
-                    {generandoEste ? 'Generando…' : 'Copiar enlace'}
-                  </Boton>
+                  {generarEnlace !== null && (
+                    <Boton
+                      variante="secundario"
+                      aria-label={`Copiar enlace de invitación para ${c.email}`}
+                      aria-busy={generandoEste}
+                      disabled={ocupado}
+                      onClick={() => void alCopiarEnlace(c)}
+                    >
+                      {generandoEste ? 'Generando…' : 'Copiar enlace'}
+                    </Boton>
+                  )}
                   <Boton
                     id={idRetirar(c.idCorreoHabilitado)}
                     variante="secundario"
@@ -152,7 +169,7 @@ export function CorreosPendientes({
       {porRetirar !== null && (
         <ConfirmarQuitar
           key={porRetirar.idCorreoHabilitado}
-          pregunta={preguntaRetirarCorreo(porRetirar.email)}
+          pregunta={preguntaRetirar(porRetirar.email)}
           ocupado={enviando}
           textoConfirmar="Sí, retirar"
           textoOcupado="Retirando…"

@@ -82,7 +82,16 @@ function MiEquipo({ destino }: { destino: Destino }) {
         </div>
       )}
       {busqueda.estado === 'listo' && busqueda.equipos.length === 0 && (
-        <EstadoVacio titulo="Aún no tienes equipo">Tu docente te agrega a uno desde el proyecto.</EstadoVacio>
+        <EstadoVacio
+          titulo="Aún no tienes equipo"
+          accion={
+            <Link className="boton boton--primario" to={rutas.misCursos()}>
+              Ir a Mis cursos
+            </Link>
+          }
+        >
+          Elige uno desde Mis cursos mientras la inscripción esté abierta, o espera a que tu docente te asigne.
+        </EstadoVacio>
       )}
       {busqueda.estado === 'listo' && busqueda.equipos.length === 1 && (
         <EstadoVacio titulo="Tu proyecto aún no tiene hitos">

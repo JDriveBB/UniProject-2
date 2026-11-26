@@ -35,6 +35,7 @@ import type { Mensaje } from '../proyectos/errores';
 import { ejecutarPlan } from '../proyectos/guardado';
 import type { ApiGuardado } from '../proyectos/guardado';
 import { planDeGuardado } from '../proyectos/plan';
+import { TarjetaCursosProyecto } from '../proyectos/TarjetaCursosProyecto';
 import { TarjetaDatosProyecto } from '../proyectos/TarjetaDatosProyecto';
 import { TarjetaEquipos } from '../proyectos/TarjetaEquipos';
 import { TarjetaHitos } from '../proyectos/TarjetaHitos';
@@ -93,13 +94,14 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [desincronizado, setDesincronizado] = useState(false);
+  const [versionCursos, setVersionCursos] = useState(0);
   const [mensaje, setMensaje] = useState<Mensaje | null>(() => {
     const falla = falloDeCreacion(ubicacion.state);
     if (falla !== null) {
       return { tipo: 'error', texto: TEXTO_CREACION_PARCIAL + falla };
     }
     return vieneDeCreacion(ubicacion.state)
-      ? { tipo: 'exito', texto: 'Proyecto creado. Ahora puedes crear equipos y agregar estudiantes.' }
+      ? { tipo: 'exito', texto: 'Proyecto creado. Ahora asígnale sus cursos y crea los equipos.' }
       : null;
   });
   const contador = useRef(0);
@@ -126,6 +128,10 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
   // hook antes de los return anticipados (reglas de hooks); estable: TarjetaEquipos lo usa como dependencia de un efecto
   const alActualizarEquipo = useCallback((equipo: EquipoVista) => {
     setServidor((s) => (s === null ? s : { ...s, equipos: reemplazarEquipo(s.equipos, equipo) }));
+  }, []);
+
+  const alCambiarCursos = useCallback(() => {
+    setVersionCursos((v) => v + 1);
   }, []);
 
   if (carga.estado === 'cargando') {
@@ -238,7 +244,7 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
 
   const titulo = esNuevo ? 'Nuevo proyecto' : editable ? 'Configurar proyecto' : 'Proyecto';
   const descripcion = editable
-    ? 'Define los datos del proyecto, sus hitos con rúbrica y los equipos.'
+    ? 'Define los datos del proyecto, sus cursos, sus hitos con rúbrica y los equipos.'
     : 'Consulta los datos del proyecto, sus hitos con rúbrica y los equipos. Solo su docente puede cambiarlos.';
 
   return (
@@ -265,8 +271,10 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
             borrador={borrador}
             errores={errores.proyecto}
             editable={editable}
+            esNuevo={esNuevo}
             alCambiar={(cambios) => setBorrador((b) => ({ ...b, ...cambios }))}
           />
+          {editable && <TarjetaCursosProyecto idProyecto={idProyecto} alCambiarCursos={alCambiarCursos} />}
           <TarjetaHitos
             hitos={borrador.hitos}
             seleccion={seleccion}
@@ -296,6 +304,7 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
             editable={editable}
             usaMonitores={borrador.usaMonitores}
             usaMonitoresGuardado={servidor !== null && servidor.proyecto.usaMonitores}
+            versionCursos={versionCursos}
             alCambiarUsaMonitores={(valor) => setBorrador((b) => ({ ...b, usaMonitores: valor }))}
             alActualizarEquipo={alActualizarEquipo}
           />

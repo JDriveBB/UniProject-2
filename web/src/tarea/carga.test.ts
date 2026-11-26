@@ -50,6 +50,9 @@ describe('carga de tarea', () => {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-12-01',
       usaMonitores: false,
+      equiposMixtos: false,
+      cierreEquipos: null,
+      horasRonda: 48,
     };
 
     const proyectoDetalle: ProyectoDetalle = {
@@ -59,6 +62,8 @@ describe('carga de tarea', () => {
           idEquipo: 7,
           idProyecto: 1,
           nombreEquipo: 'Equipo 7',
+          idCurso: null,
+          cupo: null,
           miembros: [],
           hitos: [
             { idHitoEquipo: 100, idHito: 1, estado: 'EVALUADO', fechaEnvio: null },

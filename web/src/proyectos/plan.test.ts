@@ -34,6 +34,9 @@ const servidor: ProyectoDetalle = {
     fechaInicio: '2026-08-01',
     fechaFin: '2026-11-30',
     usaMonitores: false,
+    equiposMixtos: false,
+    cierreEquipos: null,
+    horasRonda: 48,
   },
   hitos: [
     hitoVista(11, 1, '2026-08-01', '2026-08-29', [[21, 50], [22, 50]]),
@@ -57,6 +60,7 @@ describe('plan de guardado', () => {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-11-30',
       usaMonitores: true,
+      equiposMixtos: true,
       hitos: [
         {
           clave: 'n1',
@@ -75,7 +79,14 @@ describe('plan de guardado', () => {
     expect(planDeGuardado(null, b)).toEqual([
       {
         tipo: 'crearProyecto',
-        solicitud: { nombre: 'Proyecto nuevo', descripcion: null, fechaInicio: '2026-08-01', fechaFin: '2026-11-30', usaMonitores: true },
+        solicitud: {
+          nombre: 'Proyecto nuevo',
+          descripcion: null,
+          fechaInicio: '2026-08-01',
+          fechaFin: '2026-11-30',
+          usaMonitores: true,
+          equiposMixtos: true,
+        },
       },
       {
         tipo: 'crearHito',
@@ -168,6 +179,19 @@ describe('plan de guardado', () => {
     expect(plan[0].tipo).toBe('actualizarHito');
     if (plan[0].tipo === 'actualizarHito') {
       expect(plan[0].solicitud.diasInactividadAlerta).toBeNull();
+    }
+  });
+
+  it('actualizar no envía equiposMixtos', () => {
+    const b = borradorDe(servidor);
+    b.nombre = 'Diseño de Software II';
+    b.equiposMixtos = true;
+    const plan = planDeGuardado(servidor, b);
+    expect(plan).toHaveLength(1);
+    const op = plan[0];
+    expect(op.tipo).toBe('actualizarProyecto');
+    if (op.tipo === 'actualizarProyecto') {
+      expect(op.solicitud).not.toHaveProperty('equiposMixtos');
     }
   });
 });

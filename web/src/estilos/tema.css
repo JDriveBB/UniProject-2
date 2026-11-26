@@ -4841,3 +4841,60 @@ select.campo__entrada {
     opacity: 1;
   }
 }
+
+/* Bloque 51a: cursos */
+.curso__proyectos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.curso__proyecto {
+  padding: var(--espacio-3);
+  border: 1px solid var(--color-borde-tabla);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+}
+
+.curso__companeros {
+  margin-top: var(--espacio-2);
+}
+
+.curso__lista-companeros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-1);
+  margin: var(--espacio-2) 0 0;
+  padding: 0 0 0 var(--espacio-5);
+}
+
+.curso__estudiante {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espacio-1) var(--espacio-3);
+  min-width: 0;
+}
+
+.curso__insignias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.curso__selector {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.curso__repetido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-3);
+}

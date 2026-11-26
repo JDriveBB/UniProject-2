@@ -2,12 +2,15 @@ import { Navigate, Route, Routes } from 'react-router';
 import { Marco } from './componentes/Marco';
 import { AdminDocentes } from './paginas/AdminDocentes';
 import { NuevoProyecto, ProyectoDeRuta } from './paginas/ConfigurarProyecto';
+import { ListaCursos } from './paginas/Cursos';
+import { DetalleCursoDeRuta } from './paginas/DetalleCurso';
 import { DetalleTareaDeRuta } from './paginas/DetalleTarea';
 import { EvaluacionHitoDeRuta } from './paginas/EvaluacionHito';
 import { EvaluarHitoDeRuta } from './paginas/EvaluarHito';
 import { Ingreso } from './paginas/Ingreso';
 import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
+import { MisCursos } from './paginas/MisCursos';
 import { MisTareas } from './paginas/MisTareas';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { Notificaciones } from './paginas/Notificaciones';
@@ -64,12 +67,15 @@ export function App() {
           </Route>
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
             <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />
+            <Route path="/cursos" element={<ListaCursos />} />
+            <Route path="/cursos/:idCurso" element={<DetalleCursoDeRuta />} />
             <Route path="/panel" element={<ElegirPanel />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/proyectos/:idProyecto/panel" element={<PanelProyectoDeRuta />} />
             <Route path="/hitos/:idHitoEquipo/evaluar" element={<EvaluarHitoDeRuta />} />
           </Route>
           <Route element={<RutaProtegida roles={['ESTUDIANTE']} />}>
+            <Route path="/mis-cursos" element={<MisCursos />} />
             <Route path="/tablero" element={<MiTablero />} />
             <Route path="/ruta-critica" element={<MiRutaCritica />} />
           </Route>

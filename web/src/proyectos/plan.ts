@@ -122,7 +122,7 @@ export function planDeGuardado(servidor: ProyectoDetalle | null, b: BorradorProy
   const despues: Operacion[] = [];
   let delProyecto: Operacion[] = [];
   if (servidor === null) {
-    delProyecto = [{ tipo: 'crearProyecto', solicitud: proyecto }];
+    delProyecto = [{ tipo: 'crearProyecto', solicitud: { ...proyecto, equiposMixtos: b.equiposMixtos } }];
   } else if (proyectoCambio(servidor.proyecto, proyecto)) {
     delProyecto = [{ tipo: 'actualizarProyecto', solicitud: proyecto }];
   }

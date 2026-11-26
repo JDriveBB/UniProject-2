@@ -1,18 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { crearEquipo, detalleProyecto, listarEstudiantes, listarEstudiantesDisponibles } from '../api/proyectos';
-import type { EquipoVista, EstudianteDisponibleVista, EstudianteProyectoVista } from '../api/tipos';
+import {
+  crearEquipo,
+  generarEnlaceCorreo,
+  listarCorreos,
+  listarEstudiantesDisponibles,
+  retirarCorreo,
+} from '../api/proyectos';
+import type { EquipoVista, EstudianteDisponibleVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
 import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
 import { Campo } from '../componentes/Campo';
 import { Casilla } from '../componentes/Casilla';
 import { Tarjeta } from '../componentes/Tarjeta';
-import { CAMPOS_EQUIPO, mensajeErrorApi } from './errores';
-import type { Mensaje } from './errores';
 import { CorreosPendientes } from './CorreosPendientes';
 import { claveIntegrantes } from './equipos';
+import { CAMPOS_EQUIPO, mensajeErrorApi } from './errores';
+import type { Mensaje } from './errores';
 import { FilaMonitores } from './FilaMonitores';
+import { preguntaRetirarCorreo } from './quitar';
 import { TarjetaEquipo } from './TarjetaEquipo';
 import { MAXIMO_NOMBRE_EQUIPO, validarNombreEquipo } from './validacion';
 
@@ -29,26 +36,22 @@ interface PropsEquipos {
   usaMonitores: boolean;
   /** Valor guardado: habilitar monitores lo exige (409 PROYECTO_SIN_MONITORES). */
   usaMonitoresGuardado: boolean;
+  /** Sube al cambiar cursos del proyecto para recargar disponibles. */
+  versionCursos: number;
   alCambiarUsaMonitores: (valor: boolean) => void;
   alActualizarEquipo: (equipo: EquipoVista) => void;
 }
 
 function RejillaEquipos({
-  idProyecto,
   equipos,
-  estudiantes,
   disponibles,
   editable,
   alActualizarEquipo,
-  alHabilitarCorreo,
 }: {
-  idProyecto: number;
   equipos: EquipoVista[];
-  estudiantes: EstudianteProyectoVista[];
   disponibles: EstudianteDisponibleVista[];
   editable: boolean;
   alActualizarEquipo: (equipo: EquipoVista) => void;
-  alHabilitarCorreo: () => void;
 }) {
   if (equipos.length === 0) {
     return <p className="texto-secundario">Aún no hay equipos.</p>;
@@ -58,32 +61,29 @@ function RejillaEquipos({
       {equipos.map((e) => (
         <TarjetaEquipo
           key={e.idEquipo}
-          idProyecto={idProyecto}
           equipo={e}
-          estudiantes={estudiantes}
           disponibles={disponibles}
           editable={editable}
           alActualizar={alActualizarEquipo}
-          alHabilitarCorreo={alHabilitarCorreo}
         />
       ))}
     </div>
   );
 }
 
-/** P03 derecha 2: equipos en dos columnas, casilla de monitores, fila de monitores y nota y los correos habilitados sin cuenta (bloque 30). */
+/** P03 derecha 2: equipos en dos columnas, casilla de monitores, fila de monitores y monitores sin cuenta. */
 export function TarjetaEquipos({
   idProyecto,
   equipos,
   editable,
   usaMonitores,
   usaMonitoresGuardado,
+  versionCursos,
   alCambiarUsaMonitores,
   alActualizarEquipo,
 }: PropsEquipos) {
   const avisar = useAvisos();
   const [versionCorreos, setVersionCorreos] = useState(0);
-  const [estudiantes, setEstudiantes] = useState<EstudianteProyectoVista[]>([]);
   const [disponibles, setDisponibles] = useState<EstudianteDisponibleVista[]>([]);
   const integrantes = claveIntegrantes(equipos);
   const [abierto, setAbierto] = useState(false);
@@ -93,55 +93,56 @@ export function TarjetaEquipos({
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const errorNombre = intentado ? (validarNombreEquipo(nombre) ?? undefined) : undefined;
 
-  function correoHabilitado() {
+  const correoHabilitado = useCallback(() => {
     setVersionCorreos((v) => v + 1);
-  }
+  }, []);
 
-  useEffect(() => {
-    if (versionCorreos === 0 || idProyecto === null) {
-      return;
+  const cargarMonitoresPendientes = useCallback(async () => {
+    if (idProyecto === null) {
+      return [];
     }
-    let vigente = true;
-    detalleProyecto(idProyecto)
-      .then((detalle) => {
-        if (vigente) {
-          for (const e of detalle.equipos) {
-            alActualizarEquipo(e);
-          }
-        }
-      })
-      .catch(() => {
-        // no bloquear si falla la recarga secundaria
-      });
-    return () => {
-      vigente = false;
-    };
-  }, [idProyecto, versionCorreos, alActualizarEquipo]);
+    const correos = await listarCorreos(idProyecto);
+    return correos.filter((c) => c.rol === 'MONITOR');
+  }, [idProyecto]);
 
-  /* D-11, D-12 y T-046: estudiantes del proyecto (sugerencias e invitados) y cuentas disponibles sin equipo una vez,
-     y de nuevo al habilitar, invitar, retirar, agregar o quitar integrantes. Solo el docente dueño puede pedirlos. */
+  const generarEnlaceMonitor = useCallback(
+    (idCorreoHabilitado: number) => {
+      if (idProyecto === null) {
+        return Promise.reject(new Error('Proyecto sin guardar'));
+      }
+      return generarEnlaceCorreo(idProyecto, idCorreoHabilitado);
+    },
+    [idProyecto],
+  );
+
+  const retirarMonitorPendiente = useCallback(
+    (idCorreoHabilitado: number) => {
+      if (idProyecto === null) {
+        return Promise.reject(new Error('Proyecto sin guardar'));
+      }
+      return retirarCorreo(idProyecto, idCorreoHabilitado);
+    },
+    [idProyecto],
+  );
+
   useEffect(() => {
     if (!editable || idProyecto === null) {
       return;
     }
     let vigente = true;
-    void Promise.allSettled([listarEstudiantes(idProyecto), listarEstudiantesDisponibles(idProyecto)]).then(
-      ([resEstudiantes, resDisponibles]) => {
-        if (!vigente) {
-          return;
+    listarEstudiantesDisponibles(idProyecto)
+      .then((lista) => {
+        if (vigente) {
+          setDisponibles(lista);
         }
-        if (resEstudiantes.status === 'fulfilled') {
-          setEstudiantes(resEstudiantes.value);
-        }
-        if (resDisponibles.status === 'fulfilled') {
-          setDisponibles(resDisponibles.value);
-        }
-      },
-    );
+      })
+      .catch(() => {
+        // no bloquear si falla la carga de sugerencias
+      });
     return () => {
       vigente = false;
     };
-  }, [editable, idProyecto, versionCorreos, integrantes]);
+  }, [editable, idProyecto, integrantes, versionCursos]);
 
   function cerrar() {
     setAbierto(false);
@@ -158,7 +159,7 @@ export function TarjetaEquipos({
     }
     setEnviando(true);
     try {
-      alActualizarEquipo(await crearEquipo(idProyecto, nombre.trim()));
+      alActualizarEquipo(await crearEquipo(idProyecto, { nombreEquipo: nombre.trim(), idCurso: null, cupo: null }));
       cerrar();
       avisar('Equipo creado.');
     } catch (e) {
@@ -174,13 +175,10 @@ export function TarjetaEquipos({
         <p className="texto-secundario">Guarda el proyecto para crear equipos y agregar estudiantes.</p>
       ) : (
         <RejillaEquipos
-          idProyecto={idProyecto}
           equipos={equipos}
-          estudiantes={estudiantes}
           disponibles={disponibles}
           editable={editable}
           alActualizarEquipo={alActualizarEquipo}
-          alHabilitarCorreo={correoHabilitado}
         />
       )}
       {editable &&
@@ -219,17 +217,21 @@ export function TarjetaEquipos({
       {editable &&
         usaMonitores &&
         (usaMonitoresGuardado && idProyecto !== null ? (
-          <FilaMonitores idProyecto={idProyecto} version={versionCorreos} alHabilitarCorreo={correoHabilitado} />
+          <>
+            <FilaMonitores idProyecto={idProyecto} version={versionCorreos} alHabilitarCorreo={correoHabilitado} />
+            <CorreosPendientes
+              titulo="Monitores sin cuenta"
+              version={versionCorreos}
+              cargar={cargarMonitoresPendientes}
+              generarEnlace={generarEnlaceMonitor}
+              retirar={retirarMonitorPendiente}
+              preguntaRetirar={preguntaRetirarCorreo}
+              alCambiarHabilitaciones={correoHabilitado}
+            />
+          </>
         ) : (
           <p className="texto-secundario">Guarda el proyecto para habilitar monitores.</p>
         ))}
-      {editable && idProyecto !== null && (
-        <CorreosPendientes
-          idProyecto={idProyecto}
-          version={versionCorreos}
-          alCambiarHabilitaciones={correoHabilitado}
-        />
-      )}
       {editable && <p className="texto-secundario">{NOTA}</p>}
     </Tarjeta>
   );

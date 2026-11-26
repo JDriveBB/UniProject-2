@@ -1,3 +1,4 @@
+import type { ResultadoCorreosCurso } from '../api/tipos';
 import { validarCorreo } from '../cuentas/validacion';
 import { MAXIMO_CORREOS_LOTE, separarCorreos } from './correos';
 import type { ErrorAlAgregar, ResumenEstudiantes, ResumenMonitores } from './equipos';
@@ -8,7 +9,7 @@ export type Ficha = {
   resultado?: string;
 };
 
-/** Estudiante que se puede elegir con un clic en el campo de fichas (D-11, T-046). */
+/** Estudiante que se puede elegir con un clic en el campo de fichas. */
 export interface Sugerencia {
   email: string;
   /** null si aún no tiene cuenta. */
@@ -17,16 +18,16 @@ export interface Sugerencia {
 }
 
 export const AVISO_LIMITE_CORREOS = 'Máximo 50 correos por vez.';
+export const MOTIVO_CUPO_LLENO = 'El equipo ya tiene su cupo completo';
 
-/** Textos de correos habilitados sin cuenta: los estudiantes quedan invitados al equipo (D-12). */
+/** Textos de correos habilitados sin cuenta para monitores del proyecto. */
 export const TEXTO_HABILITADO_SIN_CUENTA = {
-  estudianteSingular: 'invitado: entrará al equipo cuando cree su cuenta',
-  estudiantePlural: 'invitados: entrarán al equipo cuando creen su cuenta',
   monitorSingular: 'habilitado sin cuenta (aparecerá cuando cree su cuenta)',
   monitorPlural: 'habilitados sin cuenta (aparecerán cuando creen su cuenta)',
 } as const;
 
 const MOTIVO_YA_HABILITADO_MONITOR = 'Ya estaba habilitado';
+const MOTIVO_YA_EN_CURSO = 'Ya estaba en el curso';
 const MOTIVO_OTRO_ROL_ESTUDIANTE = 'Tiene otro rol: no es estudiante';
 const MOTIVO_OTRO_ROL_MONITOR = 'Tiene otro rol: no es monitor';
 
@@ -147,19 +148,44 @@ function aplicarResultado(
   };
 }
 
-/** Quita fichas agregadas o invitadas y deja las demás con su motivo en resultado. */
-export function aplicarResultadoEstudiantes(
+/** Quita fichas agregadas al equipo y deja los errores y cupo lleno con su motivo en resultado. */
+export function aplicarResultadoEquipo(
   fichas: Ficha[],
   resumen: ResumenEstudiantes,
 ): { fichas: Ficha[]; resumen: string } {
-  return aplicarResultado(fichas, resumen.agregados, resumen.invitados, [], resumen.conOtroRol, resumen.errores, {
+  const erroresConCupo: ErrorAlAgregar[] = [
+    ...resumen.errores,
+    ...resumen.cupoLleno.map((email) => ({ email, motivo: MOTIVO_CUPO_LLENO })),
+  ];
+  return aplicarResultado(fichas, resumen.agregados, [], [], [], erroresConCupo, {
     otroRol: MOTIVO_OTRO_ROL_ESTUDIANTE,
-    habilitadoSingular: TEXTO_HABILITADO_SIN_CUENTA.estudianteSingular,
-    habilitadoPlural: TEXTO_HABILITADO_SIN_CUENTA.estudiantePlural,
+    habilitadoSingular: '',
+    habilitadoPlural: '',
   });
 }
 
-/** Igual que aplicarResultadoEstudiantes, para monitores del proyecto. */
+/** Quita fichas agregadas o habilitadas en el curso y deja las demás con su motivo en resultado. */
+export function aplicarResultadoCurso(
+  fichas: Ficha[],
+  resumen: ResultadoCorreosCurso,
+): { fichas: Ficha[]; resumen: string } {
+  return aplicarResultado(
+    fichas,
+    resumen.agregados,
+    resumen.habilitados.map((c) => c.email),
+    resumen.yaEnCurso,
+    resumen.conOtroRol,
+    [],
+    {
+      yaHabilitado: MOTIVO_YA_EN_CURSO,
+      otroRol: MOTIVO_OTRO_ROL_ESTUDIANTE,
+      habilitadoSingular: 'sin cuenta: copia su enlace en «Correos sin cuenta»',
+      habilitadoPlural: 'sin cuenta: copia sus enlaces en «Correos sin cuenta»',
+    },
+  );
+}
+
+/** Igual que aplicarResultadoCurso, para monitores del proyecto. */
 export function aplicarResultadoMonitores(
   fichas: Ficha[],
   resumen: ResumenMonitores,

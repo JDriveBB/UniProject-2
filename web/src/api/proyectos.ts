@@ -2,20 +2,28 @@ import { api } from './cliente';
 import type {
   CorreoHabilitadoVista,
   CriterioVista,
+  CursoResumen,
   EnlaceRegistro,
   EquipoVista,
   EstudianteDisponibleVista,
   EstudianteProyectoVista,
   HitoVista,
+  InscripcionVista,
   MonitorVista,
   ProyectoDetalle,
   ProyectoVista,
+  ResultadoCursosProyecto,
   ResultadoHabilitacion,
+  ResultadoReparto,
   SolicitudCorreos,
   SolicitudCriterio,
+  SolicitudCupo,
+  SolicitudCursoEstudiante,
+  SolicitudCursosProyecto,
   SolicitudEquipo,
+  SolicitudEquiposLote,
   SolicitudHito,
-  SolicitudInvitacion,
+  SolicitudInscripcion,
   SolicitudLider,
   SolicitudMiembro,
   SolicitudProyecto,
@@ -68,30 +76,23 @@ export function eliminarCriterio(idHito: number, idCriterio: number): Promise<vo
   return api.borrar<void>(`/api/hitos/${idHito}/criterios/${idCriterio}`);
 }
 
-/** crearEquipo: 409 EQUIPO_REPETIDO. */
-export function crearEquipo(idProyecto: number, nombreEquipo: string): Promise<EquipoVista> {
-  const solicitud: SolicitudEquipo = { nombreEquipo };
+/** crearEquipo: 400 CURSO_EN_PROYECTO_MIXTO o CURSO_REQUERIDO; 409 PROYECTO_SIN_CURSOS, CURSO_NO_ASIGNADO o EQUIPO_REPETIDO. */
+export function crearEquipo(idProyecto: number, solicitud: SolicitudEquipo): Promise<EquipoVista> {
   return api.post<EquipoVista>(`/api/proyectos/${idProyecto}/equipos`, solicitud);
 }
 
-/** agregarMiembro: 409 CORREO_NO_HABILITADO, ESTUDIANTE_NO_REGISTRADO o YA_TIENE_EQUIPO. */
-export function agregarMiembro(idEquipo: number, email: string): Promise<EquipoVista> {
-  const solicitud: SolicitudMiembro = { email };
+/** agregarMiembro: 409 ESTUDIANTE_SIN_CURSO, YA_TIENE_EQUIPO, CURSO_DEL_EQUIPO o CUPO_LLENO (se repite con pasarCupo para confirmar). */
+export function agregarMiembro(idEquipo: number, email: string, pasarCupo = false): Promise<EquipoVista> {
+  const solicitud: SolicitudMiembro = pasarCupo ? { email, pasarCupo: true } : { email };
   return api.post<EquipoVista>(`/api/equipos/${idEquipo}/miembros`, solicitud);
 }
 
-/** invitarAlEquipo (D-12): estudiante habilitado sin cuenta; entra al equipo al registrarse. 409 CORREO_NO_HABILITADO, YA_TIENE_CUENTA o YA_INVITADO. */
-export function invitarAlEquipo(idEquipo: number, email: string): Promise<EstudianteProyectoVista> {
-  const solicitud: SolicitudInvitacion = { email };
-  return api.post<EstudianteProyectoVista>(`/api/equipos/${idEquipo}/invitaciones`, solicitud);
-}
-
-/** listarEstudiantes (D-11, D-12): estudiantes habilitados con su equipo o invitación. Solo el docente dueño (403). */
+/** listarEstudiantes: participantes del proyecto con su curso y equipo. Solo el docente dueño (403). */
 export function listarEstudiantes(idProyecto: number): Promise<EstudianteProyectoVista[]> {
   return api.get<EstudianteProyectoVista[]>(`/api/proyectos/${idProyecto}/estudiantes`);
 }
 
-/** listarEstudiantesDisponibles (T-046): cuentas de estudiante sin equipo ni habilitación en el proyecto. Solo el docente dueño (403). */
+/** listarEstudiantesDisponibles: participantes sin equipo en el proyecto, con su curso. Solo el docente dueño (403). */
 export function listarEstudiantesDisponibles(idProyecto: number): Promise<EstudianteDisponibleVista[]> {
   return api.get<EstudianteDisponibleVista[]>(`/api/proyectos/${idProyecto}/estudiantes-disponibles`);
 }
@@ -102,7 +103,7 @@ export function cambiarLider(idEquipo: number, idUsuario: number): Promise<Equip
   return api.put<EquipoVista>(`/api/equipos/${idEquipo}/lider`, solicitud);
 }
 
-/** habilitarCorreos: 409 PROYECTO_SIN_MONITORES si se habilita un monitor sin usaMonitores guardado. */
+/** habilitarCorreos: solo monitores. 409 PROYECTO_SIN_MONITORES si no tiene usaMonitores guardado. */
 export function habilitarCorreos(idProyecto: number, solicitud: SolicitudCorreos): Promise<ResultadoHabilitacion> {
   return api.post<ResultadoHabilitacion>(`/api/proyectos/${idProyecto}/correos`, solicitud);
 }
@@ -135,4 +136,71 @@ export function retirarCorreo(idProyecto: number, idCorreoHabilitado: number): P
 /** generarEnlaceCorreo: 200 (Cache-Control: no-store). Solo habilitaciones pendientes; 409 HABILITACION_USADA; 404 si no existe en el proyecto. */
 export function generarEnlaceCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<EnlaceRegistro> {
   return api.post<EnlaceRegistro>(`/api/proyectos/${idProyecto}/correos/${idCorreoHabilitado}/enlace`);
+}
+
+/** crearEquiposEnLote: 400 CURSO_EN_PROYECTO_MIXTO o CURSO_REQUERIDO; 409 PROYECTO_SIN_CURSOS, CURSO_NO_ASIGNADO, EQUIPO_REPETIDO, SIN_ESTUDIANTES_SIN_EQUIPO o DEMASIADOS_EQUIPOS. */
+export function crearEquiposEnLote(idProyecto: number, solicitud: SolicitudEquiposLote): Promise<EquipoVista[]> {
+  return api.post<EquipoVista[]>(`/api/proyectos/${idProyecto}/equipos/lote`, solicitud);
+}
+
+/** repartirEquipos: asigna al azar a los estudiantes sin equipo según curso y cupo. */
+export function repartirEquipos(idProyecto: number): Promise<ResultadoReparto> {
+  return api.post<ResultadoReparto>(`/api/proyectos/${idProyecto}/equipos/reparto`);
+}
+
+/** vistaInscripcion: estado de inscripción a equipos del proyecto. */
+export function vistaInscripcion(idProyecto: number): Promise<InscripcionVista> {
+  return api.get<InscripcionVista>(`/api/proyectos/${idProyecto}/inscripcion`);
+}
+
+/** configurarInscripcion: configura cierreEquipos y horasRonda del proyecto. 400 CIERRE_EN_EL_PASADO o VALIDACION; 409 INSCRIPCION_YA_CERRADA. */
+export function configurarInscripcion(
+  idProyecto: number,
+  solicitud: SolicitudInscripcion,
+): Promise<InscripcionVista> {
+  return api.put<InscripcionVista>(`/api/proyectos/${idProyecto}/inscripcion`, solicitud);
+}
+
+/** listarCursosProyecto: cursos asignados al proyecto. */
+export function listarCursosProyecto(idProyecto: number): Promise<CursoResumen[]> {
+  return api.get<CursoResumen[]>(`/api/proyectos/${idProyecto}/cursos`);
+}
+
+/** asignarCursosProyecto: reemplaza los cursos del proyecto (confirmar=false devuelve vista previa si hay cambios). 409 CURSO_ARCHIVADO. */
+export function asignarCursosProyecto(
+  idProyecto: number,
+  solicitud: SolicitudCursosProyecto,
+): Promise<ResultadoCursosProyecto> {
+  return api.put<ResultadoCursosProyecto>(`/api/proyectos/${idProyecto}/cursos`, solicitud);
+}
+
+/** elegirCursoEstudiante: 409 EQUIPO_DE_OTRO_CURSO o CURSO_NO_VALIDO. */
+export function elegirCursoEstudiante(
+  idProyecto: number,
+  idUsuario: number,
+  idCurso: number,
+): Promise<EstudianteProyectoVista> {
+  const solicitud: SolicitudCursoEstudiante = { idCurso };
+  return api.put<EstudianteProyectoVista>(`/api/proyectos/${idProyecto}/estudiantes/${idUsuario}/curso`, solicitud);
+}
+
+/** destituirLider: deja el equipo sin líder y abre una votación si no hay una abierta. 409 SIN_LIDER. */
+export function destituirLider(idEquipo: number): Promise<EquipoVista> {
+  return api.borrar<EquipoVista>(`/api/equipos/${idEquipo}/lider`);
+}
+
+/** cambiarCupo: cambia el cupo; puede quedar por debajo de los integrantes actuales sin sacar a nadie. */
+export function cambiarCupo(idEquipo: number, cupo: number | null): Promise<EquipoVista> {
+  const solicitud: SolicitudCupo = { cupo };
+  return api.put<EquipoVista>(`/api/equipos/${idEquipo}/cupo`, solicitud);
+}
+
+/** unirseEquipo: 409 EQUIPO_SIN_INSCRIPCION, INSCRIPCION_CERRADA, YA_TIENE_EQUIPO, CURSO_DEL_EQUIPO o EQUIPO_LLENO. */
+export function unirseEquipo(idEquipo: number): Promise<EquipoVista> {
+  return api.post<EquipoVista>(`/api/equipos/${idEquipo}/inscripcion`);
+}
+
+/** salirseEquipo: 204. 404 si no está en el equipo; 409 EQUIPO_SIN_INSCRIPCION, INSCRIPCION_CERRADA o TIENE_TAREAS. */
+export function salirseEquipo(idEquipo: number): Promise<void> {
+  return api.borrar<void>(`/api/equipos/${idEquipo}/inscripcion`);
 }

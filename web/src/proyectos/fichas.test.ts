@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import type { ResultadoCorreosCurso } from '../api/tipos';
 import type { ResumenEstudiantes, ResumenMonitores } from './equipos';
 import type { Sugerencia } from './fichas';
 import {
   agregarTexto,
-  aplicarResultadoEstudiantes,
+  aplicarResultadoCurso,
+  aplicarResultadoEquipo,
   aplicarResultadoMonitores,
   AVISO_LIMITE_CORREOS,
   filtrarSugerencias,
+  MOTIVO_CUPO_LLENO,
   quitar,
   TEXTO_HABILITADO_SIN_CUENTA,
   validas,
@@ -95,40 +98,50 @@ describe('filtrarSugerencias', () => {
   });
 });
 
-describe('aplicarResultadoEstudiantes y aplicarResultadoMonitores', () => {
-  it('estudiantes: quita agregados e invitados, deja los demás con motivo y arma resumen corto', () => {
-    const { fichas } = agregarTexto(
-      [],
-      'Ok1@uninorte.edu.co ok2@uninorte.edu.co inv@uninorte.edu.co doc@uninorte.edu.co err@uninorte.edu.co',
-    );
+describe('aplicarResultadoEquipo, aplicarResultadoCurso y aplicarResultadoMonitores', () => {
+  it('equipo: quita agregados, deja cupo lleno con su motivo y arma el resumen', () => {
+    const { fichas } = agregarTexto([], 'ok@uninorte.edu.co lleno@uninorte.edu.co');
     const resumen: ResumenEstudiantes = {
-      agregados: ['ok1@uninorte.edu.co', 'ok2@uninorte.edu.co'],
-      invitados: ['inv@uninorte.edu.co'],
-      conOtroRol: ['doc@uninorte.edu.co'],
-      errores: [{ email: 'err@uninorte.edu.co', motivo: 'Ya pertenece a otro equipo' }],
+      agregados: ['ok@uninorte.edu.co'],
+      cupoLleno: ['lleno@uninorte.edu.co'],
+      errores: [],
     };
-
-    const resultado = aplicarResultadoEstudiantes(fichas, resumen);
+    const resultado = aplicarResultadoEquipo(fichas, resumen);
     expect(resultado.fichas).toEqual([
-      { correo: 'doc@uninorte.edu.co', error: null, resultado: 'Tiene otro rol: no es estudiante' },
-      { correo: 'err@uninorte.edu.co', error: null, resultado: 'Ya pertenece a otro equipo' },
+      { correo: 'lleno@uninorte.edu.co', error: null, resultado: MOTIVO_CUPO_LLENO },
     ]);
-    expect(resultado.resumen).toBe(
-      '2 agregados · 1 invitado: entrará al equipo cuando cree su cuenta · 2 con problemas',
-    );
+    expect(resultado.resumen).toBe('1 agregado · 1 con problema');
   });
 
-  it('estudiantes: singular/plural y solo las partes con número', () => {
-    const { fichas } = agregarTexto([], 'a@u.co b@u.co c@u.co');
-    const resultado = aplicarResultadoEstudiantes(fichas, {
-      agregados: ['a@u.co'],
-      invitados: ['b@u.co', 'c@u.co'],
-      conOtroRol: [],
-      errores: [],
-    });
-    expect(resultado.fichas).toEqual([]);
-    expect(resultado.resumen).toBe('1 agregado · 2 invitados: entrarán al equipo cuando creen su cuenta');
-    expect(TEXTO_HABILITADO_SIN_CUENTA.estudiantePlural).toBe('invitados: entrarán al equipo cuando creen su cuenta');
+  it('curso: quita agregados y habilitados, deja ya en curso y otro rol con su motivo', () => {
+    const { fichas } = agregarTexto(
+      [],
+      'ok@uninorte.edu.co nuevo@uninorte.edu.co ya@uninorte.edu.co doc@uninorte.edu.co',
+    );
+    const resumen: ResultadoCorreosCurso = {
+      agregados: ['ok@uninorte.edu.co'],
+      habilitados: [
+        {
+          idCorreoHabilitado: 5,
+          email: 'nuevo@uninorte.edu.co',
+          rol: 'ESTUDIANTE',
+          idProyecto: null,
+          idCurso: 1,
+          fechaHabilitacion: '2026-11-06T10:00:00Z',
+          registrado: false,
+        },
+      ],
+      yaEnCurso: ['ya@uninorte.edu.co'],
+      conOtroRol: ['doc@uninorte.edu.co'],
+    };
+    const resultado = aplicarResultadoCurso(fichas, resumen);
+    expect(resultado.fichas).toEqual([
+      { correo: 'ya@uninorte.edu.co', error: null, resultado: 'Ya estaba en el curso' },
+      { correo: 'doc@uninorte.edu.co', error: null, resultado: 'Tiene otro rol: no es estudiante' },
+    ]);
+    expect(resultado.resumen).toBe(
+      '1 agregado · 1 sin cuenta: copia su enlace en «Correos sin cuenta» · 2 con problemas',
+    );
   });
 
   it('monitores: quita asignados y habilitados, deja los demás con motivo y arma resumen corto', () => {

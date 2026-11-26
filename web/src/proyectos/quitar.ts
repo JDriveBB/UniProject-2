@@ -7,7 +7,6 @@ import type { Mensaje } from './errores';
 export interface ApiQuitar {
   quitarMiembro(idEquipo: number, idUsuario: number): Promise<EquipoVista>;
   quitarMonitor(idProyecto: number, idMonitor: number): Promise<void>;
-  retirarCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<void>;
 }
 
 export type ResultadoQuitarIntegrante = { tipo: 'quitado'; equipo: EquipoVista } | { tipo: 'error'; mensaje: string };
@@ -48,6 +47,10 @@ export function preguntaRetirarCorreo(correo: string): string {
   return `¿Retirar la habilitación de ${correo}? Esa persona ya no podrá crear su cuenta para este proyecto. Puedes volver a habilitarla cuando quieras.`;
 }
 
+export function preguntaRetirarCorreoCurso(correo: string): string {
+  return `¿Retirar la habilitación de ${correo}? Esa persona ya no podrá crear su cuenta con este curso. Puedes volver a agregar su correo cuando quieras.`;
+}
+
 export function textoCorreoRetirado(correo: string): string {
   return `Se retiró la habilitación de ${correo}.`;
 }
@@ -57,14 +60,13 @@ export interface ResultadoRetirar {
   recargar: boolean;
 }
 
-/** Decisión 30f-6: retira una habilitación pendiente; 409 = la persona se registró entretanto (se recarga para verla en su equipo o en monitores); 404 = ya no existía. */
+/** Decisión 30f-6: retira una habilitación pendiente; 409 = la persona se registró entretanto (se recarga); 404 = ya no existía. */
 export async function retirarHabilitacion(
-  api: Pick<ApiQuitar, 'retirarCorreo'>,
-  idProyecto: number,
+  retirar: (idCorreoHabilitado: number) => Promise<void>,
   correo: Pick<CorreoHabilitadoVista, 'idCorreoHabilitado' | 'email'>,
 ): Promise<ResultadoRetirar> {
   try {
-    await api.retirarCorreo(idProyecto, correo.idCorreoHabilitado);
+    await retirar(correo.idCorreoHabilitado);
     return { mensaje: { tipo: 'exito', texto: textoCorreoRetirado(correo.email) }, recargar: true };
   } catch (e) {
     if (e instanceof ErrorApi) {

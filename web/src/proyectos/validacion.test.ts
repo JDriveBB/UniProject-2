@@ -40,6 +40,7 @@ const proyecto: BorradorProyecto = {
   fechaInicio: '2026-08-01',
   fechaFin: '2026-11-30',
   usaMonitores: false,
+  equiposMixtos: false,
   hitos: [hito],
 };
 
