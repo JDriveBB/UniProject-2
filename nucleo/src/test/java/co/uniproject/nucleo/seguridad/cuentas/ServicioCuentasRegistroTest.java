@@ -14,8 +14,8 @@ import static org.mockito.Mockito.when;
 
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
+import co.uniproject.nucleo.configuracionacademica.cursos.ParticipacionCursos;
 import co.uniproject.nucleo.configuracionacademica.repositorio.MonitorProyectoRepositorio;
-import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
 import co.uniproject.nucleo.seguridad.dominio.CorreoHabilitado;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
 import co.uniproject.nucleo.seguridad.dominio.Usuario;
@@ -47,7 +47,7 @@ class ServicioCuentasRegistroTest {
     private final AtomicInteger encodes = new AtomicInteger();
     private UsuarioRepositorio usuarios;
     private CorreoHabilitadoRepositorio correos;
-    private ServicioEquipos equipos;
+    private ParticipacionCursos participacion;
     private ServicioCuentas servicio;
     private CodigosRecuperacion.Nuevo codigoValido;
     private int encodesTrasConstruir;
@@ -56,7 +56,7 @@ class ServicioCuentasRegistroTest {
     void preparar() {
         usuarios = mock(UsuarioRepositorio.class);
         correos = mock(CorreoHabilitadoRepositorio.class);
-        equipos = mock(ServicioEquipos.class);
+        participacion = mock(ParticipacionCursos.class);
         codigoValido = CodigosRecuperacion.nuevo();
         when(correos.bloquearPendientes(EMAIL))
                 .thenReturn(List.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
@@ -77,7 +77,7 @@ class ServicioCuentasRegistroTest {
                 usuarios,
                 correos,
                 mock(MonitorProyectoRepositorio.class),
-                equipos,
+                participacion,
                 contador,
                 mock(RegistroAuditoria.class),
                 Clock.fixed(AHORA, ZoneOffset.UTC));
@@ -154,7 +154,7 @@ class ServicioCuentasRegistroTest {
                 .thenReturn(List.of(habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)))));
         when(usuarios.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("duplicado"));
         exigirRechazoUniforme();
-        verify(equipos, never()).incorporarInvitado(anyLong(), anyLong(), anyLong(), anyLong());
+        verify(participacion, never()).incorporar(anyLong(), anyLong(), anyLong());
 
         clearInvocations(usuarios);
 
@@ -193,7 +193,9 @@ class ServicioCuentasRegistroTest {
         doThrow(new CannotAcquireLockException("candado")).when(correos).bloquearPendientes(EMAIL);
         exigirRechazoUniforme();
         encodesTrasConstruir = encodes.get();
-        doThrow(new DeadlockLoserDataAccessException("interbloqueo", null)).when(correos).bloquearPendientes(EMAIL);
+        doThrow(new DeadlockLoserDataAccessException("interbloqueo", null))
+                .when(correos)
+                .bloquearPendientes(EMAIL);
         exigirRechazoUniforme();
         verify(usuarios, never()).saveAndFlush(any());
     }
@@ -212,27 +214,41 @@ class ServicioCuentasRegistroTest {
     }
 
     @Test
-    void laInvitacionAUnEquipoSeConsumeAlRegistrarseAunqueNoSePuedaCumplir() {
-        CorreoHabilitado invitada = habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)));
-        invitada.setIdCorreoHabilitado(7L);
-        invitada.setIdProyecto(3L);
-        invitada.setIdEquipoInvitado(11L);
-        when(correos.bloquearPendientes(EMAIL)).thenReturn(List.of(invitada));
+    void incorporaAlEstudianteEnSusCursosEnOrdenAscendenteYNadaSinCurso() {
+        CorreoHabilitado cursoAlto = habilitacionConCodigo(AHORA.plus(Duration.ofDays(1)));
+        cursoAlto.setIdCorreoHabilitado(7L);
+        cursoAlto.setIdCurso(8L);
+        CorreoHabilitado cursoBajo = habilitacion(RolPlataforma.ESTUDIANTE);
+        cursoBajo.setIdCorreoHabilitado(8L);
+        cursoBajo.setIdCurso(3L);
+        when(correos.bloquearPendientes(EMAIL)).thenReturn(List.of(cursoAlto, cursoBajo));
         when(usuarios.saveAndFlush(any(Usuario.class))).thenAnswer(i -> {
             Usuario u = i.getArgument(0);
             u.setIdUsuario(42L);
             return u;
         });
-        when(equipos.incorporarInvitado(42L, 7L, 3L, 11L)).thenReturn(false);
 
         UsuarioSesion sesion = servicio.registrar(solicitud());
 
         assertThat(sesion.idUsuario()).isEqualTo(42L);
-        assertThat(invitada.getIdEquipoInvitado()).isNull();
-        assertThat(invitada.getIdUsuarioRegistrado()).isEqualTo(42L);
-        var orden = inOrder(correos, equipos);
-        orden.verify(correos).saveAll(List.of(invitada));
-        orden.verify(equipos).incorporarInvitado(42L, 7L, 3L, 11L);
+        var orden = inOrder(correos, participacion);
+        orden.verify(correos).saveAll(List.of(cursoAlto, cursoBajo));
+        orden.verify(participacion).bloquearCurso(3L);
+        orden.verify(participacion).bloquearCurso(8L);
+        orden.verify(participacion).incorporar(42L, 3L, 42L);
+        orden.verify(participacion).incorporar(42L, 8L, 42L);
+
+        clearInvocations(participacion);
+        CorreoHabilitado monitor = habilitacion(RolPlataforma.MONITOR);
+        monitor.setIdProyecto(5L);
+        monitor.setEnlaceSelector(codigoValido.selector());
+        monitor.setEnlaceVerificadorHash(codigoValido.hashVerificador());
+        monitor.setEnlaceVenceEn(AHORA.plus(Duration.ofDays(1)));
+        when(correos.bloquearPendientes(EMAIL)).thenReturn(List.of(monitor));
+
+        servicio.registrar(solicitud());
+
+        verify(participacion, never()).incorporar(anyLong(), anyLong(), anyLong());
     }
 
     @Test

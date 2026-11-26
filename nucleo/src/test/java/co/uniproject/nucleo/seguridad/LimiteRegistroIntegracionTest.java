@@ -42,19 +42,15 @@ class LimiteRegistroIntegracionTest extends ApiIntegracionBase {
     private Habilitacion habilitar(String prefijo) {
         String docente = correoUnico("doclimreg");
         long idDocente = crearUsuario("Docente Limite", docente, "DOCENTE");
-        long proyecto = jdbc.sql("INSERT INTO proyecto (id_docente, nombre, fecha_inicio, fecha_fin) "
-                        + "VALUES (:d, 'Proyecto Limite', DATE '2026-08-03', DATE '2026-11-27') RETURNING id_proyecto")
-                .param("d", idDocente)
-                .query(Long.class)
-                .single();
+        long curso = cursoSql(idDocente);
         String email = correoUnico(prefijo);
-        jdbc.sql("INSERT INTO correo_habilitado (id_proyecto, email, rol_plataforma, id_habilitado_por) "
-                        + "VALUES (:p, :e, 'ESTUDIANTE', :d)")
-                .param("p", proyecto)
+        jdbc.sql("INSERT INTO correo_habilitado (id_curso, email, rol_plataforma, id_habilitado_por) "
+                        + "VALUES (:c, :e, 'ESTUDIANTE', :d)")
+                .param("c", curso)
                 .param("e", email)
                 .param("d", idDocente)
                 .update();
-        return new Habilitacion(email, enlace(sesion(docente), proyecto, email));
+        return new Habilitacion(email, enlaceCurso(sesion(docente), curso, email));
     }
 
     private void fallidos(int cuantos) {

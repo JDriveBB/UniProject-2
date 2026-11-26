@@ -43,18 +43,9 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
         return sesion(email);
     }
 
-    private long crearProyecto(Navegador docente) {
-        HttpResponse<String> r = docente.post(
-                "/api/proyectos",
-                "{\"nombre\":\"Proyecto Enlace\",\"fechaInicio\":\"2026-08-03\","
-                        + "\"fechaFin\":\"2026-11-27\",\"usaMonitores\":true}");
-        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
-        return numero(r.body(), "idProyecto");
-    }
-
-    private long habilitarEnProyecto(Navegador docente, long idProyecto, String email) {
-        HttpResponse<String> r = docente.post(
-                "/api/proyectos/" + idProyecto + "/correos", "{\"emails\":[\"" + email + "\"],\"rol\":\"ESTUDIANTE\"}");
+    private long habilitarEnCurso(Navegador docente, long idCurso, String email) {
+        HttpResponse<String> r =
+                docente.post("/api/cursos/" + idCurso + "/correos", "{\"emails\":[\"" + email + "\"]}");
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
         return numero(r.body(), "idCorreoHabilitado");
     }
@@ -79,9 +70,9 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
     @Test
     void rechazaRegistroSinCodigoOConCodigoInventado() {
         Navegador docente = docente();
-        long idProyecto = crearProyecto(docente);
+        long idCurso = crearCurso(docente, "Curso Enlace");
         String email = correoUnico("sinenlace");
-        long idCorreo = habilitarEnProyecto(docente, idProyecto, email);
+        long idCorreo = habilitarEnCurso(docente, idCurso, email);
 
         // Correo habilitado pero aún sin enlace generado.
         exigirRegistroNoDisponible(postRegistro(email, "\"" + CODIGO_INVENTADO + "\""));
@@ -96,8 +87,7 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
         assertThat(enBlanco.body()).contains("\"codigo\":\"VALIDACION\"").contains("codigo");
 
         // Generado el enlace real, un código mal formado, con otro selector o con otro verificador sigue fallando.
-        HttpResponse<String> enlace =
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null);
+        HttpResponse<String> enlace = docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null);
         assertThat(enlace.statusCode()).as(enlace.body()).isEqualTo(200);
         String codigoReal = campoTexto(enlace.body(), "codigo");
 
@@ -126,19 +116,19 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
     @Test
     void docenteGeneraEnlaceEstudianteSeRegistraYRepetirElCodigoFalla() {
         Navegador docente = docente();
-        long idProyecto1 = crearProyecto(docente);
-        long idProyecto2 = crearProyecto(docente);
+        long idCurso1 = crearCurso(docente, "Curso Enlace 1");
+        long idCurso2 = crearCurso(docente, "Curso Enlace 2");
         String email = correoUnico("estok");
-        long idCorreo1 = habilitarEnProyecto(docente, idProyecto1, email);
-        long idCorreo2 = habilitarEnProyecto(docente, idProyecto2, email);
-        // También generamos enlace en el segundo proyecto para comprobar que al registrarse se limpian ambos.
-        assertThat(docente.post("/api/proyectos/" + idProyecto2 + "/correos/" + idCorreo2 + "/enlace", null)
+        long idCorreo1 = habilitarEnCurso(docente, idCurso1, email);
+        long idCorreo2 = habilitarEnCurso(docente, idCurso2, email);
+        // También generamos enlace en el segundo curso para comprobar que al registrarse se limpian ambos.
+        assertThat(docente.post("/api/cursos/" + idCurso2 + "/correos/" + idCorreo2 + "/enlace", null)
                         .statusCode())
                 .isEqualTo(200);
 
         Instant antes = Instant.now();
         HttpResponse<String> rEnlace =
-                docente.post("/api/proyectos/" + idProyecto1 + "/correos/" + idCorreo1 + "/enlace", null);
+                docente.post("/api/cursos/" + idCurso1 + "/correos/" + idCorreo1 + "/enlace", null);
         Instant despues = Instant.now();
 
         assertThat(rEnlace.statusCode()).as(rEnlace.body()).isEqualTo(200);
@@ -167,21 +157,21 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
         // Repetir el mismo código falla con REGISTRO_NO_DISPONIBLE.
         exigirRegistroNoDisponible(postRegistro(email, "\"" + codigo + "\""));
         String otroHabilitado = correoUnico("otro");
-        habilitarEnProyecto(docente, idProyecto1, otroHabilitado);
+        habilitarEnCurso(docente, idCurso1, otroHabilitado);
         exigirRegistroNoDisponible(postRegistro(otroHabilitado, "\"" + codigo + "\""));
     }
 
     @Test
     void codigoValidoConOtroCorreoHabilitadoEsRechazadoYNoConsumeElEnlace() {
         Navegador docente = docente();
-        long idProyecto = crearProyecto(docente);
+        long idCurso = crearCurso(docente, "Curso Enlace Otro");
         String emailA = correoUnico("esta");
         String emailB = correoUnico("estb");
-        long idCorreoA = habilitarEnProyecto(docente, idProyecto, emailA);
-        habilitarEnProyecto(docente, idProyecto, emailB);
+        long idCorreoA = habilitarEnCurso(docente, idCurso, emailA);
+        habilitarEnCurso(docente, idCurso, emailB);
 
         String codigoA = campoTexto(
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreoA + "/enlace", null)
+                docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreoA + "/enlace", null)
                         .body(),
                 "codigo");
 
@@ -200,16 +190,16 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
     @Test
     void generarDosVecesAnulaElPrimerCodigo() {
         Navegador docente = docente();
-        long idProyecto = crearProyecto(docente);
+        long idCurso = crearCurso(docente, "Curso Reemplazo");
         String email = correoUnico("reemplazo");
-        long idCorreo = habilitarEnProyecto(docente, idProyecto, email);
+        long idCorreo = habilitarEnCurso(docente, idCurso, email);
 
         String primero = campoTexto(
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null)
+                docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null)
                         .body(),
                 "codigo");
         String segundo = campoTexto(
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null)
+                docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null)
                         .body(),
                 "codigo");
         assertThat(segundo).isNotEqualTo(primero);
@@ -228,12 +218,12 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
     @Test
     void codigoVencidoEsRechazado() {
         Navegador docente = docente();
-        long idProyecto = crearProyecto(docente);
+        long idCurso = crearCurso(docente, "Curso Vencido");
         String email = correoUnico("vencido");
-        long idCorreo = habilitarEnProyecto(docente, idProyecto, email);
+        long idCorreo = habilitarEnCurso(docente, idCurso, email);
 
         String codigoVencido = campoTexto(
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null)
+                docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null)
                         .body(),
                 "codigo");
         jdbc.sql("UPDATE correo_habilitado SET enlace_vence_en = now() - interval '1 second' "
@@ -250,7 +240,7 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
 
         // Un enlace nuevo sobre la misma habilitación vuelve a funcionar.
         String codigoNuevo = campoTexto(
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null)
+                docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null)
                         .body(),
                 "codigo");
         assertThat(postRegistro(email, "\"" + codigoNuevo + "\"").statusCode()).isEqualTo(201);
@@ -259,43 +249,43 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
     @Test
     void validaPermisosProyectoCorrectoYHabilitacionSinUsar() {
         Navegador docenteA = docente();
-        long idA = crearProyecto(docenteA);
+        long idA = crearCurso(docenteA, "Curso A");
         String emailA = correoUnico("proya");
-        long idCorreoA = habilitarEnProyecto(docenteA, idA, emailA);
+        long idCorreoA = habilitarEnCurso(docenteA, idA, emailA);
 
         Navegador docenteB = docente();
-        long idB = crearProyecto(docenteB);
-        long idCorreoB = habilitarEnProyecto(docenteB, idB, correoUnico("proyb"));
+        long idB = crearCurso(docenteB, "Curso B");
+        long idCorreoB = habilitarEnCurso(docenteB, idB, correoUnico("proyb"));
 
-        // Otro docente (no del proyecto) -> 403.
+        // Otro docente (no del curso) -> 403.
         HttpResponse<String> otroDocente =
-                docenteB.post("/api/proyectos/" + idA + "/correos/" + idCorreoA + "/enlace", null);
+                docenteB.post("/api/cursos/" + idA + "/correos/" + idCorreoA + "/enlace", null);
         assertThat(otroDocente.statusCode()).as(otroDocente.body()).isEqualTo(403);
         assertThat(otroDocente.body()).contains("\"codigo\":\"ACCESO_DENEGADO\"");
 
-        // Proyecto inexistente -> 403 (Permisos).
-        assertThat(docenteA.post("/api/proyectos/999999999/correos/" + idCorreoA + "/enlace", null)
+        // Curso inexistente -> 403 (Permisos).
+        assertThat(docenteA.post("/api/cursos/999999999/correos/" + idCorreoA + "/enlace", null)
                         .statusCode())
                 .isEqualTo(403);
 
-        // Id de otro proyecto o inexistente -> 404.
-        HttpResponse<String> otroProyecto =
-                docenteA.post("/api/proyectos/" + idA + "/correos/" + idCorreoB + "/enlace", null);
-        assertThat(otroProyecto.statusCode()).as(otroProyecto.body()).isEqualTo(404);
-        assertThat(otroProyecto.body()).contains("\"codigo\":\"NO_ENCONTRADO\"");
+        // Id de otro curso o inexistente -> 404.
+        HttpResponse<String> otroCurso =
+                docenteA.post("/api/cursos/" + idA + "/correos/" + idCorreoB + "/enlace", null);
+        assertThat(otroCurso.statusCode()).as(otroCurso.body()).isEqualTo(404);
+        assertThat(otroCurso.body()).contains("\"codigo\":\"NO_ENCONTRADO\"");
 
-        HttpResponse<String> inexistente = docenteA.post("/api/proyectos/" + idA + "/correos/999999999/enlace", null);
+        HttpResponse<String> inexistente = docenteA.post("/api/cursos/" + idA + "/correos/999999999/enlace", null);
         assertThat(inexistente.statusCode()).as(inexistente.body()).isEqualTo(404);
 
         // Habilitación ya usada -> 409 HABILITACION_USADA.
-        String codigoA = enlace(docenteA, idA, emailA);
+        String codigoA = enlaceCurso(docenteA, idA, emailA);
         assertThat(postRegistro(emailA, "\"" + codigoA + "\"").statusCode()).isEqualTo(201);
 
-        HttpResponse<String> usada = docenteA.post("/api/proyectos/" + idA + "/correos/" + idCorreoA + "/enlace", null);
+        HttpResponse<String> usada = docenteA.post("/api/cursos/" + idA + "/correos/" + idCorreoA + "/enlace", null);
         assertThat(usada.statusCode()).as(usada.body()).isEqualTo(409);
         assertThat(usada.body())
                 .contains("\"codigo\":\"HABILITACION_USADA\"")
-                .contains(EnlacesRegistro.MENSAJE_HABILITACION_USADA);
+                .contains("Esa persona ya creó su cuenta. Quítala del curso");
     }
 
     @Test
@@ -323,8 +313,8 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
 
         // Habilitación de estudiante -> 404 NO_ENCONTRADO; inexistente -> 404 NO_ENCONTRADO.
         Navegador docente = sesion(emailDoc);
-        long idProyecto = crearProyecto(docente);
-        long idHabEst = habilitarEnProyecto(docente, idProyecto, correoUnico("estadmin"));
+        long idCurso = crearCurso(docente, "Curso Admin");
+        long idHabEst = habilitarEnCurso(docente, idCurso, correoUnico("estadmin"));
         HttpResponse<String> sobreEstudiante = admin.post("/api/admin/docentes/" + idHabEst + "/enlace", null);
         assertThat(sobreEstudiante.statusCode()).as(sobreEstudiante.body()).isEqualTo(404);
         assertThat(sobreEstudiante.body()).contains("\"codigo\":\"NO_ENCONTRADO\"");
@@ -340,16 +330,16 @@ class EnlaceRegistroIntegracionTest extends ApiIntegracionBase {
     @Test
     void noGuardaElCodigoEnLaBaseNiEnAuditoriaLogsOToString(CapturedOutput salida) throws Exception {
         Navegador docente = docente();
-        long idProyecto = crearProyecto(docente);
-        long idDocente = jdbc.sql("SELECT id_docente FROM proyecto WHERE id_proyecto = :p")
-                .param("p", idProyecto)
+        long idCurso = crearCurso(docente, "Curso Secreto");
+        long idDocente = jdbc.sql("SELECT id_docente FROM curso WHERE id_curso = :c")
+                .param("c", idCurso)
                 .query(Long.class)
                 .single();
         String email = correoUnico("secreto");
-        long idCorreo = habilitarEnProyecto(docente, idProyecto, email);
+        long idCorreo = habilitarEnCurso(docente, idCurso, email);
 
         HttpResponse<String> rEnlace =
-                docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null);
+                docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null);
         assertThat(rEnlace.statusCode()).as(rEnlace.body()).isEqualTo(200);
         String codigo = campoTexto(rEnlace.body(), "codigo");
         Instant venceEn = Instant.parse(campoTexto(rEnlace.body(), "venceEn"));

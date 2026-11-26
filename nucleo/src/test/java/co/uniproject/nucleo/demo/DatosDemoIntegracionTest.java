@@ -28,6 +28,7 @@ class DatosDemoIntegracionTest extends ApiIntegracionBase {
         return jdbc.sql(sql)
                 .param("dominio", "%@" + CargaDemo.DOMINIO)
                 .param("proyecto", CargaDemo.PROYECTO)
+                .param("curso", CargaDemo.CURSO)
                 .query(Integer.class)
                 .single();
     }
@@ -57,8 +58,8 @@ class DatosDemoIntegracionTest extends ApiIntegracionBase {
         assertThat(contar("SELECT count(*) FROM monitor_proyecto mp JOIN proyecto p ON p.id_proyecto = mp.id_proyecto "
                         + "WHERE p.nombre = :proyecto"))
                 .isEqualTo(1);
-        assertThat(contar("SELECT count(*) FROM correo_habilitado ch JOIN proyecto p ON p.id_proyecto = ch.id_proyecto "
-                        + "WHERE p.nombre = :proyecto AND ch.fecha_uso IS NULL"))
+        assertThat(contar("SELECT count(*) FROM correo_habilitado ch JOIN curso c ON c.id_curso = ch.id_curso "
+                        + "WHERE c.nombre = :curso AND ch.fecha_uso IS NULL"))
                 .isEqualTo(2);
         assertThat(contar("SELECT count(*) FROM miembro_equipo me JOIN usuario u ON u.id_usuario = me.id_usuario "
                         + "WHERE u.email = 'hugo@" + CargaDemo.DOMINIO + "'"))

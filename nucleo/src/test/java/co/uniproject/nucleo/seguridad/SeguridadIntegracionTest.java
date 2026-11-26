@@ -159,6 +159,16 @@ class SeguridadIntegracionTest {
         return enlaces.generarParaProyecto(9101L, idProyecto, idCorreo).codigo();
     }
 
+    private String enlaceCurso(long idCurso, String email) {
+        long idCorreo = jdbc.sql("SELECT id_correo_habilitado FROM correo_habilitado "
+                        + "WHERE id_curso = :c AND email = :e AND fecha_uso IS NULL")
+                .param("c", idCurso)
+                .param("e", email)
+                .query(Long.class)
+                .single();
+        return enlaces.generarParaCurso(9101L, idCurso, idCorreo).codigo();
+    }
+
     @Test
     void sinSesionLaApiResponde401() {
         Navegador n = new Navegador(puerto);
@@ -275,10 +285,15 @@ class SeguridadIntegracionTest {
                                 + "(9201, 9101, 'P1', DATE '2026-08-03', DATE '2026-11-27', true), "
                                 + "(9202, 9101, 'P2', DATE '2026-08-03', DATE '2026-11-27', true)")
                 .update();
+        jdbc.sql("INSERT INTO curso (id_curso, id_docente, nombre, periodo) VALUES "
+                        + "(9301, 9101, 'Curso SQL 1', '2026-2'), (9302, 9101, 'Curso SQL 2', '2026-2')")
+                .update();
+        jdbc.sql("INSERT INTO correo_habilitado (id_curso, email, rol_plataforma, id_habilitado_por) VALUES "
+                        + "(9301, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), (9302, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), "
+                        + "(9301, 'ambiguo@u.edu.co', 'ESTUDIANTE', 9101)")
+                .update();
         jdbc.sql("INSERT INTO correo_habilitado (id_proyecto, email, rol_plataforma, id_habilitado_por) VALUES "
-                        + "(9201, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), (9202, 'est.uno@u.edu.co', 'ESTUDIANTE', 9101), "
-                        + "(9201, 'mon.uno@u.edu.co', 'MONITOR', 9101), "
-                        + "(9201, 'ambiguo@u.edu.co', 'ESTUDIANTE', 9101), (9202, 'ambiguo@u.edu.co', 'MONITOR', 9101)")
+                        + "(9201, 'mon.uno@u.edu.co', 'MONITOR', 9101), (9202, 'ambiguo@u.edu.co', 'MONITOR', 9101)")
                 .update();
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
@@ -290,12 +305,17 @@ class SeguridadIntegracionTest {
                                         "est.uno@u.edu.co",
                                         "ClaveEst2026",
                                         true,
-                                        enlaceProyecto(9201, "est.uno@u.edu.co")))
+                                        enlaceCurso(9301, "est.uno@u.edu.co")))
                         .body())
                 .contains("\"rol\":\"ESTUDIANTE\"");
         assertThat(jdbc.sql(
                                 "SELECT count(*) FROM correo_habilitado c JOIN usuario u ON u.id_usuario = c.id_usuario_registrado "
                                         + "WHERE c.email = 'est.uno@u.edu.co' AND u.email = c.email AND c.fecha_uso IS NOT NULL")
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(2);
+        assertThat(jdbc.sql("SELECT count(*) FROM miembro_curso mc JOIN usuario u ON u.id_usuario = mc.id_usuario "
+                                + "WHERE u.email = 'est.uno@u.edu.co'")
                         .query(Integer.class)
                         .single())
                 .isEqualTo(2);
@@ -318,7 +338,7 @@ class SeguridadIntegracionTest {
 
         HttpResponse<String> ambiguo = n.post(
                 "/api/cuentas/registro",
-                registro("Amb", "ambiguo@u.edu.co", "ClaveAmb20260", true, enlaceProyecto(9201, "ambiguo@u.edu.co")));
+                registro("Amb", "ambiguo@u.edu.co", "ClaveAmb20260", true, enlaceCurso(9301, "ambiguo@u.edu.co")));
         assertThat(ambiguo.statusCode()).isEqualTo(409);
         assertThat(ambiguo.body()).contains("\"codigo\":\"REGISTRO_NO_DISPONIBLE\"");
         HttpResponse<String> noHabilitado = n.post(

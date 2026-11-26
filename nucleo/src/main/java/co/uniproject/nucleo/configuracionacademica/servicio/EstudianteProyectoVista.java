@@ -1,8 +1,5 @@
 package co.uniproject.nucleo.configuracionacademica.servicio;
 
-/**
- * Correo de ESTUDIANTE habilitado en el proyecto (D-11, D-12), solo para el docente dueño. nombre: null sin cuenta.
- * idEquipo: equipo del proyecto donde es integrante, o null. idEquipoInvitado: equipo al que entrará al registrarse.
- */
+/** Participante del proyecto, el curso con que cuenta y su equipo o null. Solo para el docente dueño. */
 public record EstudianteProyectoVista(
-        String email, String nombre, boolean registrado, Long idEquipo, Long idEquipoInvitado) {}
+        long idUsuario, String email, String nombre, long idCurso, String nombreCurso, Long idEquipo) {}

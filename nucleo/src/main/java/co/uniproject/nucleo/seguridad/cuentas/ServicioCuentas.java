@@ -3,9 +3,9 @@ package co.uniproject.nucleo.seguridad.cuentas;
 import co.uniproject.nucleo.comun.error.RecursoNoEncontradoException;
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
+import co.uniproject.nucleo.configuracionacademica.cursos.ParticipacionCursos;
 import co.uniproject.nucleo.configuracionacademica.dominio.MonitorProyecto;
 import co.uniproject.nucleo.configuracionacademica.repositorio.MonitorProyectoRepositorio;
-import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.dominio.CorreoHabilitado;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
@@ -18,12 +18,12 @@ import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -45,7 +45,7 @@ public class ServicioCuentas {
     private final UsuarioRepositorio usuarios;
     private final CorreoHabilitadoRepositorio correos;
     private final MonitorProyectoRepositorio monitores;
-    private final ServicioEquipos equipos;
+    private final ParticipacionCursos participacion;
     private final PasswordEncoder codificador;
     private final RegistroAuditoria auditoria;
     private final Clock reloj;
@@ -55,14 +55,14 @@ public class ServicioCuentas {
             UsuarioRepositorio usuarios,
             CorreoHabilitadoRepositorio correos,
             MonitorProyectoRepositorio monitores,
-            ServicioEquipos equipos,
+            ParticipacionCursos participacion,
             PasswordEncoder codificador,
             RegistroAuditoria auditoria,
             Clock reloj) {
         this.usuarios = usuarios;
         this.correos = correos;
         this.monitores = monitores;
-        this.equipos = equipos;
+        this.participacion = participacion;
         this.codificador = codificador;
         this.auditoria = auditoria;
         this.reloj = reloj;
@@ -107,9 +107,9 @@ public class ServicioCuentas {
     }
 
     /**
-     * Crea la cuenta si el correo está habilitado y sin usar. El rol sale de la habilitación, no de la petición. Las
-     * habilitaciones con invitación a un equipo (D-12 20A) la consumen: el estudiante entra al equipo en esta misma
-     * transacción si las reglas del equipo se cumplen; si no, la cuenta se crea igual (ServicioEquipos.incorporarInvitado).
+     * Crea la cuenta si el correo está habilitado y sin usar. El rol sale de la habilitación, no de la petición. Si es
+     * estudiante, entra a sus cursos y a los proyectos de esos cursos en la misma transacción; bloquea todos sus cursos
+     * en orden ascendente antes de incorporarlo, para respetar el orden curso → proyecto.
      */
     @Transactional
     public UsuarioSesion registrar(SolicitudRegistro solicitud) {
@@ -155,7 +155,7 @@ public class ServicioCuentas {
         } catch (DataIntegrityViolationException e) {
             throw registroNoDisponible();
         }
-        List<Invitacion> invitaciones = new ArrayList<>();
+        Set<Long> cursosAIncorporar = new TreeSet<>();
         for (CorreoHabilitado c : habilitados) {
             c.setIdUsuarioRegistrado(usuario.getIdUsuario());
             c.setFechaUso(ahora);
@@ -168,22 +168,21 @@ public class ServicioCuentas {
                 m.setIdMonitor(usuario.getIdUsuario());
                 monitores.save(m);
             }
-            if (c.getIdEquipoInvitado() != null) {
-                // La invitación se consume siempre (CHECK de V8: una habilitación usada no queda invitada).
-                invitaciones.add(new Invitacion(c.getIdCorreoHabilitado(), c.getIdProyecto(), c.getIdEquipoInvitado()));
-                c.setIdEquipoInvitado(null);
+            if (c.getIdCurso() != null) {
+                cursosAIncorporar.add(c.getIdCurso());
             }
         }
         correos.saveAll(habilitados);
         auditoria.registrar(EntradaAuditoria.de(
                 usuario.getIdUsuario(), "usuario", usuario.getIdUsuario(), AccionAuditoria.REGISTRO_CUENTA));
-        for (Invitacion i : invitaciones) {
-            equipos.incorporarInvitado(usuario.getIdUsuario(), i.idCorreoHabilitado(), i.idProyecto(), i.idEquipo());
+        for (long idCurso : cursosAIncorporar) {
+            participacion.bloquearCurso(idCurso);
+        }
+        for (long idCurso : cursosAIncorporar) {
+            participacion.incorporar(usuario.getIdUsuario(), idCurso, usuario.getIdUsuario());
         }
         return vista(usuario);
     }
-
-    private record Invitacion(long idCorreoHabilitado, long idProyecto, long idEquipo) {}
 
     /** El administrador habilita el correo de un docente; el docente crea su cuenta con /api/cuentas/registro. */
     @Transactional

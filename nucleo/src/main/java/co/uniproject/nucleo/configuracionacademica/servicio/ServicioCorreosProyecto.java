@@ -38,7 +38,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** K2 y RF14: correos habilitados del proyecto (estudiantes y monitores) y monitores asignados. Solo el docente dueño. */
+/**
+ * RF14 (monitores habilitados por proyecto) y consulta de estudiantes participantes del proyecto (K2 por curso). Solo
+ * el docente dueño.
+ */
 @Service
 public class ServicioCorreosProyecto {
 
@@ -73,19 +76,19 @@ public class ServicioCorreosProyecto {
         this.enlaces = enlaces;
     }
 
-    /** Decisión 15-6. La auditoría guarda el rol habilitado, nunca el correo (Ley 1581). */
+    /** RF14: habilita correos de MONITOR en el proyecto. La auditoría guarda el rol, nunca el correo (Ley 1581). */
     @Transactional
     public ResultadoHabilitacion habilitar(UsuarioAutenticado usuario, long idProyecto, SolicitudCorreos solicitud) {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
-        RolPlataforma rol = solicitud.rol();
-        if (rol != RolPlataforma.ESTUDIANTE && rol != RolPlataforma.MONITOR) {
+        if (solicitud.rol() != RolPlataforma.MONITOR) {
             throw new SolicitudInvalidaException(
-                    "ROL_INVALIDO", "En un proyecto solo se habilitan estudiantes o monitores");
+                    "ROL_INVALIDO",
+                    "En un proyecto solo se habilitan monitores. Los estudiantes entran por sus cursos");
         }
         Proyecto proyecto = proyectos
                 .findById(idProyecto)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El proyecto no existe"));
-        if (rol == RolPlataforma.MONITOR && !proyecto.getUsaMonitores()) {
+        if (!proyecto.getUsaMonitores()) {
             throw new ReglaNegocioException(
                     "PROYECTO_SIN_MONITORES", "Activa los monitores en el proyecto antes de habilitar sus correos");
         }
@@ -110,25 +113,23 @@ public class ServicioCorreosProyecto {
                 continue;
             }
             Optional<Usuario> cuenta = usuarios.findByEmail(email).filter(u -> u.getFechaAnonimizacion() == null);
-            if (cuenta.isPresent() && cuenta.get().getRolPlataforma() != rol) {
+            if (cuenta.isPresent() && cuenta.get().getRolPlataforma() != RolPlataforma.MONITOR) {
                 conOtroRol.add(email);
                 continue;
             }
             CorreoHabilitado c = new CorreoHabilitado();
             c.setIdProyecto(idProyecto);
             c.setEmail(email);
-            c.setRolPlataforma(rol);
+            c.setRolPlataforma(RolPlataforma.MONITOR);
             c.setIdHabilitadoPor(usuario.idUsuario());
             c.setFechaHabilitacion(ahora);
             if (cuenta.isPresent()) {
                 c.setIdUsuarioRegistrado(cuenta.get().getIdUsuario());
                 c.setFechaUso(ahora);
-                if (rol == RolPlataforma.MONITOR) {
-                    MonitorProyecto m = new MonitorProyecto();
-                    m.setIdProyecto(idProyecto);
-                    m.setIdMonitor(cuenta.get().getIdUsuario());
-                    monitores.save(m);
-                }
+                MonitorProyecto m = new MonitorProyecto();
+                m.setIdProyecto(idProyecto);
+                m.setIdMonitor(cuenta.get().getIdUsuario());
+                monitores.save(m);
             }
             try {
                 c = correos.saveAndFlush(c);
@@ -144,7 +145,7 @@ public class ServicioCorreosProyecto {
                     AccionAuditoria.HABILITAR_CORREO,
                     "rol_plataforma",
                     null,
-                    rol.name()));
+                    RolPlataforma.MONITOR.name()));
             habilitados.add(CorreoHabilitadoVista.de(c));
         }
         return new ResultadoHabilitacion(habilitados, yaHabilitados, conOtroRol);
@@ -159,45 +160,43 @@ public class ServicioCorreosProyecto {
     }
 
     /**
-     * D-11 y D-12: correos de ESTUDIANTE habilitados en el proyecto, con o sin cuenta, su equipo y su invitación, para
-     * sugerirlos al armar los equipos. Las cuentas suprimidas (bloque 27) no aparecen. Ordenados por correo.
+     * Participantes del proyecto (desde participante_proyecto, K2 por curso), con el curso con que cuentan y su equipo
+     * en el proyecto (o null). Las cuentas suprimidas no aparecen. Ordenados por nombre y correo.
      */
     @Transactional(readOnly = true)
     public List<EstudianteProyectoVista> estudiantes(UsuarioAutenticado usuario, long idProyecto) {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
-        return jdbc.sql("SELECT c.email, u.nombre, c.fecha_uso IS NOT NULL AS registrado, "
+        return jdbc.sql("SELECT pp.id_usuario, u.email, u.nombre, pp.id_curso, c.nombre AS nombre_curso, "
                         + "(SELECT m.id_equipo FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
-                        + "WHERE e.id_proyecto = c.id_proyecto AND m.id_usuario = c.id_usuario_registrado LIMIT 1) AS id_equipo, "
-                        + "c.id_equipo_invitado FROM correo_habilitado c "
-                        + "LEFT JOIN usuario u ON u.id_usuario = c.id_usuario_registrado "
-                        + "WHERE c.id_proyecto = :proyecto AND c.rol_plataforma = 'ESTUDIANTE' "
-                        + "AND u.fecha_anonimizacion IS NULL ORDER BY c.email")
+                        + "WHERE e.id_proyecto = pp.id_proyecto AND m.id_usuario = pp.id_usuario LIMIT 1) AS id_equipo "
+                        + "FROM participante_proyecto pp "
+                        + "JOIN usuario u ON u.id_usuario = pp.id_usuario "
+                        + "JOIN curso c ON c.id_curso = pp.id_curso "
+                        + "WHERE pp.id_proyecto = :proyecto AND u.fecha_anonimizacion IS NULL "
+                        + "ORDER BY u.nombre, u.email")
                 .param("proyecto", idProyecto)
                 .query((rs, fila) -> new EstudianteProyectoVista(
+                        rs.getLong("id_usuario"),
                         rs.getString("email"),
                         rs.getString("nombre"),
-                        rs.getBoolean("registrado"),
-                        rs.getObject("id_equipo", Long.class),
-                        rs.getObject("id_equipo_invitado", Long.class)))
+                        rs.getLong("id_curso"),
+                        rs.getString("nombre_curso"),
+                        rs.getObject("id_equipo", Long.class)))
                 .list();
     }
 
     /**
-     * T-046: cuentas de ESTUDIANTE utilizables de la plataforma sin equipo en este proyecto y sin fila de ESTUDIANTE
-     * en correo_habilitado del proyecto (esas ya las devuelve estudiantes). Solo para el docente dueño. Ordenadas
-     * por nombre y correo.
+     * Participantes no anonimizados del proyecto sin equipo en el proyecto (K2 por curso). Solo para el docente dueño.
+     * Ordenados por nombre y correo.
      */
     @Transactional(readOnly = true)
     public List<EstudianteDisponibleVista> disponibles(UsuarioAutenticado usuario, long idProyecto) {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
-        return jdbc.sql("SELECT u.email, u.nombre FROM usuario u "
-                        + "WHERE u.rol_plataforma = 'ESTUDIANTE' AND u.fecha_anonimizacion IS NULL "
-                        + "AND u.password_hash <> '!' "
+        return jdbc.sql("SELECT u.email, u.nombre FROM participante_proyecto pp "
+                        + "JOIN usuario u ON u.id_usuario = pp.id_usuario "
+                        + "WHERE pp.id_proyecto = :proyecto AND u.fecha_anonimizacion IS NULL "
                         + "AND NOT EXISTS (SELECT 1 FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
-                        + "WHERE e.id_proyecto = :proyecto AND m.id_usuario = u.id_usuario) "
-                        + "AND NOT EXISTS (SELECT 1 FROM correo_habilitado c WHERE c.id_proyecto = :proyecto "
-                        + "AND c.rol_plataforma = 'ESTUDIANTE' "
-                        + "AND (c.id_usuario_registrado = u.id_usuario OR c.email = u.email)) "
+                        + "WHERE e.id_proyecto = pp.id_proyecto AND m.id_usuario = pp.id_usuario) "
                         + "ORDER BY u.nombre, u.email")
                 .param("proyecto", idProyecto)
                 .query((rs, fila) -> new EstudianteDisponibleVista(rs.getString("email"), rs.getString("nombre")))
@@ -251,9 +250,9 @@ public class ServicioCorreosProyecto {
     }
 
     /**
-     * Decisiones 30-5 a 30-8: retira una habilitación pendiente (la persona aún no creó su cuenta). Borrado
-     * condicional en una sentencia para no borrar una habilitación que se usa en ese mismo instante. Usada → 409
-     * HABILITACION_USADA (el acceso se quita desde el equipo o los monitores). La auditoría guarda solo el id.
+     * Decisiones 30-5 a 30-8: retira una habilitación pendiente de monitor (la persona aún no creó su cuenta). Borrado
+     * condicional en una sentencia para no borrar una habilitación que se usa en ese mismo instante. Usada -> 409
+     * HABILITACION_USADA. La auditoría guarda solo el id.
      */
     @Transactional
     public void retirarCorreo(UsuarioAutenticado usuario, long idProyecto, long idCorreoHabilitado) {

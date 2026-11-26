@@ -11,6 +11,12 @@ public interface Permisos {
     /** Dueño del proyecto. */
     boolean esDocenteDelProyecto(long idUsuario, long idProyecto);
 
+    /** Dueño del curso. */
+    boolean esDocenteDelCurso(long idUsuario, long idCurso);
+
+    /** Docente dueño del curso o estudiante miembro del curso. */
+    boolean puedeVerCurso(long idUsuario, long idCurso);
+
     /** Monitor asignado y el proyecto trabaja con monitores (usa_monitores). */
     boolean esMonitorDelProyecto(long idUsuario, long idProyecto);
 

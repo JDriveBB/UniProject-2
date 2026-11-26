@@ -1,9 +1,7 @@
 package co.uniproject.nucleo.configuracionacademica.web;
 
 import co.uniproject.nucleo.configuracionacademica.servicio.EquipoVista;
-import co.uniproject.nucleo.configuracionacademica.servicio.EstudianteProyectoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
-import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudInvitacion;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudLider;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudMiembro;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
@@ -36,16 +34,6 @@ public class ControladorEquipos {
             @PathVariable("idEquipo") long idEquipo,
             @Valid @RequestBody SolicitudMiembro solicitud) {
         return equipos.agregarMiembro(usuario, idEquipo, solicitud);
-    }
-
-    /** D-12 20A: estudiante habilitado sin cuenta que entrará al equipo al registrarse. */
-    @PostMapping("/invitaciones")
-    @ResponseStatus(HttpStatus.CREATED)
-    public EstudianteProyectoVista invitar(
-            @AuthenticationPrincipal UsuarioAutenticado usuario,
-            @PathVariable("idEquipo") long idEquipo,
-            @Valid @RequestBody SolicitudInvitacion solicitud) {
-        return equipos.invitar(usuario, idEquipo, solicitud);
     }
 
     @DeleteMapping("/miembros/{idUsuario}")

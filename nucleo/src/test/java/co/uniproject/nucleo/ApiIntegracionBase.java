@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -132,6 +133,73 @@ public abstract class ApiIntegracionBase {
                 docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null);
         assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
         return campoTexto(r.body(), "codigo");
+    }
+
+    /** Crea un curso del docente en el periodo 2026-2 y devuelve su id. */
+    protected long crearCurso(Navegador docente, String nombre) {
+        HttpResponse<String> r = docente.post("/api/cursos", "{\"nombre\":\"" + nombre + "\",\"periodo\":\"2026-2\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        return numero(r.body(), "idCurso");
+    }
+
+    /** Asigna cursos a un proyecto con confirmar=true y exige 200 con aplicado=true. */
+    protected void asignarCursos(Navegador docente, long idProyecto, long... idsCursos) {
+        String lista = Arrays.stream(idsCursos).mapToObj(String::valueOf).collect(Collectors.joining(","));
+        HttpResponse<String> r = docente.put(
+                "/api/proyectos/" + idProyecto + "/cursos", "{\"idsCursos\":[" + lista + "],\"confirmar\":true}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        assertThat(r.body()).contains("\"aplicado\":true");
+    }
+
+    /** Agrega o habilita correos de estudiantes en el curso y exige 201. */
+    protected void agregarAlCurso(Navegador docente, long idCurso, String... emails) {
+        String lista = Arrays.stream(emails).map(e -> "\"" + e + "\"").collect(Collectors.joining(","));
+        HttpResponse<String> r = docente.post("/api/cursos/" + idCurso + "/correos", "{\"emails\":[" + lista + "]}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+    }
+
+    /** Busca la habilitación pendiente del correo en el curso y pide al docente un enlace de registro nuevo. */
+    protected String enlaceCurso(Navegador docente, long idCurso, String email) {
+        long idCorreo = jdbc.sql("SELECT id_correo_habilitado FROM correo_habilitado "
+                        + "WHERE id_curso = :c AND email = :e AND fecha_uso IS NULL")
+                .param("c", idCurso)
+                .param("e", email.strip().toLowerCase(Locale.ROOT))
+                .query(Long.class)
+                .single();
+        HttpResponse<String> r = docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        return campoTexto(r.body(), "codigo");
+    }
+
+    /** Crea un curso por SQL con nombre único y lo asigna a los proyectos indicados. */
+    protected long cursoSql(long idDocente, long... idsProyectos) {
+        long idCurso = jdbc.sql("INSERT INTO curso (id_docente, nombre, periodo) VALUES (:d, :n, '2026-2') "
+                        + "RETURNING id_curso")
+                .param("d", idDocente)
+                .param("n", "Curso SQL " + SECUENCIA.incrementAndGet())
+                .query(Long.class)
+                .single();
+        for (long idProyecto : idsProyectos) {
+            jdbc.sql("INSERT INTO curso_proyecto (id_curso, id_proyecto) VALUES (:c, :p)")
+                    .param("c", idCurso)
+                    .param("p", idProyecto)
+                    .update();
+        }
+        return idCurso;
+    }
+
+    /** Inserta directamente miembro_curso y participante_proyecto para el estudiante. */
+    protected void participanteSql(long idCurso, long idProyecto, long idUsuario) {
+        jdbc.sql("INSERT INTO miembro_curso (id_curso, id_usuario) VALUES (:c, :u) ON CONFLICT DO NOTHING")
+                .param("c", idCurso)
+                .param("u", idUsuario)
+                .update();
+        jdbc.sql("INSERT INTO participante_proyecto (id_proyecto, id_usuario, id_curso) VALUES (:p, :u, :c) "
+                        + "ON CONFLICT DO NOTHING")
+                .param("p", idProyecto)
+                .param("u", idUsuario)
+                .param("c", idCurso)
+                .update();
     }
 
     /** true si el JSON tiene "campo": valor exacto (12 no casa con 123). */

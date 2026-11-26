@@ -36,6 +36,9 @@ public class Proyecto {
     @Column(name = "usa_monitores")
     private Boolean usaMonitores = false;
 
+    @Column(name = "equipos_mixtos")
+    private Boolean equiposMixtos = false;
+
     public Long getIdProyecto() {
         return idProyecto;
     }
@@ -90,5 +93,13 @@ public class Proyecto {
 
     public void setUsaMonitores(Boolean usaMonitores) {
         this.usaMonitores = usaMonitores;
+    }
+
+    public Boolean getEquiposMixtos() {
+        return equiposMixtos;
+    }
+
+    public void setEquiposMixtos(Boolean equiposMixtos) {
+        this.equiposMixtos = equiposMixtos;
     }
 }
