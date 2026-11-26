@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.notificaciones.programador;
 
 import co.uniproject.eventos.Topologia;
+import co.uniproject.nucleo.configuracionacademica.votacion.RevisionRondas;
 import co.uniproject.nucleo.ejecucion.servicio.RefrescoRiesgo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,11 +16,14 @@ public class ProgramacionRevisiones {
     private final RevisionRiesgo riesgo;
     private final RevisionInactividad inactividad;
     private final RefrescoRiesgo refresco;
+    private final RevisionRondas rondas;
 
-    public ProgramacionRevisiones(RevisionRiesgo riesgo, RevisionInactividad inactividad, RefrescoRiesgo refresco) {
+    public ProgramacionRevisiones(
+            RevisionRiesgo riesgo, RevisionInactividad inactividad, RefrescoRiesgo refresco, RevisionRondas rondas) {
         this.riesgo = riesgo;
         this.inactividad = inactividad;
         this.refresco = refresco;
+        this.rondas = rondas;
     }
 
     @Scheduled(cron = "${uniproject.programador.cron-riesgo}", zone = Topologia.ZONA)
@@ -41,6 +45,28 @@ public class ProgramacionRevisiones {
             log.info("Revisión de inactividad: {} alertas nuevas", n);
         } catch (Exception e) {
             log.error("Error durante la revisión de inactividad", e);
+        }
+    }
+
+    @Scheduled(cron = "${uniproject.programador.cron-rondas}", zone = Topologia.ZONA)
+    public void revisarRondas() {
+        try {
+            int cerradas = rondas.cerrarVencidas();
+            log.info("Revisión de rondas: {} cerradas", cerradas);
+        } catch (Exception e) {
+            log.error("Error durante el cierre de rondas vencidas", e);
+        }
+        try {
+            int abiertas = rondas.abrirProgramadas();
+            log.info("Revisión de rondas: {} abiertas", abiertas);
+        } catch (Exception e) {
+            log.error("Error durante la apertura programada de rondas", e);
+        }
+        try {
+            int recordados = rondas.recordarCierres();
+            log.info("Revisión de rondas: {} recordatorios de cierre", recordados);
+        } catch (Exception e) {
+            log.error("Error durante el recordatorio de cierres", e);
         }
     }
 }

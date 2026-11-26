@@ -8,12 +8,17 @@ import co.uniproject.nucleo.configuracionacademica.dominio.Equipo;
 import co.uniproject.nucleo.configuracionacademica.dominio.MiembroEquipoId;
 import co.uniproject.nucleo.configuracionacademica.repositorio.EquipoRepositorio;
 import co.uniproject.nucleo.configuracionacademica.repositorio.MiembroEquipoRepositorio;
+import co.uniproject.nucleo.configuracionacademica.votacion.OrigenRonda;
+import co.uniproject.nucleo.configuracionacademica.votacion.RondaLiderFila;
+import co.uniproject.nucleo.configuracionacademica.votacion.RondasLider;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioCuentas;
 import co.uniproject.nucleo.seguridad.permisos.Permisos;
 import co.uniproject.nucleo.trazabilidad.auditoria.AccionAuditoria;
 import co.uniproject.nucleo.trazabilidad.auditoria.EntradaAuditoria;
 import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +45,8 @@ public class ServicioEquipos {
     private final Permisos permisos;
     private final RegistroAuditoria auditoria;
     private final JdbcClient jdbc;
+    private final RondasLider rondas;
+    private final Clock reloj;
 
     public ServicioEquipos(
             EquipoRepositorio equipos,
@@ -48,7 +55,9 @@ public class ServicioEquipos {
             ParticipacionCursos participacion,
             Permisos permisos,
             RegistroAuditoria auditoria,
-            JdbcClient jdbc) {
+            JdbcClient jdbc,
+            RondasLider rondas,
+            Clock reloj) {
         this.equipos = equipos;
         this.miembros = miembros;
         this.apoyo = apoyo;
@@ -56,6 +65,8 @@ public class ServicioEquipos {
         this.permisos = permisos;
         this.auditoria = auditoria;
         this.jdbc = jdbc;
+        this.rondas = rondas;
+        this.reloj = reloj;
     }
 
     @Transactional
@@ -231,7 +242,7 @@ public class ServicioEquipos {
 
     /**
      * Nombra líder a un integrante del equipo; el anterior deja de ser líder. Decisión 15-8: dos UPDATE en orden por
-     * el índice único parcial (un líder por equipo).
+     * el índice único parcial (un líder por equipo). Si hay una votación sin cerrar, se cancela.
      */
     @Transactional
     public EquipoVista cambiarLider(UsuarioAutenticado usuario, long idEquipo, SolicitudLider solicitud) {
@@ -241,35 +252,14 @@ public class ServicioEquipos {
         if (!permisos.esIntegranteDelEquipo(nuevo, idEquipo)) {
             throw new ReglaNegocioException("NO_ES_MIEMBRO", "El líder debe ser miembro del equipo");
         }
-        Optional<Long> anterior = apoyo.liderDe(idEquipo);
-        if (anterior.isEmpty() || anterior.get() != nuevo) {
-            jdbc.sql("UPDATE miembro_equipo SET rol_equipo = 'INTEGRANTE' WHERE id_equipo = :equipo "
-                            + "AND rol_equipo = 'LIDER'")
-                    .param("equipo", idEquipo)
-                    .update();
-            int promovidos = jdbc.sql(
-                            "UPDATE miembro_equipo SET rol_equipo = 'LIDER' WHERE id_equipo = :equipo AND id_usuario = :usuario")
-                    .param("equipo", idEquipo)
-                    .param("usuario", nuevo)
-                    .update();
-            if (promovidos != 1) {
-                throw new ReglaNegocioException("NO_ES_MIEMBRO", "El líder debe ser miembro del equipo");
-            }
-            auditoria.registrar(EntradaAuditoria.cambio(
-                    usuario.idUsuario(),
-                    "equipo",
-                    idEquipo,
-                    AccionAuditoria.ACTUALIZAR,
-                    "lider",
-                    anterior.map(String::valueOf).orElse(null),
-                    String.valueOf(nuevo)));
-        }
+        rondas.cancelarSinCerrar(usuario.idUsuario(), idEquipo, Instant.now(reloj));
+        apoyo.nombrarLider(usuario.idUsuario(), idEquipo, nuevo);
         return apoyo.vistaEquipo(equipo);
     }
 
     /**
-     * Destituye al líder del equipo; el equipo queda sin líder y sus acciones de líder bloqueadas hasta que el docente
-     * nombre a otro (la ronda de votación llega en el bloque 3).
+     * Destituye al líder del equipo; el equipo queda sin líder, con sus acciones de líder bloqueadas, y con una
+     * votación abierta hasta que se elija o el docente nombre a otro.
      */
     @Transactional
     public EquipoVista destituir(UsuarioAutenticado usuario, long idEquipo) {
@@ -289,6 +279,14 @@ public class ServicioEquipos {
                 "lider",
                 String.valueOf(anterior),
                 null));
+        Instant ahora = Instant.now(reloj);
+        Optional<RondaLiderFila> fila = rondas.sinCerrar(idEquipo);
+        if (fila.isPresent() && fila.get().vencida(ahora)) {
+            rondas.cancelarSinCerrar(usuario.idUsuario(), idEquipo, ahora);
+        }
+        if (rondas.sinCerrar(idEquipo).isEmpty()) {
+            rondas.abrir(usuario.idUsuario(), idEquipo, OrigenRonda.DEMANDA, ahora);
+        }
         return apoyo.vistaEquipo(equipo);
     }
 

@@ -951,6 +951,7 @@ paths:
     put:
       tags: [equipos]
       operationId: cambiarLider
+      description: 'Nombra líder a un integrante del equipo; si hay una votación sin cerrar, se cancela. Errores: 409 NO_ES_MIEMBRO'
       requestBody:
         required: true
         content:
@@ -970,13 +971,89 @@ paths:
       tags: [equipos]
       operationId: destituirLider
       summary: Destituye al líder del equipo y lo deja sin líder. Solo el docente dueño
-      description: 'Errores: 409 SIN_LIDER si el equipo no tiene líder'
+      description: 'Deja el equipo sin líder y abre una votación si no hay una abierta. Errores: 409 SIN_LIDER si el equipo no tiene líder'
       responses:
         '200':
           description: Equipo sin líder
           content:
             application/json:
               schema: {$ref: '#/components/schemas/EquipoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/ronda:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    get:
+      tags: [equipos]
+      operationId: vistaVotacion
+      summary: Estado actual de la votación de líder del equipo
+      description: 'Visible para quienes pueden ver el equipo (integrantes, docente dueño y monitor activo); no expone correos ni votos de terceros ni conteo por candidato mientras la ronda no esté cerrada'
+      responses:
+        '200':
+          description: Estado de votación de líder del equipo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    post:
+      tags: [equipos]
+      operationId: abrirRonda
+      summary: Abre una ronda de votación de líder a demanda. Solo el docente dueño
+      description: 'Si había una ronda vencida sin cerrar, la cierra primero con su resultado y abre la nueva. Errores: 409 EQUIPO_SIN_INTEGRANTES o RONDA_ABIERTA'
+      responses:
+        '201':
+          description: Ronda abierta
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/ronda/voto:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: votarLider
+      summary: Registra o cambia el voto del integrante en la ronda abierta
+      description: 'Solo integrantes actuales del equipo (docente y monitor reciben 403). Errores: 400 VALIDACION; 409 SIN_RONDA_ABIERTA o CANDIDATO_NO_VALIDO'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudVoto'}
+      responses:
+        '200':
+          description: Estado actualizado de la votación
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/ronda/desempate:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: desempatarLider
+      summary: El docente dueño elige al líder entre los empatados de la última ronda
+      description: 'Errores: 400 VALIDACION; 409 SIN_EMPATE, EMPATE_RESUELTO o NO_ESTA_EMPATADO'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudDesempate'}
+      responses:
+        '200':
+          description: Estado de la votación tras elegir al líder
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '409': {$ref: '#/components/responses/Conflicto'}
@@ -2487,3 +2564,54 @@ components:
         notaSugerida: {type: [number, 'null'], description: Nula para el propio estudiante}
         notaFinal: {$ref: '#/components/schemas/DecimalNulo'}
         fechaConfirmacion: {$ref: '#/components/schemas/InstanteNulo'}
+    OrigenRonda: {type: string, enum: [PROGRAMADA, DEMANDA]}
+    ResultadoRonda: {type: string, enum: [LIDER_ELEGIDO, EMPATE, SIN_VOTOS, CANCELADA]}
+    SolicitudVoto:
+      type: object
+      required: [idCandidato]
+      properties:
+        idCandidato: {$ref: '#/components/schemas/Id'}
+    SolicitudDesempate:
+      type: object
+      required: [idUsuario]
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+    CandidatoVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        votos: {type: [integer, 'null']}
+        empatado: {type: boolean}
+    RondaVista:
+      type: object
+      properties:
+        idRonda: {$ref: '#/components/schemas/Id'}
+        origen: {$ref: '#/components/schemas/OrigenRonda'}
+        abreEn: {$ref: '#/components/schemas/Instante'}
+        cierraEn: {$ref: '#/components/schemas/Instante'}
+        cerradaEn: {$ref: '#/components/schemas/InstanteNulo'}
+        abierta: {type: boolean}
+        resultado:
+          oneOf:
+            - $ref: '#/components/schemas/ResultadoRonda'
+            - type: 'null'
+        idLiderElegido: {$ref: '#/components/schemas/IdNulo'}
+        nombreLiderElegido: {$ref: '#/components/schemas/TextoNulo'}
+        votosEmitidos: {type: integer}
+        votantes: {type: integer}
+        miVoto: {$ref: '#/components/schemas/IdNulo'}
+        puedoVotar: {type: boolean}
+        candidatos: {type: array, items: {$ref: '#/components/schemas/CandidatoVista'}}
+    VotacionVista:
+      type: object
+      properties:
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        idLiderActual: {$ref: '#/components/schemas/IdNulo'}
+        nombreLiderActual: {$ref: '#/components/schemas/TextoNulo'}
+        ronda:
+          oneOf:
+            - $ref: '#/components/schemas/RondaVista'
+            - type: 'null'
+        puedeAbrir: {type: boolean}
+        puedeDesempatar: {type: boolean}

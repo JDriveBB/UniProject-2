@@ -1,5 +1,6 @@
 package co.uniproject.nucleo.configuracionacademica.servicio;
 
+import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.configuracionacademica.dominio.Equipo;
 import co.uniproject.nucleo.configuracionacademica.dominio.MiembroEquipo;
 import co.uniproject.nucleo.configuracionacademica.repositorio.MiembroEquipoRepositorio;
@@ -118,6 +119,37 @@ public class ApoyoConfiguracion {
                 .param("equipo", idEquipo)
                 .query(Long.class)
                 .optional();
+    }
+
+    /**
+     * Nombra líder a un integrante del equipo; el anterior pasa a integrante (dos UPDATE en orden por el índice único
+     * parcial). Exige el candado del equipo ya tomado; idActor nulo indica acción del sistema.
+     */
+    public void nombrarLider(Long idActor, long idEquipo, long idNuevo) {
+        Optional<Long> anterior = liderDe(idEquipo);
+        if (anterior.isPresent() && anterior.get() == idNuevo) {
+            return;
+        }
+        jdbc.sql("UPDATE miembro_equipo SET rol_equipo = 'INTEGRANTE' WHERE id_equipo = :equipo "
+                        + "AND rol_equipo = 'LIDER'")
+                .param("equipo", idEquipo)
+                .update();
+        int promovidos = jdbc.sql(
+                        "UPDATE miembro_equipo SET rol_equipo = 'LIDER' WHERE id_equipo = :equipo AND id_usuario = :usuario")
+                .param("equipo", idEquipo)
+                .param("usuario", idNuevo)
+                .update();
+        if (promovidos != 1) {
+            throw new ReglaNegocioException("NO_ES_MIEMBRO", "El líder debe ser miembro del equipo");
+        }
+        auditoria.registrar(EntradaAuditoria.cambio(
+                idActor,
+                "equipo",
+                idEquipo,
+                AccionAuditoria.ACTUALIZAR,
+                "lider",
+                anterior.map(String::valueOf).orElse(null),
+                String.valueOf(idNuevo)));
     }
 
     /** Equipo con sus miembros (primero el líder, luego por nombre) y sus hitos (por id de hito, con su último envío). */

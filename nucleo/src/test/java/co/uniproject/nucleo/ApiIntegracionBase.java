@@ -63,6 +63,7 @@ public abstract class ApiIntegracionBase {
         registry.add("spring.rabbitmq.password", rabbit::getAdminPassword);
         registry.add("uniproject.token-interno", () -> "token-de-prueba");
         registry.add("uniproject.outbox.intervalo-ms", () -> 600000L);
+        registry.add("uniproject.programador.cron-rondas", () -> "-");
     }
 
     @Value("${local.server.port}")
@@ -233,6 +234,27 @@ public abstract class ApiIntegracionBase {
     protected void cerrarInscripcionSql(long idProyecto) {
         jdbc.sql("UPDATE proyecto SET cierre_equipos = now() - interval '1 hour' WHERE id_proyecto = :p")
                 .param("p", idProyecto)
+                .update();
+    }
+
+    /** Abre una ronda de votación vía API; exige 201 y devuelve ronda.idRonda. */
+    protected long abrirRondaApi(Navegador docente, long idEquipo) {
+        HttpResponse<String> r = docente.post("/api/equipos/" + idEquipo + "/ronda", null);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        return numero(r.body(), "idRonda");
+    }
+
+    /** Registra o cambia el voto del estudiante por el candidato en la ronda abierta del equipo. */
+    protected HttpResponse<String> votarApi(Navegador estudiante, long idEquipo, long idCandidato) {
+        return estudiante.put("/api/equipos/" + idEquipo + "/ronda/voto", "{\"idCandidato\":" + idCandidato + "}");
+    }
+
+    /** Marca la ronda sin cerrar del equipo como vencida en la BD. */
+    protected void vencerRondaSql(long idEquipo) {
+        jdbc.sql(
+                        "UPDATE ronda_lider SET abre_en = now() - interval '49 hours', cierra_en = now() - interval '1 minute' "
+                                + "WHERE id_equipo = :e AND cerrada_en IS NULL")
+                .param("e", idEquipo)
                 .update();
     }
 
