@@ -1,8 +1,10 @@
 package co.uniproject.nucleo.configuracionacademica.servicio;
 
+import co.uniproject.eventos.datos.MovimientoEquipo;
 import co.uniproject.nucleo.comun.error.RecursoNoEncontradoException;
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
+import co.uniproject.nucleo.configuracionacademica.avisos.AvisosConfiguracion;
 import co.uniproject.nucleo.configuracionacademica.cursos.ParticipacionCursos;
 import co.uniproject.nucleo.configuracionacademica.dominio.Equipo;
 import co.uniproject.nucleo.configuracionacademica.dominio.MiembroEquipoId;
@@ -46,6 +48,7 @@ public class ServicioEquipos {
     private final RegistroAuditoria auditoria;
     private final JdbcClient jdbc;
     private final RondasLider rondas;
+    private final AvisosConfiguracion avisos;
     private final Clock reloj;
 
     public ServicioEquipos(
@@ -57,6 +60,7 @@ public class ServicioEquipos {
             RegistroAuditoria auditoria,
             JdbcClient jdbc,
             RondasLider rondas,
+            AvisosConfiguracion avisos,
             Clock reloj) {
         this.equipos = equipos;
         this.miembros = miembros;
@@ -66,6 +70,7 @@ public class ServicioEquipos {
         this.auditoria = auditoria;
         this.jdbc = jdbc;
         this.rondas = rondas;
+        this.avisos = avisos;
         this.reloj = reloj;
     }
 
@@ -202,6 +207,7 @@ public class ServicioEquipos {
                     "CUPO_LLENO", "El equipo ya tiene su cupo completo. Confírmalo para pasar el cupo");
         }
         apoyo.agregarIntegrante(usuario.idUsuario(), idEquipo, idEstudiante);
+        avisos.miembroCambio(idEquipo, MovimientoEquipo.ENTRO, true, List.of(idEstudiante));
         return apoyo.vistaEquipo(equipo);
     }
 
@@ -237,6 +243,7 @@ public class ServicioEquipos {
                 String.valueOf(idUsuario),
                 null));
         participacion.sincronizar(equipo.getIdProyecto(), idUsuario);
+        avisos.miembroCambio(idEquipo, MovimientoEquipo.SALIO, true, List.of(idUsuario));
         return apoyo.vistaEquipo(equipo);
     }
 

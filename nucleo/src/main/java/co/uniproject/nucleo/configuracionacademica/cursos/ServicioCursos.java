@@ -2,6 +2,7 @@ package co.uniproject.nucleo.configuracionacademica.cursos;
 
 import co.uniproject.nucleo.comun.error.RecursoNoEncontradoException;
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
+import co.uniproject.nucleo.configuracionacademica.avisos.AvisosConfiguracion;
 import co.uniproject.nucleo.configuracionacademica.servicio.AuditoriaCambios;
 import co.uniproject.nucleo.configuracionacademica.servicio.Textos;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
@@ -46,6 +47,7 @@ public class ServicioCursos {
     private final ParticipacionCursos participacion;
     private final Permisos permisos;
     private final RegistroAuditoria auditoria;
+    private final AvisosConfiguracion avisos;
     private final Clock reloj;
 
     public ServicioCursos(
@@ -56,6 +58,7 @@ public class ServicioCursos {
             ParticipacionCursos participacion,
             Permisos permisos,
             RegistroAuditoria auditoria,
+            AvisosConfiguracion avisos,
             Clock reloj) {
         this.jdbc = jdbc;
         this.correos = correos;
@@ -64,6 +67,7 @@ public class ServicioCursos {
         this.participacion = participacion;
         this.permisos = permisos;
         this.auditoria = auditoria;
+        this.avisos = avisos;
         this.reloj = reloj;
     }
 
@@ -275,6 +279,7 @@ public class ServicioCursos {
                 if (participacion.incorporar(
                         usuario.idUsuario(), idCurso, cuenta.get().getIdUsuario())) {
                     agregados.add(email);
+                    avisos.estudianteAgregadoACurso(idCurso, cuenta.get().getIdUsuario());
                 } else {
                     yaEnCurso.add(email);
                 }

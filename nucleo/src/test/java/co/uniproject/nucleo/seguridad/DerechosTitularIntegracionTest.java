@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.datos.CaracterNota;
 import co.uniproject.eventos.datos.EquipoInactividad;
+import co.uniproject.eventos.datos.EquipoMiembroCambio;
 import co.uniproject.eventos.datos.HitoEvaluado;
+import co.uniproject.eventos.datos.InscripcionPorCerrar;
+import co.uniproject.eventos.datos.MovimientoEquipo;
 import co.uniproject.eventos.datos.Persona;
 import co.uniproject.eventos.datos.Referencia;
 import co.uniproject.eventos.datos.ReferenciaTarea;
@@ -836,5 +839,33 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
                 .contains(ServicioSupresion.ENLACE_ELIMINADO)
                 .contains(urlOtro)
                 .doesNotContain(urlTitular);
+    }
+
+    @Test
+    void rectificaElNombreEnLosAvisosDeEquipos() {
+        Escenario e = escenario();
+        Persona persona = new Persona(e.idEstudiante(), e.nombre(), null);
+        Persona lider = new Persona(e.idLider(), "Lider Supresion", null);
+        Referencia proyecto = new Referencia(e.idProyecto(), "Proyecto Supresion");
+        Referencia equipo = new Referencia(e.idEquipo(), "Equipo S");
+        UUID cambio = tx.execute(s -> eventos.registrar(new EquipoMiembroCambio(
+                proyecto, equipo, MovimientoEquipo.ENTRO, false, List.of(persona), List.of(lider))));
+        UUID porCerrar = tx.execute(s -> eventos.registrar(
+                new InscripcionPorCerrar(proyecto, Instant.now().plusSeconds(3600), List.of(persona))));
+
+        HttpResponse<String> r = sesion(e.estudiante()).put("/api/perfil/nombre", "{\"nombre\":\"Paula Rectificada\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+
+        assertThat(texto(
+                        "SELECT mensaje FROM notificacion WHERE id_destinatario = :id AND tipo = 'equipo.miembro_cambio'",
+                        e.idLider()))
+                .isEqualTo("Paula Rectificada entró a Equipo S.");
+        EquipoMiembroCambio datosCambio = (EquipoMiembroCambio)
+                codec.leer(carga(cambio).getBytes(StandardCharsets.UTF_8)).data();
+        assertThat(datosCambio.personas()).containsExactly(new Persona(e.idEstudiante(), "Paula Rectificada", null));
+        InscripcionPorCerrar datosPorCerrar = (InscripcionPorCerrar)
+                codec.leer(carga(porCerrar).getBytes(StandardCharsets.UTF_8)).data();
+        assertThat(datosPorCerrar.estudiantes())
+                .containsExactly(new Persona(e.idEstudiante(), "Paula Rectificada", null));
     }
 }

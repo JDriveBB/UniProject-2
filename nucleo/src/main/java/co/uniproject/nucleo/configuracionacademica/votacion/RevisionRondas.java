@@ -1,5 +1,6 @@
 package co.uniproject.nucleo.configuracionacademica.votacion;
 
+import co.uniproject.nucleo.configuracionacademica.avisos.AvisosConfiguracion;
 import co.uniproject.nucleo.configuracionacademica.servicio.ApoyoConfiguracion;
 import java.time.Clock;
 import java.time.Instant;
@@ -23,14 +24,21 @@ public class RevisionRondas {
     private final TransactionTemplate tx;
     private final ApoyoConfiguracion apoyo;
     private final RondasLider rondas;
+    private final AvisosConfiguracion avisos;
     private final Clock reloj;
 
     public RevisionRondas(
-            JdbcClient jdbc, TransactionTemplate tx, ApoyoConfiguracion apoyo, RondasLider rondas, Clock reloj) {
+            JdbcClient jdbc,
+            TransactionTemplate tx,
+            ApoyoConfiguracion apoyo,
+            RondasLider rondas,
+            AvisosConfiguracion avisos,
+            Clock reloj) {
         this.jdbc = jdbc;
         this.tx = tx;
         this.apoyo = apoyo;
         this.rondas = rondas;
+        this.avisos = avisos;
         this.reloj = reloj;
     }
 
@@ -142,8 +150,7 @@ public class RevisionRondas {
                             .param("ahora", momentoUtc)
                             .param("p", idProyecto)
                             .update();
-                    // Bloque 4: registrar equipo.inscripcion_por_cerrar (estudiantes sin equipo) y
-                    // equipo.inscripcion_resumen (docente).
+                    avisos.cierreProximo(idProyecto);
                     marcados.incrementAndGet();
                 });
             } catch (RuntimeException e) {

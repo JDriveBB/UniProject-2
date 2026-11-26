@@ -1,8 +1,10 @@
 package co.uniproject.nucleo.configuracionacademica.servicio;
 
+import co.uniproject.eventos.datos.MovimientoEquipo;
 import co.uniproject.nucleo.comun.error.RecursoNoEncontradoException;
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
 import co.uniproject.nucleo.comun.error.SolicitudInvalidaException;
+import co.uniproject.nucleo.configuracionacademica.avisos.AvisosConfiguracion;
 import co.uniproject.nucleo.configuracionacademica.cursos.ParticipacionCursos;
 import co.uniproject.nucleo.configuracionacademica.dominio.Equipo;
 import co.uniproject.nucleo.configuracionacademica.repositorio.EquipoRepositorio;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +41,7 @@ public class ServicioInscripcion {
     private final ParticipacionCursos participacion;
     private final Permisos permisos;
     private final RegistroAuditoria auditoria;
+    private final AvisosConfiguracion avisos;
     private final Clock reloj;
 
     public ServicioInscripcion(
@@ -47,6 +51,7 @@ public class ServicioInscripcion {
             ParticipacionCursos participacion,
             Permisos permisos,
             RegistroAuditoria auditoria,
+            AvisosConfiguracion avisos,
             Clock reloj) {
         this.jdbc = jdbc;
         this.equipos = equipos;
@@ -54,6 +59,7 @@ public class ServicioInscripcion {
         this.participacion = participacion;
         this.permisos = permisos;
         this.auditoria = auditoria;
+        this.avisos = avisos;
         this.reloj = reloj;
     }
 
@@ -237,6 +243,7 @@ public class ServicioInscripcion {
             throw new ReglaNegocioException("EQUIPO_LLENO", "El equipo ya está completo");
         }
         apoyo.agregarIntegrante(usuario.idUsuario(), idEquipo, usuario.idUsuario());
+        avisos.miembroCambio(idEquipo, MovimientoEquipo.ENTRO, false, List.of(usuario.idUsuario()));
         return apoyo.vistaEquipo(equipo);
     }
 
@@ -310,6 +317,7 @@ public class ServicioInscripcion {
                 String.valueOf(usuario.idUsuario()),
                 null));
         participacion.sincronizar(idProyecto, usuario.idUsuario());
+        avisos.miembroCambio(idEquipo, MovimientoEquipo.SALIO, false, List.of(usuario.idUsuario()));
     }
 
     /**
@@ -352,6 +360,7 @@ public class ServicioInscripcion {
                 .list();
         List<AsignacionRepartoVista> asignados = new ArrayList<>();
         List<EstudianteDisponibleVista> sinCupo = new ArrayList<>();
+        Map<Long, List<Long>> porEquipo = new TreeMap<>();
         for (Candidato c : candidatos) {
             EquipoReparto elegido = null;
             for (EquipoReparto eq : equiposConCupo) {
@@ -372,8 +381,12 @@ public class ServicioInscripcion {
                 elegido.integrantes++;
                 asignados.add(
                         new AsignacionRepartoVista(c.idUsuario(), c.nombre(), elegido.idEquipo, elegido.nombreEquipo));
+                porEquipo
+                        .computeIfAbsent(elegido.idEquipo, k -> new ArrayList<>())
+                        .add(c.idUsuario());
             }
         }
+        porEquipo.forEach((idEquipo, ids) -> avisos.miembroCambio(idEquipo, MovimientoEquipo.ENTRO, true, ids));
         return new ResultadoReparto(asignados, sinCupo);
     }
 

@@ -1,5 +1,8 @@
 package co.uniproject.eventos;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import co.uniproject.eventos.datos.*;
 import co.uniproject.eventos.ejemplos.EjemplosEventos;
 import co.uniproject.eventos.interno.ContratoInterno;
@@ -12,9 +15,6 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ContratoEventosTest {
 
@@ -70,11 +70,9 @@ class ContratoEventosTest {
                 EjemplosEventos.TAREA,
                 EjemplosEventos.INTEGRANTE_A,
                 new Referencia(100, "Estudiante C"),
-                ""
-        );
+                "");
         EventoCloud evento = EventoCloud.nuevo(correccionInvalida, RELOJ);
-        assertThatThrownBy(() -> CODEC.serializar(evento))
-                .isInstanceOf(EventoInvalidoException.class);
+        assertThatThrownBy(() -> CODEC.serializar(evento)).isInstanceOf(EventoInvalidoException.class);
     }
 
     @Test
@@ -121,12 +119,17 @@ class ContratoEventosTest {
 
     @Test
     void patronDelCodigoDeVinculacion() {
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(32))).isTrue();
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "aZ09_-".repeat(5) + "ab")).isTrue();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(32)))
+                .isTrue();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "aZ09_-".repeat(5) + "ab"))
+                .isTrue();
 
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(31))).isFalse();
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(33))).isFalse();
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(31) + "+")).isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(31)))
+                .isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(33)))
+                .isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO, "A".repeat(31) + "+"))
+                .isFalse();
     }
 
     @Test
@@ -143,28 +146,99 @@ class ContratoEventosTest {
 
     @Test
     void eventosDeCuentaNoAdmitenCamposExtra() {
-        for (DatosEvento datos : List.of(EjemplosEventos.recuperacionSolicitada(),
+        for (DatosEvento datos : List.of(
+                EjemplosEventos.recuperacionSolicitada(),
                 EjemplosEventos.contrasenaCambiada(OrigenCambioContrasena.RECUPERACION))) {
             String json = CODEC.serializar(EventoCloud.nuevo(datos, RELOJ));
             assertThat(json).doesNotContain("\"codigo\"");
             JsonNode conCodigo = CODEC.mapeador().readTree(json);
             ((ObjectNode) conCodigo.get("data")).put("codigo", "A".repeat(43));
-            byte[] cuerpoConCodigo = CODEC.mapeador().writeValueAsString(conCodigo).getBytes(StandardCharsets.UTF_8);
+            byte[] cuerpoConCodigo =
+                    CODEC.mapeador().writeValueAsString(conCodigo).getBytes(StandardCharsets.UTF_8);
             assertThatThrownBy(() -> CODEC.leer(cuerpoConCodigo)).isInstanceOf(EventoInvalidoException.class);
             JsonNode conCorreo = CODEC.mapeador().readTree(json);
             ((ObjectNode) conCorreo.get("data").get("titular")).put("email", "a@u.edu.co");
-            byte[] cuerpoConCorreo = CODEC.mapeador().writeValueAsString(conCorreo).getBytes(StandardCharsets.UTF_8);
+            byte[] cuerpoConCorreo =
+                    CODEC.mapeador().writeValueAsString(conCorreo).getBytes(StandardCharsets.UTF_8);
             assertThatThrownBy(() -> CODEC.leer(cuerpoConCorreo)).isInstanceOf(EventoInvalidoException.class);
         }
     }
 
     @Test
     void patronDelCodigoDeRecuperacion() {
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(43))).isTrue();
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "aZ09_-".repeat(7) + "b")).isTrue();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(43)))
+                .isTrue();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "aZ09_-".repeat(7) + "b"))
+                .isTrue();
 
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(42))).isFalse();
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(44))).isFalse();
-        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(42) + "+")).isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(42)))
+                .isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(44)))
+                .isFalse();
+        assertThat(Pattern.matches(ContratoInterno.PATRON_CODIGO_RECUPERACION, "A".repeat(42) + "+"))
+                .isFalse();
+    }
+
+    @Test
+    void serializaLosEventosDeCursosYEquipos() {
+        List<DatosEvento> eventos = List.of(
+                EjemplosEventos.cursoEstudianteAgregado(),
+                EjemplosEventos.equipoVotacionAbierta(),
+                EjemplosEventos.equipoLiderElegido(OrigenLider.VOTACION),
+                EjemplosEventos.equipoSinLider(MotivoSinLider.EMPATE),
+                EjemplosEventos.equipoMiembroCambio(MovimientoEquipo.ENTRO, true),
+                EjemplosEventos.inscripcionPorCerrar(),
+                EjemplosEventos.inscripcionResumen());
+        StringBuilder todos = new StringBuilder();
+        for (DatosEvento datos : eventos) {
+            String json = CODEC.serializar(EventoCloud.nuevo(datos, RELOJ));
+            assertThat(json).doesNotContain("@");
+            todos.append(json);
+        }
+        assertThat(todos.toString())
+                .contains("\"periodo\":\"2026-2\"")
+                .contains("\"cierraEn\":\"2026-10-26T19:05:00Z\"")
+                .contains("\"origen\":\"VOTACION\"")
+                .contains("\"motivo\":\"EMPATE\"")
+                .contains("\"movimiento\":\"ENTRO\"")
+                .contains("\"porDocente\":true")
+                .contains("\"sinEquipo\":2")
+                .contains("\"cuposLibres\":3");
+    }
+
+    @Test
+    void listasObligatoriasNoPuedenIrVacias() {
+        EventoCloud votacionVacia = EventoCloud.nuevo(
+                new EquipoVotacionAbierta(
+                        EjemplosEventos.PROYECTO, EjemplosEventos.EQUIPO, EjemplosEventos.CIERRE_VOTACION, List.of()),
+                RELOJ);
+        assertThatThrownBy(() -> CODEC.serializar(votacionVacia)).isInstanceOf(EventoInvalidoException.class);
+
+        EventoCloud miembroSinPersonas = EventoCloud.nuevo(
+                new EquipoMiembroCambio(
+                        EjemplosEventos.PROYECTO,
+                        EjemplosEventos.EQUIPO,
+                        MovimientoEquipo.ENTRO,
+                        true,
+                        List.of(),
+                        List.of(EjemplosEventos.LIDER_C)),
+                RELOJ);
+        assertThatThrownBy(() -> CODEC.serializar(miembroSinPersonas)).isInstanceOf(EventoInvalidoException.class);
+
+        EventoCloud porCerrarVacio = EventoCloud.nuevo(
+                new InscripcionPorCerrar(EjemplosEventos.PROYECTO, EjemplosEventos.CIERRE_INSCRIPCION, List.of()),
+                RELOJ);
+        assertThatThrownBy(() -> CODEC.serializar(porCerrarVacio)).isInstanceOf(EventoInvalidoException.class);
+
+        EventoCloud miembroSinRestantes = EventoCloud.nuevo(
+                new EquipoMiembroCambio(
+                        EjemplosEventos.PROYECTO,
+                        EjemplosEventos.EQUIPO,
+                        MovimientoEquipo.ENTRO,
+                        true,
+                        List.of(EjemplosEventos.INTEGRANTE_E),
+                        List.of()),
+                RELOJ);
+        assertThat(CODEC.serializar(miembroSinRestantes)).isNotBlank();
     }
 }

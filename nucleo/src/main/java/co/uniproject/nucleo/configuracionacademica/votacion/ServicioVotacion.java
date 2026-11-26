@@ -1,6 +1,8 @@
 package co.uniproject.nucleo.configuracionacademica.votacion;
 
+import co.uniproject.eventos.datos.OrigenLider;
 import co.uniproject.nucleo.comun.error.ReglaNegocioException;
+import co.uniproject.nucleo.configuracionacademica.avisos.AvisosConfiguracion;
 import co.uniproject.nucleo.configuracionacademica.dominio.Equipo;
 import co.uniproject.nucleo.configuracionacademica.repositorio.EquipoRepositorio;
 import co.uniproject.nucleo.configuracionacademica.servicio.ApoyoConfiguracion;
@@ -26,6 +28,7 @@ public class ServicioVotacion {
     private final ApoyoConfiguracion apoyo;
     private final Permisos permisos;
     private final JdbcClient jdbc;
+    private final AvisosConfiguracion avisos;
     private final Clock reloj;
 
     public ServicioVotacion(
@@ -34,12 +37,14 @@ public class ServicioVotacion {
             ApoyoConfiguracion apoyo,
             Permisos permisos,
             JdbcClient jdbc,
+            AvisosConfiguracion avisos,
             Clock reloj) {
         this.equipos = equipos;
         this.rondas = rondas;
         this.apoyo = apoyo;
         this.permisos = permisos;
         this.jdbc = jdbc;
+        this.avisos = avisos;
         this.reloj = reloj;
     }
 
@@ -118,7 +123,7 @@ public class ServicioVotacion {
         }
         apoyo.nombrarLider(usuario.idUsuario(), idEquipo, solicitud.idUsuario());
         rondas.marcarDesempate(usuario.idUsuario(), ronda.idRonda(), solicitud.idUsuario());
-        // Bloque 4: registrar equipo.lider_elegido (equipo y docente).
+        avisos.liderElegido(idEquipo, solicitud.idUsuario(), OrigenLider.DESEMPATE);
         return construirVista(usuario, equipo, ahora);
     }
 

@@ -19,6 +19,13 @@ const MARCAS_POR_TIPO: Record<string, Marca> = {
   'equipo.inactividad': { texto: 'Inactividad', tono: 'aviso' },
   'tarea.reasignada': { texto: 'Tarea reasignada', tono: 'info' },
   'tarea.correccion': { texto: 'Corrección solicitada', tono: 'aviso' },
+  'curso.estudiante_agregado': { texto: 'Curso', tono: 'info' },
+  'equipo.votacion_abierta': { texto: 'Votación abierta', tono: 'info' },
+  'equipo.lider_elegido': { texto: 'Nuevo líder', tono: 'exito' },
+  'equipo.sin_lider': { texto: 'Equipo sin líder', tono: 'aviso' },
+  'equipo.miembro_cambio': { texto: 'Cambio en el equipo', tono: 'info' },
+  'equipo.inscripcion_por_cerrar': { texto: 'Cierre de equipos', tono: 'aviso' },
+  'equipo.inscripcion_resumen': { texto: 'Resumen de equipos', tono: 'info' },
 };
 
 const MARCA_POR_DEFECTO: Marca = { texto: 'Aviso', tono: 'neutro' };

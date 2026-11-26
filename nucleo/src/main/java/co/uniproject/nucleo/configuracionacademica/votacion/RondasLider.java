@@ -1,5 +1,8 @@
 package co.uniproject.nucleo.configuracionacademica.votacion;
 
+import co.uniproject.eventos.datos.MotivoSinLider;
+import co.uniproject.eventos.datos.OrigenLider;
+import co.uniproject.nucleo.configuracionacademica.avisos.AvisosConfiguracion;
 import co.uniproject.nucleo.configuracionacademica.servicio.ApoyoConfiguracion;
 import co.uniproject.nucleo.trazabilidad.auditoria.AccionAuditoria;
 import co.uniproject.nucleo.trazabilidad.auditoria.EntradaAuditoria;
@@ -37,11 +40,14 @@ public class RondasLider {
     private final JdbcClient jdbc;
     private final ApoyoConfiguracion apoyo;
     private final RegistroAuditoria auditoria;
+    private final AvisosConfiguracion avisos;
 
-    public RondasLider(JdbcClient jdbc, ApoyoConfiguracion apoyo, RegistroAuditoria auditoria) {
+    public RondasLider(
+            JdbcClient jdbc, ApoyoConfiguracion apoyo, RegistroAuditoria auditoria, AvisosConfiguracion avisos) {
         this.jdbc = jdbc;
         this.apoyo = apoyo;
         this.auditoria = auditoria;
+        this.avisos = avisos;
     }
 
     /** Integrante elegible para votar y ser votado en una ronda. */
@@ -114,7 +120,7 @@ public class RondasLider {
                 .single();
         auditoria.registrar(EntradaAuditoria.cambio(
                 idActor, "ronda_lider", idRonda, AccionAuditoria.CREAR, "origen", null, origen.name()));
-        // Bloque 4: registrar equipo.votacion_abierta (integrantes del equipo) con RegistroEventos en esta transacción.
+        avisos.votacionAbierta(idEquipo, cierra);
         return idRonda;
     }
 
@@ -156,9 +162,11 @@ public class RondasLider {
                 null,
                 resultado.name()));
         if (resultado == ResultadoRonda.LIDER_ELEGIDO) {
-            // Bloque 4: registrar equipo.lider_elegido (equipo y docente).
+            avisos.liderElegido(ronda.idEquipo(), ganador, OrigenLider.VOTACION);
         } else {
-            // Bloque 4: registrar equipo.sin_lider (docente), con el motivo EMPATE o SIN_VOTOS.
+            avisos.sinLider(
+                    ronda.idEquipo(),
+                    resultado == ResultadoRonda.EMPATE ? MotivoSinLider.EMPATE : MotivoSinLider.SIN_VOTOS);
         }
         return resultado;
     }
