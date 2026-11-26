@@ -1,6 +1,7 @@
 package co.uniproject.nucleo.configuracionacademica.servicio;
 
 import co.uniproject.nucleo.configuracionacademica.dominio.Proyecto;
+import java.time.Instant;
 import java.time.LocalDate;
 
 public record ProyectoVista(
@@ -11,7 +12,9 @@ public record ProyectoVista(
         LocalDate fechaInicio,
         LocalDate fechaFin,
         boolean usaMonitores,
-        boolean equiposMixtos) {
+        boolean equiposMixtos,
+        Instant cierreEquipos,
+        int horasRonda) {
 
     public static ProyectoVista de(Proyecto p) {
         return new ProyectoVista(
@@ -22,6 +25,8 @@ public record ProyectoVista(
                 p.getFechaInicio(),
                 p.getFechaFin(),
                 p.getUsaMonitores(),
-                Boolean.TRUE.equals(p.getEquiposMixtos()));
+                Boolean.TRUE.equals(p.getEquiposMixtos()),
+                p.getCierreEquipos(),
+                p.getHorasRonda());
     }
 }

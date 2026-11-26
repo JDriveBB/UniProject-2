@@ -6,12 +6,17 @@ import co.uniproject.nucleo.configuracionacademica.repositorio.MiembroEquipoRepo
 import co.uniproject.nucleo.ejecucion.repositorio.HitoEquipoRepositorio;
 import co.uniproject.nucleo.seguridad.dominio.Usuario;
 import co.uniproject.nucleo.seguridad.repositorio.UsuarioRepositorio;
+import co.uniproject.nucleo.trazabilidad.auditoria.AccionAuditoria;
+import co.uniproject.nucleo.trazabilidad.auditoria.EntradaAuditoria;
+import co.uniproject.nucleo.trazabilidad.auditoria.RegistroAuditoria;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
@@ -24,16 +29,22 @@ public class ApoyoConfiguracion {
     private final HitoEquipoRepositorio hitosEquipo;
     private final UsuarioRepositorio usuarios;
     private final JdbcClient jdbc;
+    private final RegistroAuditoria auditoria;
+    private final Clock reloj;
 
     public ApoyoConfiguracion(
             MiembroEquipoRepositorio miembros,
             HitoEquipoRepositorio hitosEquipo,
             UsuarioRepositorio usuarios,
-            JdbcClient jdbc) {
+            JdbcClient jdbc,
+            RegistroAuditoria auditoria,
+            Clock reloj) {
         this.miembros = miembros;
         this.hitosEquipo = hitosEquipo;
         this.usuarios = usuarios;
         this.jdbc = jdbc;
+        this.auditoria = auditoria;
+        this.reloj = reloj;
     }
 
     /** Decisión R-7: crea el hito_equipo de cada par (hito, equipo) del proyecto que falte. Llamar tras saveAndFlush. */
@@ -43,6 +54,70 @@ public class ApoyoConfiguracion {
                         + "ON CONFLICT (id_hito, id_equipo) DO NOTHING")
                 .param("proyecto", idProyecto)
                 .update();
+    }
+
+    /** Serializa los cambios de integrantes, cupo y cierre del proyecto (un estudiante, un equipo). */
+    public void bloquearProyecto(long idProyecto) {
+        jdbc.sql("SELECT id_proyecto FROM proyecto WHERE id_proyecto = :proyecto FOR NO KEY UPDATE")
+                .param("proyecto", idProyecto)
+                .query(Long.class)
+                .single();
+    }
+
+    /** Toma el candado del equipo en el orden único de candados (proyecto antes que equipo). */
+    public void bloquearEquipo(long idEquipo) {
+        jdbc.sql("SELECT id_equipo FROM equipo WHERE id_equipo = :e FOR NO KEY UPDATE")
+                .param("e", idEquipo)
+                .query(Long.class)
+                .single();
+    }
+
+    public boolean tieneEquipoEnProyecto(long idProyecto, long idUsuario) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM miembro_equipo m JOIN equipo e "
+                        + "ON e.id_equipo = m.id_equipo WHERE e.id_proyecto = :proyecto AND m.id_usuario = :usuario)")
+                .param("proyecto", idProyecto)
+                .param("usuario", idUsuario)
+                .query(Boolean.class)
+                .single();
+    }
+
+    public void agregarIntegrante(long idQuienAgrega, long idEquipo, long idEstudiante) {
+        MiembroEquipo m = new MiembroEquipo();
+        m.setIdEquipo(idEquipo);
+        m.setIdUsuario(idEstudiante);
+        m.setFechaIngreso(Instant.now(reloj));
+        miembros.saveAndFlush(m);
+        auditoria.registrar(EntradaAuditoria.cambio(
+                idQuienAgrega,
+                "miembro_equipo",
+                idEquipo,
+                AccionAuditoria.CREAR,
+                "id_usuario",
+                null,
+                String.valueOf(idEstudiante)));
+    }
+
+    public int contarIntegrantes(long idEquipo) {
+        return jdbc.sql("SELECT count(*) FROM miembro_equipo WHERE id_equipo = :equipo")
+                .param("equipo", idEquipo)
+                .query(Integer.class)
+                .single();
+    }
+
+    public Optional<Long> cursoDelParticipante(long idProyecto, long idUsuario) {
+        return jdbc.sql(
+                        "SELECT id_curso FROM participante_proyecto WHERE id_proyecto = :proyecto AND id_usuario = :usuario")
+                .param("proyecto", idProyecto)
+                .param("usuario", idUsuario)
+                .query(Long.class)
+                .optional();
+    }
+
+    public Optional<Long> liderDe(long idEquipo) {
+        return jdbc.sql("SELECT id_usuario FROM miembro_equipo WHERE id_equipo = :equipo AND rol_equipo = 'LIDER'")
+                .param("equipo", idEquipo)
+                .query(Long.class)
+                .optional();
     }
 
     /** Equipo con sus miembros (primero el líder, luego por nombre) y sus hitos (por id de hito, con su último envío). */
@@ -75,6 +150,12 @@ public class ApoyoConfiguracion {
                 .sorted(Comparator.comparingLong(HitoEquipoVista::idHito))
                 .toList();
         return new EquipoVista(
-                equipo.getIdEquipo(), equipo.getIdProyecto(), equipo.getNombreEquipo(), vistasMiembros, vistasHitos);
+                equipo.getIdEquipo(),
+                equipo.getIdProyecto(),
+                equipo.getNombreEquipo(),
+                vistasMiembros,
+                vistasHitos,
+                equipo.getIdCurso(),
+                equipo.getCupo());
     }
 }

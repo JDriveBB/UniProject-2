@@ -192,14 +192,20 @@ public class ServicioCorreosProyecto {
     @Transactional(readOnly = true)
     public List<EstudianteDisponibleVista> disponibles(UsuarioAutenticado usuario, long idProyecto) {
         permisos.exigir(permisos.esDocenteDelProyecto(usuario.idUsuario(), idProyecto));
-        return jdbc.sql("SELECT u.email, u.nombre FROM participante_proyecto pp "
+        return jdbc.sql("SELECT u.email, u.nombre, pp.id_curso, c.nombre AS nombre_curso "
+                        + "FROM participante_proyecto pp "
                         + "JOIN usuario u ON u.id_usuario = pp.id_usuario "
+                        + "JOIN curso c ON c.id_curso = pp.id_curso "
                         + "WHERE pp.id_proyecto = :proyecto AND u.fecha_anonimizacion IS NULL "
                         + "AND NOT EXISTS (SELECT 1 FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
                         + "WHERE e.id_proyecto = pp.id_proyecto AND m.id_usuario = pp.id_usuario) "
                         + "ORDER BY u.nombre, u.email")
                 .param("proyecto", idProyecto)
-                .query((rs, fila) -> new EstudianteDisponibleVista(rs.getString("email"), rs.getString("nombre")))
+                .query((rs, fila) -> new EstudianteDisponibleVista(
+                        rs.getString("email"),
+                        rs.getString("nombre"),
+                        rs.getLong("id_curso"),
+                        rs.getString("nombre_curso")))
                 .list();
     }
 

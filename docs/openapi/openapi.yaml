@@ -512,6 +512,7 @@ paths:
       tags: [equipos]
       operationId: crearEquipo
       summary: Crea también los hito_equipo de los hitos existentes
+      description: 'Errores: 400 CURSO_EN_PROYECTO_MIXTO o CURSO_REQUERIDO; 409 PROYECTO_SIN_CURSOS, CURSO_NO_ASIGNADO o EQUIPO_REPETIDO'
       requestBody:
         required: true
         content:
@@ -523,6 +524,83 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/equipos/lote:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [equipos]
+      operationId: crearEquiposEnLote
+      summary: Crea varios equipos con cupo en un solo paso. Solo el docente dueño
+      description: 'Errores: 400 CURSO_EN_PROYECTO_MIXTO o CURSO_REQUERIDO; 409 PROYECTO_SIN_CURSOS, CURSO_NO_ASIGNADO, SIN_ESTUDIANTES_SIN_EQUIPO, DEMASIADOS_EQUIPOS o EQUIPO_REPETIDO'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudEquiposLote'}
+      responses:
+        '201':
+          description: Equipos creados en orden de numeración
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/equipos/reparto:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [equipos]
+      operationId: repartirEquipos
+      summary: Reparte automáticamente a los participantes sin equipo entre equipos con cupo libre respetando el curso. Solo el docente dueño
+      description: Reparte sin pasar el cupo de ningún equipo y devuelve los asignados y los que quedaron sin cupo
+      responses:
+        '200':
+          description: Resultado del reparto automático
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoReparto'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/inscripcion:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [equipos]
+      operationId: vistaInscripcion
+      summary: Estado de autoinscripción a equipos del proyecto y equipos visibles (sin correos ni ids de usuario)
+      description: Visible para quienes pueden ver el proyecto; en proyectos no mixtos el participante ve solo equipos de su curso más el suyo
+      responses:
+        '200':
+          description: Vista de autoinscripción
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InscripcionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    put:
+      tags: [equipos]
+      operationId: configurarInscripcion
+      summary: Configura la fecha de cierre de autoinscripción y las horas de ronda de líder. Solo el docente dueño
+      description: 'Errores: 400 CIERRE_EN_EL_PASADO o VALIDACION; 409 INSCRIPCION_YA_CERRADA (si ya se abrieron las rondas de líder)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudInscripcion'}
+      responses:
+        '200':
+          description: Configuración actualizada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InscripcionVista'}
         '400': {$ref: '#/components/responses/Invalida'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
@@ -835,6 +913,7 @@ paths:
     post:
       tags: [equipos]
       operationId: agregarMiembro
+      description: 'Errores: 409 ESTUDIANTE_SIN_CURSO, YA_TIENE_EQUIPO, CURSO_DEL_EQUIPO o CUPO_LLENO (se repite con pasarCupo: true para confirmar)'
       requestBody:
         required: true
         content:
@@ -886,6 +965,71 @@ paths:
         '400': {$ref: '#/components/responses/Invalida'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    delete:
+      tags: [equipos]
+      operationId: destituirLider
+      summary: Destituye al líder del equipo y lo deja sin líder. Solo el docente dueño
+      description: 'Errores: 409 SIN_LIDER si el equipo no tiene líder'
+      responses:
+        '200':
+          description: Equipo sin líder
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/cupo:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: cambiarCupo
+      summary: Cambia el cupo del equipo (null lo convierte en manual). Solo el docente dueño
+      description: Permite reducir el cupo por debajo de los integrantes actuales sin sacar a nadie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCupo'}
+      responses:
+        '200':
+          description: Equipo con el nuevo cupo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/equipos/{idEquipo}/inscripcion:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    post:
+      tags: [equipos]
+      operationId: unirseEquipo
+      summary: Un estudiante participante se une a un equipo con cupo mientras la inscripción está abierta
+      description: 'Errores: 409 EQUIPO_SIN_INSCRIPCION, INSCRIPCION_CERRADA, YA_TIENE_EQUIPO, CURSO_DEL_EQUIPO o EQUIPO_LLENO'
+      responses:
+        '200':
+          description: Equipo con el nuevo integrante
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    delete:
+      tags: [equipos]
+      operationId: salirseEquipo
+      summary: Un estudiante sale de un equipo con cupo mientras la inscripción está abierta y no tenga tareas asignadas
+      description: 'Errores: 404 NO_ENCONTRADO si no está en el equipo; 409 EQUIPO_SIN_INSCRIPCION, INSCRIPCION_CERRADA o TIENE_TAREAS'
+      responses:
+        '204':
+          description: Salida registrada
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
         '409': {$ref: '#/components/responses/Conflicto'}
   /api/equipos/{idEquipo}/historial:
     parameters:
@@ -1779,6 +1923,8 @@ components:
         fechaFin: {$ref: '#/components/schemas/Fecha'}
         usaMonitores: {type: boolean}
         equiposMixtos: {type: boolean}
+        cierreEquipos: {$ref: '#/components/schemas/InstanteNulo'}
+        horasRonda: {type: integer}
     ProyectoDetalle:
       type: object
       properties:
@@ -1837,11 +1983,64 @@ components:
       required: [nombreEquipo]
       properties:
         nombreEquipo: {type: string, maxLength: 100}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        cupo: {type: [integer, 'null'], minimum: 1, maximum: 100}
+    SolicitudEquiposLote:
+      type: object
+      required: [prefijo, cupo]
+      properties:
+        prefijo: {type: string, maxLength: 90}
+        cantidad: {type: [integer, 'null'], minimum: 1, maximum: 50}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        cupo: {type: integer, minimum: 1, maximum: 100}
+    SolicitudCupo:
+      type: object
+      properties:
+        cupo: {type: [integer, 'null'], minimum: 1, maximum: 100}
+    SolicitudInscripcion:
+      type: object
+      required: [horasRonda]
+      properties:
+        cierreEquipos: {$ref: '#/components/schemas/InstanteNulo'}
+        horasRonda: {type: integer, minimum: 1, maximum: 336}
+    InscripcionVista:
+      type: object
+      properties:
+        cierreEquipos: {$ref: '#/components/schemas/InstanteNulo'}
+        horasRonda: {type: integer}
+        abierta: {type: boolean}
+        idCursoQueCuenta: {$ref: '#/components/schemas/IdNulo'}
+        idMiEquipo: {$ref: '#/components/schemas/IdNulo'}
+        equipos: {type: array, items: {$ref: '#/components/schemas/EquipoInscripcionVista'}}
+    EquipoInscripcionVista:
+      type: object
+      properties:
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        nombreCurso: {$ref: '#/components/schemas/TextoNulo'}
+        cupo: {type: [integer, 'null']}
+        integrantes: {type: integer}
+        nombres: {type: array, items: {type: string}}
+        puedeUnirse: {type: boolean}
+    AsignacionRepartoVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+    ResultadoReparto:
+      type: object
+      properties:
+        asignados: {type: array, items: {$ref: '#/components/schemas/AsignacionRepartoVista'}}
+        sinCupo: {type: array, items: {$ref: '#/components/schemas/EstudianteDisponibleVista'}}
     SolicitudMiembro:
       type: object
       required: [email]
       properties:
         email: {type: string, format: email, maxLength: 254}
+        pasarCupo: {type: [boolean, 'null']}
     EstudianteProyectoVista:
       type: object
       properties:
@@ -1856,6 +2055,8 @@ components:
       properties:
         email: {type: string}
         nombre: {type: string}
+        idCurso: {$ref: '#/components/schemas/Id'}
+        nombreCurso: {type: string}
     SolicitudLider:
       type: object
       required: [idUsuario]
@@ -1869,6 +2070,8 @@ components:
         nombreEquipo: {type: string}
         miembros: {type: array, items: {$ref: '#/components/schemas/MiembroVista'}}
         hitos: {type: array, items: {$ref: '#/components/schemas/HitoEquipoVista'}}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        cupo: {type: [integer, 'null']}
     MiembroVista:
       type: object
       properties:

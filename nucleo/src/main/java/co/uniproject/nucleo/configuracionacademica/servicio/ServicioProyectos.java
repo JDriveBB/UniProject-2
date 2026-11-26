@@ -38,7 +38,10 @@ public class ServicioProyectos {
     /** Misma regla que PermisosJdbc.puedeVerProyecto, para listar. */
     private static final String VISIBLES = "SELECT p.id_proyecto FROM proyecto p WHERE p.id_docente = :usuario "
             + "OR (p.usa_monitores AND EXISTS (SELECT 1 FROM monitor_proyecto mp WHERE mp.id_proyecto = p.id_proyecto "
-            + "AND mp.id_monitor = :usuario)) OR EXISTS (SELECT 1 FROM equipo e JOIN miembro_equipo m "
+            + "AND mp.id_monitor = :usuario)) "
+            + "OR EXISTS (SELECT 1 FROM participante_proyecto pp WHERE pp.id_proyecto = p.id_proyecto "
+            + "AND pp.id_usuario = :usuario) "
+            + "OR EXISTS (SELECT 1 FROM equipo e JOIN miembro_equipo m "
             + "ON m.id_equipo = e.id_equipo WHERE e.id_proyecto = p.id_proyecto AND m.id_usuario = :usuario) "
             + "ORDER BY p.fecha_inicio DESC, p.id_proyecto";
 
@@ -80,6 +83,7 @@ public class ServicioProyectos {
         Proyecto p = new Proyecto();
         p.setIdDocente(usuario.idUsuario());
         p.setEquiposMixtos(Boolean.TRUE.equals(solicitud.equiposMixtos()));
+        p.setHorasRonda(Proyecto.HORAS_RONDA_POR_DEFECTO);
         aplicar(p, solicitud);
         p = proyectos.saveAndFlush(p);
         auditoria.registrar(

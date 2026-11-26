@@ -10,6 +10,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -199,6 +201,38 @@ public abstract class ApiIntegracionBase {
                 .param("p", idProyecto)
                 .param("u", idUsuario)
                 .param("c", idCurso)
+                .update();
+    }
+
+    /** Crea un equipo vía API omitiendo del JSON los campos nulos; exige 201 y devuelve idEquipo. */
+    protected long crearEquipoApi(Navegador docente, long idProyecto, String nombre, Long idCurso, Integer cupo) {
+        StringBuilder json =
+                new StringBuilder("{\"nombreEquipo\":\"").append(nombre).append("\"");
+        if (idCurso != null) {
+            json.append(",\"idCurso\":").append(idCurso);
+        }
+        if (cupo != null) {
+            json.append(",\"cupo\":").append(cupo);
+        }
+        json.append("}");
+        HttpResponse<String> r = docente.post("/api/proyectos/" + idProyecto + "/equipos", json.toString());
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        return numero(r.body(), "idEquipo");
+    }
+
+    /** Abre la autoinscripción del proyecto fijando el cierre en 7 días y horasRonda = 48. */
+    protected void abrirInscripcion(Navegador docente, long idProyecto) {
+        Instant cierre = Instant.now().plus(7, ChronoUnit.DAYS);
+        HttpResponse<String> r = docente.put(
+                "/api/proyectos/" + idProyecto + "/inscripcion",
+                "{\"cierreEquipos\":\"" + cierre + "\",\"horasRonda\":48}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+    }
+
+    /** Cierra la autoinscripción del proyecto en la BD poniendo cierre_equipos una hora en el pasado. */
+    protected void cerrarInscripcionSql(long idProyecto) {
+        jdbc.sql("UPDATE proyecto SET cierre_equipos = now() - interval '1 hour' WHERE id_proyecto = :p")
+                .param("p", idProyecto)
                 .update();
     }
 

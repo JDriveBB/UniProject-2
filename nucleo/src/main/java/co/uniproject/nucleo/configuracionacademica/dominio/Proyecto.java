@@ -6,12 +6,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.time.LocalDate;
 
 /** Tabla Proyecto del diagrama de BD. */
 @Entity
 @Table(name = "proyecto")
 public class Proyecto {
+
+    public static final int HORAS_RONDA_POR_DEFECTO = 48;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +41,12 @@ public class Proyecto {
 
     @Column(name = "equipos_mixtos")
     private Boolean equiposMixtos = false;
+
+    @Column(name = "cierre_equipos", insertable = false, updatable = false)
+    private Instant cierreEquipos;
+
+    @Column(name = "horas_ronda", updatable = false)
+    private Integer horasRonda = HORAS_RONDA_POR_DEFECTO;
 
     public Long getIdProyecto() {
         return idProyecto;
@@ -101,5 +110,21 @@ public class Proyecto {
 
     public void setEquiposMixtos(Boolean equiposMixtos) {
         this.equiposMixtos = equiposMixtos;
+    }
+
+    public Instant getCierreEquipos() {
+        return cierreEquipos;
+    }
+
+    public void setCierreEquipos(Instant cierreEquipos) {
+        this.cierreEquipos = cierreEquipos;
+    }
+
+    public Integer getHorasRonda() {
+        return horasRonda;
+    }
+
+    public void setHorasRonda(Integer horasRonda) {
+        this.horasRonda = horasRonda;
     }
 }

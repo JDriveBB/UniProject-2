@@ -12,7 +12,10 @@ public class PermisosJdbc implements Permisos {
             + "WHERE mp.id_proyecto = p.id_proyecto AND mp.id_monitor = :usuario))";
 
     private static final String VER_PROYECTO = "SELECT EXISTS (SELECT 1 FROM proyecto p WHERE p.id_proyecto = :id "
-            + "AND (p.id_docente = :usuario OR " + MONITOR_ACTIVO + " OR EXISTS (SELECT 1 FROM equipo e "
+            + "AND (p.id_docente = :usuario OR " + MONITOR_ACTIVO
+            + " OR EXISTS (SELECT 1 FROM participante_proyecto pp WHERE pp.id_proyecto = p.id_proyecto "
+            + "AND pp.id_usuario = :usuario)"
+            + " OR EXISTS (SELECT 1 FROM equipo e "
             + "JOIN miembro_equipo m ON m.id_equipo = e.id_equipo WHERE e.id_proyecto = p.id_proyecto "
             + "AND m.id_usuario = :usuario)))";
 
@@ -65,6 +68,14 @@ public class PermisosJdbc implements Permisos {
     public boolean esMonitorDelProyecto(long idUsuario, long idProyecto) {
         return existe(
                 "SELECT EXISTS (SELECT 1 FROM proyecto p WHERE p.id_proyecto = :id AND " + MONITOR_ACTIVO + ")",
+                idUsuario,
+                idProyecto);
+    }
+
+    @Override
+    public boolean esParticipanteDelProyecto(long idUsuario, long idProyecto) {
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM participante_proyecto WHERE id_proyecto = :id AND id_usuario = :usuario)",
                 idUsuario,
                 idProyecto);
     }

@@ -46,18 +46,19 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
     }
 
-    private static Map<String, String> leerDisponibles(String json) {
+    private static Map<String, JsonNode> leerDisponibles(String json) {
         JsonNode lista = JSON.readTree(json);
         assertThat(lista.isArray()).isTrue();
-        Map<String, String> porCorreo = new LinkedHashMap<>();
+        Map<String, JsonNode> porCorreo = new LinkedHashMap<>();
         for (JsonNode elemento : lista) {
             assertThat(elemento.isObject()).isTrue();
-            assertThat(elemento.size()).isEqualTo(2);
+            assertThat(elemento.size()).isEqualTo(4);
             assertThat(elemento.has("email")).isTrue();
             assertThat(elemento.has("nombre")).isTrue();
+            assertThat(elemento.has("idCurso")).isTrue();
+            assertThat(elemento.has("nombreCurso")).isTrue();
             String email = JSON.treeToValue(elemento.get("email"), String.class);
-            String nombre = JSON.treeToValue(elemento.get("nombre"), String.class);
-            porCorreo.put(email, nombre);
+            porCorreo.put(email, elemento);
         }
         return porCorreo;
     }
@@ -68,10 +69,11 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         Navegador otraDocente = docente();
 
         long idProyecto = crearProyecto(docente);
-        long idEquipo = crearEquipo(docente, idProyecto, "Equipo A");
         long cursoAsignado = crearCurso(docente, "Curso Asignado");
         long cursoSinAsignar = crearCurso(docente, "Curso Sin Asignar");
         long cursoAjeno = crearCurso(otraDocente, "Curso Ajeno");
+        asignarCursos(docente, idProyecto, cursoAsignado);
+        long idEquipo = crearEquipo(docente, idProyecto, "Equipo A");
 
         String libreZ = correoUnico("librez");
         crearUsuario("Zulma Libre", libreZ, "ESTUDIANTE");
@@ -89,7 +91,6 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         agregarAlCurso(docente, cursoAsignado, libreZ, libreA, conEquipo, suprimido);
         agregarAlCurso(docente, cursoSinAsignar, otroCursoMismoDoc);
         agregarAlCurso(otraDocente, cursoAjeno, otroDocenteEst);
-        asignarCursos(docente, idProyecto, cursoAsignado);
         agregarMiembro(docente, idEquipo, conEquipo);
 
         HttpResponse<String> supresion =
@@ -99,16 +100,21 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         HttpResponse<String> respuesta = docente.get("/api/proyectos/" + idProyecto + "/estudiantes-disponibles");
         assertThat(respuesta.statusCode()).as(respuesta.body()).isEqualTo(200);
 
-        Map<String, String> disponibles = leerDisponibles(respuesta.body());
+        Map<String, JsonNode> disponibles = leerDisponibles(respuesta.body());
         assertThat(disponibles)
-                .containsEntry(libreA, "Alicia Libre")
-                .containsEntry(libreZ, "Zulma Libre")
+                .containsKeys(libreA, libreZ)
                 .doesNotContainKeys(
                         conEquipo,
                         otroCursoMismoDoc,
                         otroDocenteEst,
                         suprimido,
                         ServicioSupresion.correoAnonimo(idSuprimido));
+        assertThat(disponibles.get(libreA).get("nombre").asString()).isEqualTo("Alicia Libre");
+        assertThat(disponibles.get(libreA).get("idCurso").asLong()).isEqualTo(cursoAsignado);
+        assertThat(disponibles.get(libreA).get("nombreCurso").asString()).isEqualTo("Curso Asignado");
+        assertThat(disponibles.get(libreZ).get("nombre").asString()).isEqualTo("Zulma Libre");
+        assertThat(disponibles.get(libreZ).get("idCurso").asLong()).isEqualTo(cursoAsignado);
+        assertThat(disponibles.get(libreZ).get("nombreCurso").asString()).isEqualTo("Curso Asignado");
         List<String> orden = new ArrayList<>(disponibles.keySet());
         assertThat(orden).containsExactly(libreA, libreZ);
 
@@ -122,12 +128,12 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
     void soloLaDocenteDuenaDelProyectoPuedeListarDisponibles() {
         Navegador docente = docente();
         long idProyecto = crearProyecto(docente);
-        long idEquipo = crearEquipo(docente, idProyecto, "Equipo A");
         long curso = crearCurso(docente, "Curso Permisos");
         String estudianteCorreo = correoUnico("est");
         crearUsuario("Estudiante Prueba", estudianteCorreo, "ESTUDIANTE");
         agregarAlCurso(docente, curso, estudianteCorreo);
         asignarCursos(docente, idProyecto, curso);
+        long idEquipo = crearEquipo(docente, idProyecto, "Equipo A");
         agregarMiembro(docente, idEquipo, estudianteCorreo);
 
         Navegador otraDocente = docente();

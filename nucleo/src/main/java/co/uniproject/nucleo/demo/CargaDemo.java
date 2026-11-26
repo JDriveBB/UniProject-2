@@ -414,9 +414,9 @@ public class CargaDemo {
             String nombre,
             UsuarioAutenticado lider,
             List<UsuarioAutenticado> miembros) {
-        EquipoVista equipo = equipos.crear(docente, idProyecto, new SolicitudEquipo(nombre));
+        EquipoVista equipo = equipos.crear(docente, idProyecto, new SolicitudEquipo(nombre, null, null));
         for (UsuarioAutenticado m : miembros) {
-            equipos.agregarMiembro(docente, equipo.idEquipo(), new SolicitudMiembro(m.email()));
+            equipos.agregarMiembro(docente, equipo.idEquipo(), new SolicitudMiembro(m.email(), false));
         }
         return equipos.cambiarLider(docente, equipo.idEquipo(), new SolicitudLider(lider.idUsuario()));
     }

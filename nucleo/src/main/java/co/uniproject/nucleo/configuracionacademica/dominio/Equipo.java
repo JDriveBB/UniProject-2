@@ -23,6 +23,12 @@ public class Equipo {
     @Column(name = "nombre_equipo")
     private String nombreEquipo;
 
+    @Column(name = "id_curso")
+    private Long idCurso;
+
+    @Column(name = "cupo")
+    private Integer cupo;
+
     public Long getIdEquipo() {
         return idEquipo;
     }
@@ -45,5 +51,21 @@ public class Equipo {
 
     public void setNombreEquipo(String nombreEquipo) {
         this.nombreEquipo = nombreEquipo;
+    }
+
+    public Long getIdCurso() {
+        return idCurso;
+    }
+
+    public void setIdCurso(Long idCurso) {
+        this.idCurso = idCurso;
+    }
+
+    public Integer getCupo() {
+        return cupo;
+    }
+
+    public void setCupo(Integer cupo) {
+        this.cupo = cupo;
     }
 }

@@ -137,7 +137,6 @@ class CursosProyectoIntegracionTest extends ApiIntegracionBase {
         long c1 = crearCurso(docente, "Curso A");
         long c2 = crearCurso(docente, "Curso B");
         long p = crearProyecto(docente, "Proyecto Salida", null);
-        long equipo = crearEquipo(docente, p, "Equipo 1");
 
         String sinEq = correoUnico("sineq");
         long idSinEq = crearUsuario("Sin Equipo", sinEq, "ESTUDIANTE");
@@ -149,6 +148,7 @@ class CursosProyectoIntegracionTest extends ApiIntegracionBase {
         agregarAlCurso(docente, c1, sinEq, conEq, enDos);
         agregarAlCurso(docente, c2, enDos);
         asignarCursos(docente, p, c1, c2);
+        long equipo = crearEquipoApi(docente, p, "Equipo 1", c1, null);
         assertThat(docente.post("/api/equipos/" + equipo + "/miembros", "{\"email\":\"" + conEq + "\"}")
                         .statusCode())
                 .isEqualTo(201);
@@ -198,7 +198,6 @@ class CursosProyectoIntegracionTest extends ApiIntegracionBase {
         Navegador docente = docente();
         long c = crearCurso(docente, "Curso Quitar");
         long p = crearProyecto(docente, "Proyecto Quitar", null);
-        long equipo = crearEquipo(docente, p, "Equipo Q");
 
         String libre = correoUnico("libre");
         long idLibre = crearUsuario("Libre", libre, "ESTUDIANTE");
@@ -206,6 +205,7 @@ class CursosProyectoIntegracionTest extends ApiIntegracionBase {
         long idConEquipo = crearUsuario("Con Equipo", conEquipo, "ESTUDIANTE");
         agregarAlCurso(docente, c, libre, conEquipo);
         asignarCursos(docente, p, c);
+        long equipo = crearEquipo(docente, p, "Equipo Q");
         assertThat(docente.post("/api/equipos/" + equipo + "/miembros", "{\"email\":\"" + conEquipo + "\"}")
                         .statusCode())
                 .isEqualTo(201);

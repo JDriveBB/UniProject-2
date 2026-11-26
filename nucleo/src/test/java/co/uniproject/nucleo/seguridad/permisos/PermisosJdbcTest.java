@@ -23,7 +23,8 @@ class PermisosJdbcTest {
                     + "(4, 'Integrante', 'integrante@u.edu.co', '!', 'ESTUDIANTE'), "
                     + "(5, 'Otro equipo', 'otro@u.edu.co', '!', 'ESTUDIANTE'), "
                     + "(6, 'Admin', 'admin@u.edu.co', '!', 'ADMINISTRADOR'), "
-                    + "(7, 'Otro docente', 'docente2@u.edu.co', '!', 'DOCENTE')",
+                    + "(7, 'Otro docente', 'docente2@u.edu.co', '!', 'DOCENTE'), "
+                    + "(8, 'Participante', 'participante@u.edu.co', '!', 'ESTUDIANTE')",
             "INSERT INTO proyecto (id_proyecto, id_docente, nombre, fecha_inicio, fecha_fin, usa_monitores) VALUES "
                     + "(10, 1, 'Con monitores', DATE '2026-08-03', DATE '2026-11-27', true), "
                     + "(11, 7, 'Sin monitores', DATE '2026-08-03', DATE '2026-11-27', false)",
@@ -40,7 +41,9 @@ class PermisosJdbcTest {
                     + "(53, 41, 5, 'T53', 2), (54, 40, 5, 'T54', 2)",
             "INSERT INTO curso (id_curso, id_docente, nombre, periodo) VALUES "
                     + "(60, 1, 'Curso 1', '2026-2'), (61, 7, 'Curso 2', '2026-2')",
-            "INSERT INTO miembro_curso (id_curso, id_usuario) VALUES (60, 4)");
+            "INSERT INTO miembro_curso (id_curso, id_usuario) VALUES (60, 4), (60, 8)",
+            "INSERT INTO curso_proyecto (id_curso, id_proyecto) VALUES (60, 10)",
+            "INSERT INTO participante_proyecto (id_proyecto, id_usuario, id_curso) VALUES (10, 8, 60)");
 
     private static PermisosJdbc permisos;
 
@@ -69,6 +72,10 @@ class PermisosJdbcTest {
         "esMonitorDelProyecto, 2, 10, true",
         "esMonitorDelProyecto, 2, 11, false",
         "esMonitorDelProyecto, 3, 10, false",
+        "esParticipanteDelProyecto, 8, 10, true",
+        "esParticipanteDelProyecto, 8, 11, false",
+        "esParticipanteDelProyecto, 4, 10, false",
+        "esParticipanteDelProyecto, 1, 999, false",
         "esIntegranteDelEquipo, 3, 20, true",
         "esIntegranteDelEquipo, 4, 20, true",
         "esIntegranteDelEquipo, 5, 20, false",
@@ -80,6 +87,8 @@ class PermisosJdbcTest {
         "puedeVerProyecto, 2, 10, true",
         "puedeVerProyecto, 4, 10, true",
         "puedeVerProyecto, 5, 10, true",
+        "puedeVerProyecto, 8, 10, true",
+        "puedeVerProyecto, 8, 11, false",
         "puedeVerProyecto, 2, 11, false",
         "puedeVerProyecto, 6, 10, false",
         "puedeVerProyecto, 7, 10, false",
@@ -88,6 +97,7 @@ class PermisosJdbcTest {
         "puedeVerEquipo, 2, 20, true",
         "puedeVerEquipo, 4, 20, true",
         "puedeVerEquipo, 5, 20, false",
+        "puedeVerEquipo, 8, 20, false",
         "puedeVerEquipo, 6, 20, false",
         "puedeVerEquipo, 7, 20, false",
         "puedeVerEquipo, 2, 22, false",
@@ -178,6 +188,7 @@ class PermisosJdbcTest {
             case "esDocenteDelCurso" -> permisos.esDocenteDelCurso(u, id);
             case "puedeVerCurso" -> permisos.puedeVerCurso(u, id);
             case "esMonitorDelProyecto" -> permisos.esMonitorDelProyecto(u, id);
+            case "esParticipanteDelProyecto" -> permisos.esParticipanteDelProyecto(u, id);
             case "esIntegranteDelEquipo" -> permisos.esIntegranteDelEquipo(u, id);
             case "esLiderDelEquipo" -> permisos.esLiderDelEquipo(u, id);
             case "puedeVerProyecto" -> permisos.puedeVerProyecto(u, id);

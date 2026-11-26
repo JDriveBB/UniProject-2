@@ -2,6 +2,8 @@ package co.uniproject.nucleo.configuracionacademica.web;
 
 import co.uniproject.nucleo.configuracionacademica.servicio.EquipoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
+import co.uniproject.nucleo.configuracionacademica.servicio.ServicioInscripcion;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCupo;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudLider;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudMiembro;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
@@ -22,9 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ControladorEquipos {
 
     private final ServicioEquipos equipos;
+    private final ServicioInscripcion inscripcion;
 
-    public ControladorEquipos(ServicioEquipos equipos) {
+    public ControladorEquipos(ServicioEquipos equipos, ServicioInscripcion inscripcion) {
         this.equipos = equipos;
+        this.inscripcion = inscripcion;
     }
 
     @PostMapping("/miembros")
@@ -50,5 +54,31 @@ public class ControladorEquipos {
             @PathVariable("idEquipo") long idEquipo,
             @Valid @RequestBody SolicitudLider solicitud) {
         return equipos.cambiarLider(usuario, idEquipo, solicitud);
+    }
+
+    @DeleteMapping("/lider")
+    public EquipoVista destituirLider(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idEquipo") long idEquipo) {
+        return equipos.destituir(usuario, idEquipo);
+    }
+
+    @PutMapping("/cupo")
+    public EquipoVista cambiarCupo(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idEquipo") long idEquipo,
+            @Valid @RequestBody SolicitudCupo solicitud) {
+        return equipos.cambiarCupo(usuario, idEquipo, solicitud);
+    }
+
+    @PostMapping("/inscripcion")
+    public EquipoVista unirse(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idEquipo") long idEquipo) {
+        return inscripcion.unirse(usuario, idEquipo);
+    }
+
+    @DeleteMapping("/inscripcion")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void salirse(@AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idEquipo") long idEquipo) {
+        inscripcion.salirse(usuario, idEquipo);
     }
 }

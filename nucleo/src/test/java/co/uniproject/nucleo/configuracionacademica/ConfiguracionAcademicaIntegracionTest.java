@@ -130,6 +130,8 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void hitosYEquiposCreanLosHitosDeCadaEquipo() {
         Navegador docente = docente();
         long id = crearProyecto(docente, false);
+        long idCurso = crearCurso(docente, "Curso Hitos");
+        asignarCursos(docente, id, idCurso);
         crearEquipo(docente, id, "Equipo 1");
         HttpResponse<String> h1 =
                 docente.post("/api/proyectos/" + id + "/hitos", hito("Diagramas", 1, "2026-08-03", "2026-09-15"));
@@ -211,6 +213,8 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void laRubricaUsadaNoSeCambia() {
         Navegador docente = docente();
         long id = crearProyecto(docente, false);
+        long idCurso = crearCurso(docente, "Curso Rubrica");
+        asignarCursos(docente, id, idCurso);
         crearEquipo(docente, id, "Equipo R");
         long idHito = numero(
                 docente.post("/api/proyectos/" + id + "/hitos", hito("H", 1, "2026-08-03", "2026-09-15"))

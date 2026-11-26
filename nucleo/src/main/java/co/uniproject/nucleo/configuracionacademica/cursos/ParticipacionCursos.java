@@ -118,7 +118,8 @@ public class ParticipacionCursos {
 
     /**
      * Regla única de participación en el proyecto: decide alta, cambio de curso o baja según los cursos válidos y si
-     * el estudiante tiene equipo. No audita: es un dato derivado.
+     * el estudiante tiene equipo. Si pertenece a un equipo con curso asignado, la participación conserva el curso de
+     * ese equipo hasta que salga de él. No audita: es un dato derivado.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void sincronizar(long idProyecto, long idUsuario) {
@@ -133,6 +134,30 @@ public class ParticipacionCursos {
                 .param("u", idUsuario)
                 .query(Long.class)
                 .optional();
+        Optional<Long> cursoEquipo = jdbc.sql(
+                        "SELECT e.id_curso FROM miembro_equipo m JOIN equipo e ON e.id_equipo = m.id_equipo "
+                                + "WHERE e.id_proyecto = :p AND m.id_usuario = :u AND e.id_curso IS NOT NULL LIMIT 1")
+                .param("p", idProyecto)
+                .param("u", idUsuario)
+                .query(Long.class)
+                .optional();
+        if (cursoEquipo.isPresent()) {
+            long c = cursoEquipo.get();
+            if (actual.isEmpty()) {
+                jdbc.sql("INSERT INTO participante_proyecto (id_proyecto, id_usuario, id_curso) VALUES (:p, :u, :c)")
+                        .param("p", idProyecto)
+                        .param("u", idUsuario)
+                        .param("c", c)
+                        .update();
+            } else if (actual.get() != c) {
+                jdbc.sql("UPDATE participante_proyecto SET id_curso = :c WHERE id_proyecto = :p AND id_usuario = :u")
+                        .param("c", c)
+                        .param("p", idProyecto)
+                        .param("u", idUsuario)
+                        .update();
+            }
+            return;
+        }
         if (!validos.isEmpty()) {
             if (actual.isEmpty()) {
                 jdbc.sql("INSERT INTO participante_proyecto (id_proyecto, id_usuario, id_curso) VALUES (:p, :u, :c)")

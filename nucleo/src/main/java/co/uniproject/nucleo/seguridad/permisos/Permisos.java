@@ -20,12 +20,15 @@ public interface Permisos {
     /** Monitor asignado y el proyecto trabaja con monitores (usa_monitores). */
     boolean esMonitorDelProyecto(long idUsuario, long idProyecto);
 
+    /** Estudiante que cuenta en el proyecto por alguno de sus cursos, tenga o no equipo. */
+    boolean esParticipanteDelProyecto(long idUsuario, long idProyecto);
+
     /** Miembro del equipo, líder o integrante. */
     boolean esIntegranteDelEquipo(long idUsuario, long idEquipo);
 
     boolean esLiderDelEquipo(long idUsuario, long idEquipo);
 
-    /** Docente dueño, monitor activo o miembro de algún equipo del proyecto. */
+    /** Docente dueño, monitor activo, participante del proyecto o miembro de algún equipo del proyecto. */
     boolean puedeVerProyecto(long idUsuario, long idProyecto);
 
     /** Miembro del equipo, docente dueño del proyecto o monitor activo del proyecto. */
