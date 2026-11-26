@@ -4898,3 +4898,20 @@ select.campo__entrada {
   justify-content: space-between;
   gap: var(--espacio-2) var(--espacio-3);
 }
+
+/* Bloque 51b: equipos, inscripción y votación */
+.equipo__votacion {
+  margin: 0;
+}
+
+.equipo__votacion--info {
+  color: var(--color-info);
+}
+
+.equipo__votacion--aviso {
+  color: var(--color-aviso);
+}
+
+.equipo__votacion--neutro {
+  color: var(--color-texto-secundario);
+}

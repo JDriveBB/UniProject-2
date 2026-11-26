@@ -8,6 +8,7 @@ import { DetalleTareaDeRuta } from './paginas/DetalleTarea';
 import { EvaluacionHitoDeRuta } from './paginas/EvaluacionHito';
 import { EvaluarHitoDeRuta } from './paginas/EvaluarHito';
 import { Ingreso } from './paginas/Ingreso';
+import { InscripcionDeRuta } from './paginas/Inscripcion';
 import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
 import { MisCursos } from './paginas/MisCursos';
@@ -23,6 +24,7 @@ import { Reportes } from './paginas/Reportes';
 import { RestablecerContrasena } from './paginas/RestablecerContrasena';
 import { RutaCriticaDeRuta } from './paginas/RutaCritica';
 import { TableroDeRuta } from './paginas/Tablero';
+import { VotacionDeRuta } from './paginas/Votacion';
 import { rutas } from './rutas';
 import { useSesion } from './sesion/ContextoSesion';
 import { RutaProtegida } from './sesion/RutaProtegida';
@@ -56,6 +58,8 @@ export function App() {
           <Route path="/proyectos" element={<ListaProyectos />} />
           <Route path="/proyectos/:idProyecto" element={<ProyectoDeRuta />} />
           <Route path="/equipos/:idEquipo/tablero" element={<TableroDeRuta />} />
+          <Route path="/equipos/:idEquipo/votacion" element={<VotacionDeRuta />} />
+          <Route path="/proyectos/:idProyecto/inscripcion" element={<InscripcionDeRuta />} />
           <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<RutaCriticaDeRuta />} />
           <Route path="/tareas/:idTarea" element={<DetalleTareaDeRuta />} />
           <Route path="/mis-tareas" element={<MisTareas />} />

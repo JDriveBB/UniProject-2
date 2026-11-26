@@ -74,3 +74,25 @@ export function fechaIsoBogota(instante: Date): string {
   return `${valor('year')}-${valor('month')}-${valor('day')}`;
 }
 
+
+/** Instante de la API → valor de un campo datetime-local ("aaaa-mm-ddThh:mm") en hora de Colombia. "" si no es fecha. */
+export function valorLocalBogota(instante: string): string {
+  const fecha = new Date(instante.replace(/(\.\d{3})\d+/, '$1'));
+  if (Number.isNaN(fecha.getTime())) {
+    return '';
+  }
+  const partes = FECHA_HORA_BOGOTA.formatToParts(fecha);
+  const valor = (tipo: Intl.DateTimeFormatPartTypes) => partes.find((p) => p.type === tipo)?.value ?? '';
+  return `${valor('year')}-${valor('month')}-${valor('day')}T${valor('hour')}:${valor('minute')}`;
+}
+
+const VALOR_LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
+/** Valor de un campo datetime-local, tomado como hora de Colombia (UTC-5 fijo), → instante ISO. null si no es válido. */
+export function instanteDeValorLocal(valor: string): string | null {
+  if (!VALOR_LOCAL.test(valor)) {
+    return null;
+  }
+  const fecha = new Date(valor + ':00-05:00');
+  return Number.isNaN(fecha.getTime()) ? null : fecha.toISOString();
+}

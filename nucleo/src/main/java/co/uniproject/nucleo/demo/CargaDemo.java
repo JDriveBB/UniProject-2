@@ -9,15 +9,19 @@ import co.uniproject.nucleo.configuracionacademica.servicio.HitoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioCorreosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioHitos;
+import co.uniproject.nucleo.configuracionacademica.servicio.ServicioInscripcion;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioProyectos;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCorreos;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCriterio;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCursosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudEquipo;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudHito;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudInscripcion;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudLider;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudMiembro;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudProyecto;
+import co.uniproject.nucleo.configuracionacademica.votacion.ServicioVotacion;
+import co.uniproject.nucleo.configuracionacademica.votacion.SolicitudVoto;
 import co.uniproject.nucleo.ejecucion.servicio.EvidenciaVista;
 import co.uniproject.nucleo.ejecucion.servicio.PeticionCorreccion;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioApoyo;
@@ -46,6 +50,9 @@ import co.uniproject.nucleo.seguridad.cuentas.SolicitudRegistro;
 import co.uniproject.nucleo.seguridad.cuentas.UsuarioSesion;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
@@ -56,7 +63,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Escenario demo (decisión 22-7) cargado con los servicios reales, actuando como cada usuario. Todo en una transacción:
- * si algo falla no queda nada a medias (22-4). Correos ficticios del dominio reservado .test (Ley 1581).
+ * si algo falla no queda nada a medias (22-4). Correos ficticios del dominio reservado .test (Ley 1581). El segundo
+ * proyecto queda con la inscripción a equipos abierta, un equipo con cupo y una votación de líder abierta (bloque 51).
  */
 @Component
 @Profile("demo")
@@ -86,6 +94,9 @@ public class CargaDemo {
     private final ServicioCorrecciones correcciones;
     private final ServicioEnvio envio;
     private final ServicioEvaluacion evaluacion;
+    private final ServicioInscripcion inscripcion;
+    private final ServicioVotacion votacion;
+    private final Clock reloj;
 
     public CargaDemo(
             JdbcClient jdbc,
@@ -105,7 +116,10 @@ public class CargaDemo {
             ServicioReasignacion reasignacion,
             ServicioCorrecciones correcciones,
             ServicioEnvio envio,
-            ServicioEvaluacion evaluacion) {
+            ServicioEvaluacion evaluacion,
+            ServicioInscripcion inscripcion,
+            ServicioVotacion votacion,
+            Clock reloj) {
         this.jdbc = jdbc;
         this.codificador = codificador;
         this.cuentas = cuentas;
@@ -124,6 +138,9 @@ public class CargaDemo {
         this.correcciones = correcciones;
         this.envio = envio;
         this.evaluacion = evaluacion;
+        this.inscripcion = inscripcion;
+        this.votacion = votacion;
+        this.reloj = reloj;
     }
 
     /** true si cargó; false si ya existían (22-5). */
@@ -352,6 +369,16 @@ public class CargaDemo {
         long d2 = tarea(bruno, delta1, "Prototipo de pantallas", elena, "4", false);
         dependencias.agregar(bruno, d2, new SolicitudDependencias(List.of(d1)));
         avance.actualizar(bruno, d1, new SolicitudAvance(50, "Tablas de citas y horarios definidas"));
+
+        // Inscripción abierta 7 días, un equipo con cupo y una votación abierta (bloque 51).
+        inscripcion.configurar(
+                docente,
+                idProyecto2,
+                new SolicitudInscripcion(Instant.now(reloj).plus(Duration.ofDays(7)), 48));
+        EquipoVista epsilon = equipos.crear(docente, idProyecto2, new SolicitudEquipo("Equipo Épsilon", null, 3));
+        inscripcion.unirse(camila, epsilon.idEquipo());
+        votacion.abrir(docente, gamma.idEquipo());
+        votacion.votar(diego, gamma.idEquipo(), new SolicitudVoto(ana.idUsuario()));
         return true;
     }
 

@@ -1,31 +1,29 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
 import {
-  crearEquipo,
   generarEnlaceCorreo,
   listarCorreos,
+  listarCursosProyecto,
   listarEstudiantesDisponibles,
   retirarCorreo,
+  vistaInscripcion,
 } from '../api/proyectos';
-import type { EquipoVista, EstudianteDisponibleVista } from '../api/tipos';
+import type { CursoResumen, EquipoVista, EstudianteDisponibleVista, InscripcionVista } from '../api/tipos';
 import { Alerta } from '../componentes/Alerta';
-import { useAvisos } from '../componentes/Avisos';
 import { Boton } from '../componentes/Boton';
-import { Campo } from '../componentes/Campo';
 import { Casilla } from '../componentes/Casilla';
 import { Tarjeta } from '../componentes/Tarjeta';
+import { BloqueInscripcion } from './BloqueInscripcion';
 import { CorreosPendientes } from './CorreosPendientes';
 import { claveIntegrantes } from './equipos';
-import { CAMPOS_EQUIPO, mensajeErrorApi } from './errores';
-import type { Mensaje } from './errores';
 import { FilaMonitores } from './FilaMonitores';
+import { FormularioEquipo, FormularioLote } from './FormulariosEquipo';
 import { preguntaRetirarCorreo } from './quitar';
+import { SinEquipo } from './SinEquipo';
 import { TarjetaEquipo } from './TarjetaEquipo';
-import { MAXIMO_NOMBRE_EQUIPO, validarNombreEquipo } from './validacion';
 
 const NOTA =
-  'Todos los usuarios se registran como estudiantes. El docente designa al líder de cada equipo y, si la ' +
-  'institución trabaja con monitores, a los monitores del proyecto.';
+  'Los estudiantes entran al proyecto por sus cursos. En los equipos con cupo se inscriben solos hasta la fecha ' +
+  'de cierre; al cerrar, cada equipo vota a su líder. Si la institución trabaja con monitores, agrégalos aquí.';
 
 interface PropsEquipos {
   /** null mientras el proyecto no se ha guardado por primera vez. */
@@ -38,18 +36,28 @@ interface PropsEquipos {
   usaMonitoresGuardado: boolean;
   /** Sube al cambiar cursos del proyecto para recargar disponibles. */
   versionCursos: number;
+  /** El proyecto mezcla estudiantes de varios cursos en un mismo equipo (no se pide curso al crear equipos). */
+  equiposMixtos: boolean;
   alCambiarUsaMonitores: (valor: boolean) => void;
   alActualizarEquipo: (equipo: EquipoVista) => void;
+  /** Vuelve a pedir los equipos del proyecto (tras asignar o repartir). */
+  alRecargarEquipos: () => void;
 }
 
 function RejillaEquipos({
+  idProyecto,
   equipos,
   disponibles,
+  cursos,
+  horasRonda,
   editable,
   alActualizarEquipo,
 }: {
+  idProyecto: number;
   equipos: EquipoVista[];
   disponibles: EstudianteDisponibleVista[];
+  cursos: CursoResumen[];
+  horasRonda: number | undefined;
   editable: boolean;
   alActualizarEquipo: (equipo: EquipoVista) => void;
 }) {
@@ -61,8 +69,11 @@ function RejillaEquipos({
       {equipos.map((e) => (
         <TarjetaEquipo
           key={e.idEquipo}
+          idProyecto={idProyecto}
           equipo={e}
           disponibles={disponibles}
+          cursos={cursos}
+          horasRonda={horasRonda}
           editable={editable}
           alActualizar={alActualizarEquipo}
         />
@@ -79,19 +90,19 @@ export function TarjetaEquipos({
   usaMonitores,
   usaMonitoresGuardado,
   versionCursos,
+  equiposMixtos,
   alCambiarUsaMonitores,
   alActualizarEquipo,
+  alRecargarEquipos,
 }: PropsEquipos) {
-  const avisar = useAvisos();
   const [versionCorreos, setVersionCorreos] = useState(0);
   const [disponibles, setDisponibles] = useState<EstudianteDisponibleVista[]>([]);
+  const [versionDisponibles, setVersionDisponibles] = useState(0);
+  const [cursos, setCursos] = useState<CursoResumen[] | null>(null);
+  const [errorCursos, setErrorCursos] = useState(false);
+  const [inscripcion, setInscripcion] = useState<InscripcionVista | null>(null);
   const integrantes = claveIntegrantes(equipos);
-  const [abierto, setAbierto] = useState(false);
-  const [nombre, setNombre] = useState('');
-  const [intentado, setIntentado] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [mensaje, setMensaje] = useState<Mensaje | null>(null);
-  const errorNombre = intentado ? (validarNombreEquipo(nombre) ?? undefined) : undefined;
+  const [formulario, setFormulario] = useState<'equipo' | 'lote' | null>(null);
 
   const correoHabilitado = useCallback(() => {
     setVersionCorreos((v) => v + 1);
@@ -130,6 +141,18 @@ export function TarjetaEquipos({
       return;
     }
     let vigente = true;
+    listarCursosProyecto(idProyecto)
+      .then((lista) => {
+        if (vigente) {
+          setCursos(lista);
+          setErrorCursos(false);
+        }
+      })
+      .catch(() => {
+        if (vigente) {
+          setErrorCursos(true);
+        }
+      });
     listarEstudiantesDisponibles(idProyecto)
       .then((lista) => {
         if (vigente) {
@@ -142,31 +165,37 @@ export function TarjetaEquipos({
     return () => {
       vigente = false;
     };
-  }, [editable, idProyecto, integrantes, versionCursos]);
+  }, [editable, idProyecto, integrantes, versionCursos, versionDisponibles]);
 
-  function cerrar() {
-    setAbierto(false);
-    setNombre('');
-    setIntentado(false);
-  }
+  const cargarInscripcion = useCallback(() => {
+    if (idProyecto === null) {
+      return () => undefined;
+    }
+    let vigente = true;
+    vistaInscripcion(idProyecto)
+      .then((v) => {
+        if (vigente) {
+          setInscripcion(v);
+        }
+      })
+      .catch(() => {
+        // la inscripción no se muestra si no carga
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [idProyecto]);
 
-  async function alCrear(evento: FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-    setIntentado(true);
-    setMensaje(null);
-    if (idProyecto === null || validarNombreEquipo(nombre) !== null) {
+  useEffect(() => {
+    if (!editable) {
       return;
     }
-    setEnviando(true);
-    try {
-      alActualizarEquipo(await crearEquipo(idProyecto, { nombreEquipo: nombre.trim(), idCurso: null, cupo: null }));
-      cerrar();
-      avisar('Equipo creado.');
-    } catch (e) {
-      setMensaje({ tipo: 'error', texto: mensajeErrorApi(e, CAMPOS_EQUIPO) });
-    } finally {
-      setEnviando(false);
-    }
+    return cargarInscripcion();
+  }, [editable, cargarInscripcion]);
+
+  function alCambioSinEquipo() {
+    alRecargarEquipos();
+    setVersionDisponibles((v) => v + 1);
   }
 
   return (
@@ -174,41 +203,70 @@ export function TarjetaEquipos({
       {idProyecto === null ? (
         <p className="texto-secundario">Guarda el proyecto para crear equipos y agregar estudiantes.</p>
       ) : (
-        <RejillaEquipos
-          equipos={equipos}
-          disponibles={disponibles}
-          editable={editable}
-          alActualizarEquipo={alActualizarEquipo}
-        />
+        <>
+          {editable && (
+            <BloqueInscripcion idProyecto={idProyecto} inscripcion={inscripcion} alGuardado={setInscripcion} />
+          )}
+          <RejillaEquipos
+            idProyecto={idProyecto}
+            equipos={equipos}
+            disponibles={disponibles}
+            cursos={cursos ?? []}
+            horasRonda={inscripcion?.horasRonda}
+            editable={editable}
+            alActualizarEquipo={alActualizarEquipo}
+          />
+        </>
+      )}
+      {editable && idProyecto !== null && errorCursos && cursos === null && (
+        <Alerta tipo="error">
+          No se pudieron cargar los cursos del proyecto. Recarga la página para crear equipos.
+        </Alerta>
       )}
       {editable &&
         idProyecto !== null &&
-        (abierto ? (
-          <form className="formulario-en-linea" onSubmit={(ev) => void alCrear(ev)} noValidate>
-            <Campo
-              etiqueta="Nombre del equipo"
-              placeholder="Equipo Alfa"
-              maxLength={MAXIMO_NOMBRE_EQUIPO}
-              value={nombre}
-              onChange={(ev) => setNombre(ev.target.value)}
-              error={errorNombre}
-              required
-            />
-            <Boton type="submit" cargando={enviando}>
-              Crear equipo
-            </Boton>
-            <Boton variante="secundario" onClick={cerrar} disabled={enviando}>
-              Cancelar
-            </Boton>
-          </form>
+        (formulario === 'equipo' ? (
+          <FormularioEquipo
+            idProyecto={idProyecto}
+            cursos={cursos ?? []}
+            equiposMixtos={equiposMixtos}
+            alCreado={(e) => {
+              alActualizarEquipo(e);
+              setFormulario(null);
+            }}
+            alCancelar={() => setFormulario(null)}
+          />
+        ) : formulario === 'lote' ? (
+          <FormularioLote
+            idProyecto={idProyecto}
+            cursos={cursos ?? []}
+            equiposMixtos={equiposMixtos}
+            disponibles={disponibles}
+            alCreados={(lista) => {
+              lista.forEach(alActualizarEquipo);
+              setFormulario(null);
+            }}
+            alCancelar={() => setFormulario(null)}
+          />
         ) : (
-          <div>
-            <Boton variante="secundario" onClick={() => setAbierto(true)}>
+          <div className="pagina__acciones">
+            <Boton variante="secundario" disabled={cursos === null} onClick={() => setFormulario('equipo')}>
               + Agregar equipo
+            </Boton>
+            <Boton variante="secundario" disabled={cursos === null} onClick={() => setFormulario('lote')}>
+              + Crear varios equipos
             </Boton>
           </div>
         ))}
-      {mensaje !== null && <Alerta tipo={mensaje.tipo}>{mensaje.texto}</Alerta>}
+      {editable && idProyecto !== null && (
+        <SinEquipo
+          idProyecto={idProyecto}
+          disponibles={disponibles}
+          equipos={equipos}
+          cursos={cursos ?? []}
+          alCambio={alCambioSinEquipo}
+        />
+      )}
       {editable && (
         <Casilla checked={usaMonitores} onChange={(ev) => alCambiarUsaMonitores(ev.target.checked)}>
           La institución trabaja con monitores en este proyecto

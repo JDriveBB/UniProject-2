@@ -266,6 +266,83 @@ class DatosDemoIntegracionTest extends ApiIntegracionBase {
     }
 
     @Test
+    void elSegundoProyectoTieneInscripcionAbiertaCupoYVotacion() {
+        long idProyecto2 = jdbc.sql("SELECT id_proyecto FROM proyecto WHERE nombre = :p")
+                .param("p", CargaDemo.PROYECTO_2)
+                .query(Long.class)
+                .single();
+        assertThat(jdbc.sql("SELECT count(*) FROM proyecto WHERE id_proyecto = :p "
+                                + "AND cierre_equipos IS NOT NULL AND horas_ronda = 48")
+                        .param("p", idProyecto2)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM equipo WHERE id_proyecto = :p "
+                                + "AND nombre_equipo = 'Equipo Épsilon' AND cupo = 3")
+                        .param("p", idProyecto2)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM miembro_equipo me JOIN equipo e ON e.id_equipo = me.id_equipo "
+                                + "WHERE e.id_proyecto = :p AND e.nombre_equipo = 'Equipo Épsilon'")
+                        .param("p", idProyecto2)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        assertThat(jdbc.sql("SELECT u.email FROM miembro_equipo me JOIN equipo e ON e.id_equipo = me.id_equipo "
+                                + "JOIN usuario u ON u.id_usuario = me.id_usuario "
+                                + "WHERE e.id_proyecto = :p AND e.nombre_equipo = 'Equipo Épsilon'")
+                        .param("p", idProyecto2)
+                        .query(String.class)
+                        .single())
+                .isEqualTo(CargaDemo.correo("camila"));
+        assertThat(jdbc.sql("SELECT count(*) FROM equipo WHERE id_proyecto = :p "
+                                + "AND nombre_equipo = 'Equipo Gamma' AND cupo IS NULL")
+                        .param("p", idProyecto2)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        long idGamma = jdbc.sql(
+                        "SELECT id_equipo FROM equipo WHERE id_proyecto = :p AND nombre_equipo = 'Equipo Gamma'")
+                .param("p", idProyecto2)
+                .query(Long.class)
+                .single();
+        assertThat(jdbc.sql("SELECT count(*) FROM ronda_lider WHERE id_equipo = :e AND cerrada_en IS NULL")
+                        .param("e", idGamma)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM voto_lider v JOIN ronda_lider r ON r.id_ronda = v.id_ronda "
+                                + "WHERE r.id_equipo = :e")
+                        .param("e", idGamma)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM participante_proyecto pp WHERE pp.id_proyecto = :p "
+                                + "AND NOT EXISTS (SELECT 1 FROM miembro_equipo me JOIN equipo e ON e.id_equipo = me.id_equipo "
+                                + "WHERE e.id_proyecto = pp.id_proyecto AND me.id_usuario = pp.id_usuario)")
+                        .param("p", idProyecto2)
+                        .query(Integer.class)
+                        .single())
+                .isEqualTo(2);
+
+        Navegador docente = new Navegador(puerto);
+        docente.pedirCsrf();
+        HttpResponse<String> login = docente.post(
+                "/api/sesion/login", "{\"email\":\"" + CargaDemo.DOCENTE + "\",\"contrasena\":\"" + CLAVE_DEMO + "\"}");
+        assertThat(login.statusCode()).as(login.body()).isEqualTo(200);
+        HttpResponse<String> inscripcion = docente.get("/api/proyectos/" + idProyecto2 + "/inscripcion");
+        assertThat(inscripcion.statusCode()).as(inscripcion.body()).isEqualTo(200);
+        assertThat(inscripcion.body()).contains("\"abierta\":true");
+        HttpResponse<String> ronda = docente.get("/api/equipos/" + idGamma + "/ronda");
+        assertThat(ronda.statusCode()).as(ronda.body()).isEqualTo(200);
+        assertThat(ronda.body())
+                .contains("\"votosEmitidos\":1")
+                .contains("\"votantes\":2")
+                .contains("\"abierta\":true");
+    }
+
+    @Test
     void esIdempotente() {
         int antes = usuarios();
         assertThat(antes).isEqualTo(9);

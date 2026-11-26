@@ -5,6 +5,8 @@ import {
   bloqueoParaQuitar,
   ES_LIDER_AHORA,
   pendientesDe,
+  preguntaDestituir,
+  preguntaNombrarConRonda,
   preguntaQuitarIntegrante,
   preguntaQuitarMonitor,
   preguntaRetirarCorreo,
@@ -100,7 +102,7 @@ describe('quitar integrantes y monitores', () => {
     expect(bloqueoParaQuitar(miembros, 8)).toBeNull();
     expect(bloqueoParaQuitar(miembros, 9)).toBe(ES_LIDER_AHORA);
     expect(bloqueoParaQuitar(miembros, 7)).toBe(YA_NO_ES_MIEMBRO);
-    expect(ES_LIDER_AHORA).toBe('Esa persona es ahora el líder del equipo. Designa a otro líder antes de quitarla.');
+    expect(ES_LIDER_AHORA).toBe('Esa persona es ahora el líder del equipo. Destitúyela o nombra a otro líder antes de quitarla.');
   });
 
   it('retirar un correo pendiente', async () => {
@@ -181,5 +183,19 @@ describe('quitar integrantes y monitores', () => {
     expect((await retirarHabilitacion(api404, c)).recargar).toBe(true);
     expect((await retirarHabilitacion(api409, c)).recargar).toBe(true);
     expect((await retirarHabilitacion(api403, c)).recargar).toBe(false);
+  });
+});
+
+describe('preguntas de liderazgo (bloque 51)', () => {
+  it('preguntaDestituir avisa de la votación y sus horas', () => {
+    expect(preguntaDestituir('Ana', 48)).toBe(
+      '¿Destituir a Ana como líder? El equipo queda sin líder y se abre una votación de 48 horas entre sus integrantes.',
+    );
+  });
+
+  it('preguntaNombrarConRonda avisa de que la votación se cancela', () => {
+    expect(preguntaNombrarConRonda('Luis')).toBe(
+      'Hay una votación abierta en este equipo. Si nombras a Luis como líder, la votación se cancela. ¿Continuar?',
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import {
   actualizarCriterio,
   actualizarHito,
@@ -134,6 +134,19 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
     setVersionCursos((v) => v + 1);
   }, []);
 
+  /* Tras asignar o repartir estudiantes, los equipos cambian en el servidor: se vuelven a pedir. */
+  const recargarEquipos = useCallback(async () => {
+    if (idProyecto === null) {
+      return;
+    }
+    try {
+      const detalle = await detalleProyecto(idProyecto);
+      setServidor((s) => (s === null ? s : { ...s, equipos: detalle.equipos }));
+    } catch {
+      avisar('No se pudieron recargar los equipos. Recarga la página.');
+    }
+  }, [idProyecto, avisar]);
+
   if (carga.estado === 'cargando') {
     return <Cargando />;
   }
@@ -250,6 +263,13 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
   return (
     <div className="pagina">
       <EncabezadoPagina titulo={titulo} descripcion={descripcion}>
+        {usuario.rol === 'ESTUDIANTE' && idProyecto !== null && (
+          <div className="pagina__acciones">
+            <Link className="boton boton--secundario" to={rutas.inscripcionProyecto(idProyecto)}>
+              Ver inscripción a equipos
+            </Link>
+          </div>
+        )}
         {editable && (
           <div className="pagina__acciones">
             <Boton variante="secundario" onClick={alCancelar} disabled={guardando}>
@@ -305,8 +325,10 @@ function ConfigurarProyecto({ idRuta }: { idRuta: string | null }) {
             usaMonitores={borrador.usaMonitores}
             usaMonitoresGuardado={servidor !== null && servidor.proyecto.usaMonitores}
             versionCursos={versionCursos}
+            equiposMixtos={servidor?.proyecto.equiposMixtos ?? false}
             alCambiarUsaMonitores={(valor) => setBorrador((b) => ({ ...b, usaMonitores: valor }))}
             alActualizarEquipo={alActualizarEquipo}
+            alRecargarEquipos={() => void recargarEquipos()}
           />
         </div>
       </div>

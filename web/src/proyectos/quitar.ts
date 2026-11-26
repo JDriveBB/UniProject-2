@@ -13,7 +13,7 @@ export type ResultadoQuitarIntegrante = { tipo: 'quitado'; equipo: EquipoVista }
 
 export const YA_NO_ES_MIEMBRO = 'Esa persona ya no estaba en el equipo. Recarga la página para ver la lista actual.';
 export const YA_NO_ES_MONITOR = 'Ese monitor ya no estaba asignado al proyecto.';
-export const ES_LIDER_AHORA = 'Esa persona es ahora el líder del equipo. Designa a otro líder antes de quitarla.';
+export const ES_LIDER_AHORA = 'Esa persona es ahora el líder del equipo. Destitúyela o nombra a otro líder antes de quitarla.';
 
 /** Decisión 26b-16: al líder no se le ofrece "Quitar"; primero se designa otro líder. */
 export function sePuedeQuitar(miembro: MiembroVista): boolean {
@@ -114,4 +114,14 @@ export async function quitarMonitorDelProyecto(api: Pick<ApiQuitar, 'quitarMonit
     }
     return { tipo: 'error', texto: mensajeErrorApi(e, []) };
   }
+}
+
+/** Bloque 51: destituir deja al equipo sin líder y el núcleo abre una votación. */
+export function preguntaDestituir(nombre: string, horas: number): string {
+  return `¿Destituir a ${nombre} como líder? El equipo queda sin líder y se abre una votación de ${horas} horas entre sus integrantes.`;
+}
+
+/** Bloque 51: nombrar a un líder con una votación abierta la cancela. */
+export function preguntaNombrarConRonda(nombre: string): string {
+  return `Hay una votación abierta en este equipo. Si nombras a ${nombre} como líder, la votación se cancela. ¿Continuar?`;
 }
