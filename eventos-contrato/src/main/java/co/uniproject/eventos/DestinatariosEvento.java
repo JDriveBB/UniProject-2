@@ -1,10 +1,18 @@
 package co.uniproject.eventos;
 
 import co.uniproject.eventos.datos.ContrasenaCambiada;
+import co.uniproject.eventos.datos.CursoEstudianteAgregado;
 import co.uniproject.eventos.datos.DatosEvento;
 import co.uniproject.eventos.datos.EquipoInactividad;
+import co.uniproject.eventos.datos.EquipoLiderElegido;
+import co.uniproject.eventos.datos.EquipoMiembroCambio;
+import co.uniproject.eventos.datos.EquipoSinLider;
+import co.uniproject.eventos.datos.EquipoVotacionAbierta;
 import co.uniproject.eventos.datos.HitoEnviado;
 import co.uniproject.eventos.datos.HitoEvaluado;
+import co.uniproject.eventos.datos.InscripcionPorCerrar;
+import co.uniproject.eventos.datos.InscripcionResumen;
+import co.uniproject.eventos.datos.MovimientoEquipo;
 import co.uniproject.eventos.datos.Persona;
 import co.uniproject.eventos.datos.RecuperacionSolicitada;
 import co.uniproject.eventos.datos.TareaCorreccion;
@@ -21,13 +29,16 @@ import java.util.Set;
  */
 public final class DestinatariosEvento {
 
-    /** UNICO: aviso normal. NUEVO y ANTERIOR: las dos caras de una reasignación. */
-    public enum Papel { UNICO, NUEVO, ANTERIOR }
+    /** UNICO: aviso normal. NUEVO y ANTERIOR: las dos caras de una reasignación. NUEVO también marca a quien el docente metió en un equipo (equipo.miembro_cambio). */
+    public enum Papel {
+        UNICO,
+        NUEVO,
+        ANTERIOR
+    }
 
     public record Destino(Persona persona, Papel papel) {}
 
-    private DestinatariosEvento() {
-    }
+    private DestinatariosEvento() {}
 
     public static List<Destino> de(DatosEvento datos) {
         List<Destino> candidatos = new ArrayList<>();
@@ -51,6 +62,21 @@ public final class DestinatariosEvento {
             case TareaCorreccion t -> candidatos.add(new Destino(t.responsable(), Papel.UNICO));
             case RecuperacionSolicitada r -> candidatos.add(new Destino(r.titular(), Papel.UNICO));
             case ContrasenaCambiada c -> candidatos.add(new Destino(c.titular(), Papel.UNICO));
+            case CursoEstudianteAgregado c -> candidatos.add(new Destino(c.estudiante(), Papel.UNICO));
+            case EquipoVotacionAbierta v -> v.integrantes().forEach(p -> candidatos.add(new Destino(p, Papel.UNICO)));
+            case EquipoLiderElegido l -> {
+                l.integrantes().forEach(p -> candidatos.add(new Destino(p, Papel.UNICO)));
+                candidatos.add(new Destino(l.docente(), Papel.UNICO));
+            }
+            case EquipoSinLider s -> candidatos.add(new Destino(s.docente(), Papel.UNICO));
+            case EquipoMiembroCambio m -> {
+                if (m.movimiento() == MovimientoEquipo.ENTRO && m.porDocente()) {
+                    m.personas().forEach(p -> candidatos.add(new Destino(p, Papel.NUEVO)));
+                }
+                m.integrantes().forEach(p -> candidatos.add(new Destino(p, Papel.UNICO)));
+            }
+            case InscripcionPorCerrar i -> i.estudiantes().forEach(p -> candidatos.add(new Destino(p, Papel.UNICO)));
+            case InscripcionResumen r -> candidatos.add(new Destino(r.docente(), Papel.UNICO));
         }
         Set<Long> vistos = new HashSet<>();
         List<Destino> resultado = new ArrayList<>();

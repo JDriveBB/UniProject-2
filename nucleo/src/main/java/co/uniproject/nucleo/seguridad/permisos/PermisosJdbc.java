@@ -12,7 +12,10 @@ public class PermisosJdbc implements Permisos {
             + "WHERE mp.id_proyecto = p.id_proyecto AND mp.id_monitor = :usuario))";
 
     private static final String VER_PROYECTO = "SELECT EXISTS (SELECT 1 FROM proyecto p WHERE p.id_proyecto = :id "
-            + "AND (p.id_docente = :usuario OR " + MONITOR_ACTIVO + " OR EXISTS (SELECT 1 FROM equipo e "
+            + "AND (p.id_docente = :usuario OR " + MONITOR_ACTIVO
+            + " OR EXISTS (SELECT 1 FROM participante_proyecto pp WHERE pp.id_proyecto = p.id_proyecto "
+            + "AND pp.id_usuario = :usuario)"
+            + " OR EXISTS (SELECT 1 FROM equipo e "
             + "JOIN miembro_equipo m ON m.id_equipo = e.id_equipo WHERE e.id_proyecto = p.id_proyecto "
             + "AND m.id_usuario = :usuario)))";
 
@@ -37,26 +40,61 @@ public class PermisosJdbc implements Permisos {
 
     @Override
     public boolean esDocenteDelProyecto(long idUsuario, long idProyecto) {
-        return existe("SELECT EXISTS (SELECT 1 FROM proyecto WHERE id_proyecto = :id AND id_docente = :usuario)",
-                idUsuario, idProyecto);
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM proyecto WHERE id_proyecto = :id AND id_docente = :usuario)",
+                idUsuario,
+                idProyecto);
+    }
+
+    @Override
+    public boolean esDocenteDelCurso(long idUsuario, long idCurso) {
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM curso WHERE id_curso = :id AND id_docente = :usuario)",
+                idUsuario,
+                idCurso);
+    }
+
+    @Override
+    public boolean puedeVerCurso(long idUsuario, long idCurso) {
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM curso c WHERE c.id_curso = :id AND (c.id_docente = :usuario "
+                        + "OR EXISTS (SELECT 1 FROM miembro_curso mc WHERE mc.id_curso = c.id_curso "
+                        + "AND mc.id_usuario = :usuario)))",
+                idUsuario,
+                idCurso);
     }
 
     @Override
     public boolean esMonitorDelProyecto(long idUsuario, long idProyecto) {
-        return existe("SELECT EXISTS (SELECT 1 FROM proyecto p WHERE p.id_proyecto = :id AND " + MONITOR_ACTIVO + ")",
-                idUsuario, idProyecto);
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM proyecto p WHERE p.id_proyecto = :id AND " + MONITOR_ACTIVO + ")",
+                idUsuario,
+                idProyecto);
+    }
+
+    @Override
+    public boolean esParticipanteDelProyecto(long idUsuario, long idProyecto) {
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM participante_proyecto WHERE id_proyecto = :id AND id_usuario = :usuario)",
+                idUsuario,
+                idProyecto);
     }
 
     @Override
     public boolean esIntegranteDelEquipo(long idUsuario, long idEquipo) {
-        return existe("SELECT EXISTS (SELECT 1 FROM miembro_equipo WHERE id_equipo = :id AND id_usuario = :usuario)",
-                idUsuario, idEquipo);
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM miembro_equipo WHERE id_equipo = :id AND id_usuario = :usuario)",
+                idUsuario,
+                idEquipo);
     }
 
     @Override
     public boolean esLiderDelEquipo(long idUsuario, long idEquipo) {
-        return existe("SELECT EXISTS (SELECT 1 FROM miembro_equipo WHERE id_equipo = :id AND id_usuario = :usuario "
-                + "AND rol_equipo = 'LIDER')", idUsuario, idEquipo);
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM miembro_equipo WHERE id_equipo = :id AND id_usuario = :usuario "
+                        + "AND rol_equipo = 'LIDER')",
+                idUsuario,
+                idEquipo);
     }
 
     @Override
@@ -81,7 +119,9 @@ public class PermisosJdbc implements Permisos {
 
     @Override
     public boolean puedeGestionarTarea(long idUsuario, long idTarea) {
-        return equipoDeTarea(idTarea).filter(e -> esLiderDelEquipo(idUsuario, e)).isPresent();
+        return equipoDeTarea(idTarea)
+                .filter(e -> esLiderDelEquipo(idUsuario, e))
+                .isPresent();
     }
 
     @Override
@@ -106,38 +146,55 @@ public class PermisosJdbc implements Permisos {
 
     @Override
     public boolean puedeVerHitoEquipo(long idUsuario, long idHitoEquipo) {
-        return equipoDeHitoEquipo(idHitoEquipo).filter(e -> puedeVerEquipo(idUsuario, e)).isPresent();
+        return equipoDeHitoEquipo(idHitoEquipo)
+                .filter(e -> puedeVerEquipo(idUsuario, e))
+                .isPresent();
     }
 
     @Override
     public boolean puedeGestionarHitoEquipo(long idUsuario, long idHitoEquipo) {
-        return equipoDeHitoEquipo(idHitoEquipo).filter(e -> esLiderDelEquipo(idUsuario, e)).isPresent();
+        return equipoDeHitoEquipo(idHitoEquipo)
+                .filter(e -> esLiderDelEquipo(idUsuario, e))
+                .isPresent();
     }
 
     @Override
     public boolean puedeEnviarHito(long idUsuario, long idHitoEquipo) {
-        return equipoDeHitoEquipo(idHitoEquipo).filter(e -> esIntegranteDelEquipo(idUsuario, e)).isPresent();
+        return equipoDeHitoEquipo(idHitoEquipo)
+                .filter(e -> esIntegranteDelEquipo(idUsuario, e))
+                .isPresent();
     }
 
     @Override
     public boolean puedeEvaluarHito(long idUsuario, long idHitoEquipo) {
-        return existe("SELECT EXISTS (SELECT 1 FROM hito_equipo he JOIN hito h ON h.id_hito = he.id_hito "
-                + "JOIN proyecto p ON p.id_proyecto = h.id_proyecto "
-                + "WHERE he.id_hito_equipo = :id AND p.id_docente = :usuario)", idUsuario, idHitoEquipo);
+        return existe(
+                "SELECT EXISTS (SELECT 1 FROM hito_equipo he JOIN hito h ON h.id_hito = he.id_hito "
+                        + "JOIN proyecto p ON p.id_proyecto = h.id_proyecto "
+                        + "WHERE he.id_hito_equipo = :id AND p.id_docente = :usuario)",
+                idUsuario,
+                idHitoEquipo);
     }
 
     private boolean existe(String sql, long idUsuario, long id) {
-        return jdbc.sql(sql).param("usuario", idUsuario).param("id", id).query(Boolean.class).single();
+        return jdbc.sql(sql)
+                .param("usuario", idUsuario)
+                .param("id", id)
+                .query(Boolean.class)
+                .single();
     }
 
     private Optional<Long> equipoDeTarea(long idTarea) {
         return jdbc.sql("SELECT he.id_equipo FROM tarea t JOIN hito_equipo he ON he.id_hito_equipo = t.id_hito_equipo "
                         + "WHERE t.id_tarea = :id")
-                .param("id", idTarea).query(Long.class).optional();
+                .param("id", idTarea)
+                .query(Long.class)
+                .optional();
     }
 
     private Optional<Long> equipoDeHitoEquipo(long idHitoEquipo) {
         return jdbc.sql("SELECT id_equipo FROM hito_equipo WHERE id_hito_equipo = :id")
-                .param("id", idHitoEquipo).query(Long.class).optional();
+                .param("id", idHitoEquipo)
+                .query(Long.class)
+                .optional();
     }
 }

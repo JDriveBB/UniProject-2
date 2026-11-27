@@ -10,7 +10,8 @@ info:
     Cada mensaje es un CloudEvent 1.0 en modo estructurado. Los JSON Schema (draft-07) del módulo
     eventos-contrato son la fuente de verdad; este documento los referencia. Los dos eventos de cuenta
     (bloque 28) no llevan secretos: el código de recuperación lo pide el agente al núcleo por el endpoint
-    interno justo antes de enviarlo.
+    interno justo antes de enviarlo. Los siete eventos de cursos y equipos (bloque 50) llevan solo ids,
+    nombres y conteos.
   license:
     name: Uso académico - Diseño de Software I
 defaultContentType: application/cloudevents+json
@@ -77,6 +78,55 @@ channels:
         $ref: '#/components/messages/CuentaContrasenaCambiada'
     bindings:
       $ref: '#/components/channelBindings/eventos'
+  cursoEstudianteAgregado:
+    address: curso.estudiante_agregado
+    messages:
+      cursoEstudianteAgregado:
+        $ref: '#/components/messages/CursoEstudianteAgregado'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoVotacionAbierta:
+    address: equipo.votacion_abierta
+    messages:
+      equipoVotacionAbierta:
+        $ref: '#/components/messages/EquipoVotacionAbierta'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoLiderElegido:
+    address: equipo.lider_elegido
+    messages:
+      equipoLiderElegido:
+        $ref: '#/components/messages/EquipoLiderElegido'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoSinLider:
+    address: equipo.sin_lider
+    messages:
+      equipoSinLider:
+        $ref: '#/components/messages/EquipoSinLider'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoMiembroCambio:
+    address: equipo.miembro_cambio
+    messages:
+      equipoMiembroCambio:
+        $ref: '#/components/messages/EquipoMiembroCambio'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoInscripcionPorCerrar:
+    address: equipo.inscripcion_por_cerrar
+    messages:
+      equipoInscripcionPorCerrar:
+        $ref: '#/components/messages/EquipoInscripcionPorCerrar'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
+  equipoInscripcionResumen:
+    address: equipo.inscripcion_resumen
+    messages:
+      equipoInscripcionResumen:
+        $ref: '#/components/messages/EquipoInscripcionResumen'
+    bindings:
+      $ref: '#/components/channelBindings/eventos'
 operations:
   publicarTareaRutaCriticaRiesgo:
     action: send
@@ -132,6 +182,55 @@ operations:
     summary: La contraseña se cambió desde el perfil o con un enlace de recuperación; aviso de seguridad al titular.
     channel:
       $ref: '#/channels/cuentaContrasenaCambiada'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarCursoEstudianteAgregado:
+    action: send
+    summary: El docente agrega a un curso una cuenta que ya existe; avisa al estudiante (bloque 50).
+    channel:
+      $ref: '#/channels/cursoEstudianteAgregado'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoVotacionAbierta:
+    action: send
+    summary: Se abre una votación de líder (al cierre de equipos, a demanda o al destituir); avisa a los integrantes.
+    channel:
+      $ref: '#/channels/equipoVotacionAbierta'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoLiderElegido:
+    action: send
+    summary: Una votación termina con ganador o el docente desempata; avisa al equipo y al docente.
+    channel:
+      $ref: '#/channels/equipoLiderElegido'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoSinLider:
+    action: send
+    summary: Una votación termina en empate o sin votos; avisa al docente.
+    channel:
+      $ref: '#/channels/equipoSinLider'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoMiembroCambio:
+    action: send
+    summary: Alguien entra o sale de un equipo; avisa a los demás integrantes y a quien el docente metió.
+    channel:
+      $ref: '#/channels/equipoMiembroCambio'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoInscripcionPorCerrar:
+    action: send
+    summary: Faltan 24 horas para el cierre de equipos; avisa a los participantes sin equipo.
+    channel:
+      $ref: '#/channels/equipoInscripcionPorCerrar'
+    bindings:
+      $ref: '#/components/operationBindings/publicacion'
+  publicarEquipoInscripcionResumen:
+    action: send
+    summary: Faltan 24 horas para el cierre de equipos; resumen con conteos para el docente.
+    channel:
+      $ref: '#/channels/equipoInscripcionResumen'
     bindings:
       $ref: '#/components/operationBindings/publicacion'
 components:
@@ -217,3 +316,59 @@ components:
         schemaFormat: application/schema+json;version=draft-07
         schema:
           $ref: '../../eventos-contrato/src/main/resources/esquemas/cuenta.contrasena.cambiada.schema.json'
+    CursoEstudianteAgregado:
+      name: curso.estudiante_agregado
+      title: Estudiante agregado a un curso
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/curso.estudiante_agregado.schema.json'
+    EquipoVotacionAbierta:
+      name: equipo.votacion_abierta
+      title: Votación de líder abierta
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.votacion_abierta.schema.json'
+    EquipoLiderElegido:
+      name: equipo.lider_elegido
+      title: Líder elegido
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.lider_elegido.schema.json'
+    EquipoSinLider:
+      name: equipo.sin_lider
+      title: Equipo sin líder
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.sin_lider.schema.json'
+    EquipoMiembroCambio:
+      name: equipo.miembro_cambio
+      title: Cambio de integrantes
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.miembro_cambio.schema.json'
+    EquipoInscripcionPorCerrar:
+      name: equipo.inscripcion_por_cerrar
+      title: Inscripción por cerrar
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.inscripcion_por_cerrar.schema.json'
+    EquipoInscripcionResumen:
+      name: equipo.inscripcion_resumen
+      title: Resumen antes del cierre
+      contentType: application/cloudevents+json
+      payload:
+        schemaFormat: application/schema+json;version=draft-07
+        schema:
+          $ref: '../../eventos-contrato/src/main/resources/esquemas/equipo.inscripcion_resumen.schema.json'

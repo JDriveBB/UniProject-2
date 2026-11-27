@@ -2,12 +2,16 @@ import { Navigate, Route, Routes } from 'react-router';
 import { Marco } from './componentes/Marco';
 import { AdminDocentes } from './paginas/AdminDocentes';
 import { NuevoProyecto, ProyectoDeRuta } from './paginas/ConfigurarProyecto';
+import { ListaCursos } from './paginas/Cursos';
+import { DetalleCursoDeRuta } from './paginas/DetalleCurso';
 import { DetalleTareaDeRuta } from './paginas/DetalleTarea';
 import { EvaluacionHitoDeRuta } from './paginas/EvaluacionHito';
 import { EvaluarHitoDeRuta } from './paginas/EvaluarHito';
 import { Ingreso } from './paginas/Ingreso';
+import { InscripcionDeRuta } from './paginas/Inscripcion';
 import { ListaProyectos } from './paginas/ListaProyectos';
 import { MiRutaCritica, MiTablero } from './paginas/MiEquipo';
+import { MisCursos } from './paginas/MisCursos';
 import { MisTareas } from './paginas/MisTareas';
 import { NoEncontrada } from './paginas/NoEncontrada';
 import { Notificaciones } from './paginas/Notificaciones';
@@ -20,6 +24,7 @@ import { Reportes } from './paginas/Reportes';
 import { RestablecerContrasena } from './paginas/RestablecerContrasena';
 import { RutaCriticaDeRuta } from './paginas/RutaCritica';
 import { TableroDeRuta } from './paginas/Tablero';
+import { VotacionDeRuta } from './paginas/Votacion';
 import { rutas } from './rutas';
 import { useSesion } from './sesion/ContextoSesion';
 import { RutaProtegida } from './sesion/RutaProtegida';
@@ -53,6 +58,8 @@ export function App() {
           <Route path="/proyectos" element={<ListaProyectos />} />
           <Route path="/proyectos/:idProyecto" element={<ProyectoDeRuta />} />
           <Route path="/equipos/:idEquipo/tablero" element={<TableroDeRuta />} />
+          <Route path="/equipos/:idEquipo/votacion" element={<VotacionDeRuta />} />
+          <Route path="/proyectos/:idProyecto/inscripcion" element={<InscripcionDeRuta />} />
           <Route path="/hitos/:idHitoEquipo/ruta-critica" element={<RutaCriticaDeRuta />} />
           <Route path="/tareas/:idTarea" element={<DetalleTareaDeRuta />} />
           <Route path="/mis-tareas" element={<MisTareas />} />
@@ -64,12 +71,15 @@ export function App() {
           </Route>
           <Route element={<RutaProtegida roles={['DOCENTE']} />}>
             <Route path="/proyectos/nuevo" element={<NuevoProyecto />} />
+            <Route path="/cursos" element={<ListaCursos />} />
+            <Route path="/cursos/:idCurso" element={<DetalleCursoDeRuta />} />
             <Route path="/panel" element={<ElegirPanel />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/proyectos/:idProyecto/panel" element={<PanelProyectoDeRuta />} />
             <Route path="/hitos/:idHitoEquipo/evaluar" element={<EvaluarHitoDeRuta />} />
           </Route>
           <Route element={<RutaProtegida roles={['ESTUDIANTE']} />}>
+            <Route path="/mis-cursos" element={<MisCursos />} />
             <Route path="/tablero" element={<MiTablero />} />
             <Route path="/ruta-critica" element={<MiRutaCritica />} />
           </Route>

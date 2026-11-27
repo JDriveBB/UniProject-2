@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.datos.CaracterNota;
 import co.uniproject.eventos.datos.EquipoInactividad;
+import co.uniproject.eventos.datos.EquipoMiembroCambio;
 import co.uniproject.eventos.datos.HitoEvaluado;
+import co.uniproject.eventos.datos.InscripcionPorCerrar;
+import co.uniproject.eventos.datos.MovimientoEquipo;
 import co.uniproject.eventos.datos.Persona;
 import co.uniproject.eventos.datos.Referencia;
 import co.uniproject.eventos.datos.ReferenciaTarea;
@@ -178,17 +181,19 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
                 .param("c", String.format("%032d", id))
                 .param("id", id)
                 .update();
-        long otroProyecto = proyecto(e.idDocente(), LocalDate.now(FechasDominio.ZONA));
-        jdbc.sql("INSERT INTO correo_habilitado (id_proyecto, email, rol_plataforma, id_habilitado_por, "
-                        + "id_usuario_registrado, fecha_uso) VALUES (:p, :email, 'ESTUDIANTE', :d, :id, now())")
-                .param("p", e.idProyecto())
+        long curso = cursoSql(e.idDocente(), e.idProyecto());
+        participanteSql(curso, e.idProyecto(), id);
+        long otroCurso = cursoSql(e.idDocente());
+        jdbc.sql("INSERT INTO correo_habilitado (id_curso, email, rol_plataforma, id_habilitado_por, "
+                        + "id_usuario_registrado, fecha_uso) VALUES (:c, :email, 'ESTUDIANTE', :d, :id, now())")
+                .param("c", curso)
                 .param("email", e.estudiante())
                 .param("d", e.idDocente())
                 .param("id", id)
                 .update();
-        jdbc.sql("INSERT INTO correo_habilitado (id_proyecto, email, rol_plataforma, id_habilitado_por) "
-                        + "VALUES (:p, :email, 'ESTUDIANTE', :d)")
-                .param("p", otroProyecto)
+        jdbc.sql("INSERT INTO correo_habilitado (id_curso, email, rol_plataforma, id_habilitado_por) "
+                        + "VALUES (:c, :email, 'ESTUDIANTE', :d)")
+                .param("c", otroCurso)
                 .param("email", e.estudiante())
                 .param("d", e.idDocente())
                 .update();
@@ -249,7 +254,11 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
                                 + "AND email = 'anonimo-' || CAST(:id AS text) || '@anonimo.invalid'",
                         id))
                 .isEqualTo(1);
-        assertThat(contar("SELECT count(*) FROM correo_habilitado WHERE id_proyecto = :id", otroProyecto))
+        assertThat(contar("SELECT count(*) FROM correo_habilitado WHERE id_curso = :id", otroCurso))
+                .isZero();
+        assertThat(contar("SELECT count(*) FROM miembro_curso WHERE id_usuario = :id", id))
+                .isZero();
+        assertThat(contar("SELECT count(*) FROM participante_proyecto WHERE id_usuario = :id", id))
                 .isZero();
         assertThat(texto("SELECT nombre_archivo || '|' || url FROM evidencia WHERE id_evidencia = :id", evidencia))
                 .isEqualTo("evidencia-" + evidencia + ".pdf|" + url);
@@ -389,13 +398,14 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
                                 + "AND id_registro_afectado = :id",
                         e.idEstudiante()))
                 .isEqualTo(1);
-        jdbc.sql("INSERT INTO correo_habilitado (id_proyecto, email, rol_plataforma, id_habilitado_por) "
-                        + "VALUES (:p, :email, 'ESTUDIANTE', :d)")
-                .param("p", e.idProyecto())
+        long curso = cursoSql(e.idDocente(), e.idProyecto());
+        jdbc.sql("INSERT INTO correo_habilitado (id_curso, email, rol_plataforma, id_habilitado_por) "
+                        + "VALUES (:c, :email, 'ESTUDIANTE', :d)")
+                .param("c", curso)
                 .param("email", e.estudiante())
                 .param("d", e.idDocente())
                 .update();
-        String codigo = enlace(sesion(e.docente()), e.idProyecto(), e.estudiante());
+        String codigo = enlaceCurso(sesion(e.docente()), curso, e.estudiante());
         Navegador nuevo = new Navegador(puerto);
         nuevo.pedirCsrf();
         HttpResponse<String> registro = nuevo.post(
@@ -561,12 +571,13 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
     @Test
     void noSeHabilitanCorreosDelDominioAnonimo() {
         Escenario e = escenario();
-        HttpResponse<String> proyecto = sesion(e.docente())
+        long curso = cursoSql(e.idDocente());
+        HttpResponse<String> rCurso = sesion(e.docente())
                 .post(
-                        "/api/proyectos/" + e.idProyecto() + "/correos",
-                        "{\"emails\":[\"ANONIMO-" + e.idEstudiante() + "@anonimo.invalid\"],\"rol\":\"ESTUDIANTE\"}");
-        assertThat(proyecto.statusCode()).as(proyecto.body()).isEqualTo(400);
-        assertThat(proyecto.body()).contains("\"codigo\":\"CORREO_RESERVADO\"");
+                        "/api/cursos/" + curso + "/correos",
+                        "{\"emails\":[\"ANONIMO-" + e.idEstudiante() + "@anonimo.invalid\"]}");
+        assertThat(rCurso.statusCode()).as(rCurso.body()).isEqualTo(400);
+        assertThat(rCurso.body()).contains("\"codigo\":\"CORREO_RESERVADO\"");
         String admin = correoUnico("adminres");
         crearUsuario("Admin Reservado", admin, "ADMINISTRADOR");
         HttpResponse<String> docente = sesion(admin)
@@ -828,5 +839,33 @@ class DerechosTitularIntegracionTest extends ApiIntegracionBase {
                 .contains(ServicioSupresion.ENLACE_ELIMINADO)
                 .contains(urlOtro)
                 .doesNotContain(urlTitular);
+    }
+
+    @Test
+    void rectificaElNombreEnLosAvisosDeEquipos() {
+        Escenario e = escenario();
+        Persona persona = new Persona(e.idEstudiante(), e.nombre(), null);
+        Persona lider = new Persona(e.idLider(), "Lider Supresion", null);
+        Referencia proyecto = new Referencia(e.idProyecto(), "Proyecto Supresion");
+        Referencia equipo = new Referencia(e.idEquipo(), "Equipo S");
+        UUID cambio = tx.execute(s -> eventos.registrar(new EquipoMiembroCambio(
+                proyecto, equipo, MovimientoEquipo.ENTRO, false, List.of(persona), List.of(lider))));
+        UUID porCerrar = tx.execute(s -> eventos.registrar(
+                new InscripcionPorCerrar(proyecto, Instant.now().plusSeconds(3600), List.of(persona))));
+
+        HttpResponse<String> r = sesion(e.estudiante()).put("/api/perfil/nombre", "{\"nombre\":\"Paula Rectificada\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+
+        assertThat(texto(
+                        "SELECT mensaje FROM notificacion WHERE id_destinatario = :id AND tipo = 'equipo.miembro_cambio'",
+                        e.idLider()))
+                .isEqualTo("Paula Rectificada entró a Equipo S.");
+        EquipoMiembroCambio datosCambio = (EquipoMiembroCambio)
+                codec.leer(carga(cambio).getBytes(StandardCharsets.UTF_8)).data();
+        assertThat(datosCambio.personas()).containsExactly(new Persona(e.idEstudiante(), "Paula Rectificada", null));
+        InscripcionPorCerrar datosPorCerrar = (InscripcionPorCerrar)
+                codec.leer(carga(porCerrar).getBytes(StandardCharsets.UTF_8)).data();
+        assertThat(datosPorCerrar.estudiantes())
+                .containsExactly(new Persona(e.idEstudiante(), "Paula Rectificada", null));
     }
 }

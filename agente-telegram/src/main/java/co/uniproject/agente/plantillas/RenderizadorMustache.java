@@ -4,14 +4,13 @@ import co.uniproject.agente.destinatarios.Variante;
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.EventoCloud;
 import co.uniproject.eventos.RutasWeb;
+import co.uniproject.eventos.TextosEventos;
 import co.uniproject.eventos.Topologia;
 import co.uniproject.eventos.datos.*;
 import co.uniproject.eventos.interno.ContratoInterno;
 import com.samskivert.mustache.Escapers;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.springframework.stereotype.Component;
 
 @Component
 public class RenderizadorMustache implements RenderizadorAvisos {
@@ -33,15 +33,23 @@ public class RenderizadorMustache implements RenderizadorAvisos {
     private static final Pattern PATRON_RECUPERACION = Pattern.compile(ContratoInterno.PATRON_CODIGO_RECUPERACION);
 
     private static final String[] NOMBRES_PLANTILLAS = {
-            "tarea.ruta_critica.riesgo",
-            "equipo.inactividad",
-            "hito.enviado",
-            "hito.evaluado",
-            "tarea.reasignada-nuevo",
-            "tarea.reasignada-anterior",
-            "tarea.correccion",
-            "cuenta.recuperacion.solicitada",
-            "cuenta.contrasena.cambiada"
+        "tarea.ruta_critica.riesgo",
+        "equipo.inactividad",
+        "hito.enviado",
+        "hito.evaluado",
+        "tarea.reasignada-nuevo",
+        "tarea.reasignada-anterior",
+        "tarea.correccion",
+        "cuenta.recuperacion.solicitada",
+        "cuenta.contrasena.cambiada",
+        "curso.estudiante_agregado",
+        "equipo.votacion_abierta",
+        "equipo.lider_elegido",
+        "equipo.sin_lider",
+        "equipo.miembro_cambio",
+        "equipo.miembro_cambio-nuevo",
+        "equipo.inscripcion_por_cerrar",
+        "equipo.inscripcion_resumen"
     };
 
     private final CodecEventos codec;
@@ -50,8 +58,8 @@ public class RenderizadorMustache implements RenderizadorAvisos {
     public RenderizadorMustache(CodecEventos codec) {
         this.codec = codec;
         Mustache.Compiler compilador = Mustache.compiler()
-                .withEscaper(Escapers.simple(new String[][] {
-                        {"&", "&amp;"}, {"<", "&lt;"}, {">", "&gt;"}, {"\"", "&quot;"}}))
+                .withEscaper(Escapers.simple(
+                        new String[][] {{"&", "&amp;"}, {"<", "&lt;"}, {">", "&gt;"}, {"\"", "&quot;"}}))
                 .nullValue("");
 
         for (String nombre : NOMBRES_PLANTILLAS) {
@@ -73,7 +81,8 @@ public class RenderizadorMustache implements RenderizadorAvisos {
     @SuppressWarnings("unchecked")
     public Aviso renderizar(EventoCloud evento, Variante variante) {
         if (evento.data() instanceof RecuperacionSolicitada) {
-            throw new PlantillaException("La plantilla " + RECUPERACION + " exige el código: usa renderizarRecuperacion");
+            throw new PlantillaException(
+                    "La plantilla " + RECUPERACION + " exige el código: usa renderizarRecuperacion");
         }
         String nombre = evento.type() + variante.sufijo();
         Template plantilla = plantillas.get(nombre);
@@ -86,19 +95,63 @@ public class RenderizadorMustache implements RenderizadorAvisos {
             Map<String, Object> modelo = new HashMap<>(codec.mapeador().convertValue(evento.data(), Map.class));
             switch (evento.data()) {
                 case TareaRutaCriticaRiesgo r ->
-                        modelo.put("fechaLimiteHitoTexto", r.fechaLimiteHito().format(FORMATO_FECHA));
+                    modelo.put("fechaLimiteHitoTexto", r.fechaLimiteHito().format(FORMATO_FECHA));
                 case EquipoInactividad i -> {
-                    modelo.put("ultimaActividadTexto", FORMATO_FECHA.format(i.ultimaActividad().atZone(ZONA)));
+                    modelo.put(
+                            "ultimaActividadTexto",
+                            FORMATO_FECHA.format(i.ultimaActividad().atZone(ZONA)));
                     modelo.put("periodoTexto", i.periodoDias() == 1 ? "1 día" : i.periodoDias() + " días");
                 }
                 case HitoEvaluado h -> {
-                    modelo.put("caracterNotaTexto", h.caracterNota() == CaracterNota.PROVISIONAL ? "provisional" : "definitiva");
+                    modelo.put(
+                            "caracterNotaTexto",
+                            h.caracterNota() == CaracterNota.PROVISIONAL ? "provisional" : "definitiva");
                     modelo.put("esProvisional", h.caracterNota() == CaracterNota.PROVISIONAL);
                 }
                 case ContrasenaCambiada c -> {
                     modelo.put("fechaTexto", FORMATO_FECHA_HORA.format(c.fecha().atZone(ZONA)));
-                    modelo.put("origenTexto", c.origen() == OrigenCambioContrasena.PERFIL
-                            ? "desde tu perfil" : "con un enlace de recuperación");
+                    modelo.put(
+                            "origenTexto",
+                            c.origen() == OrigenCambioContrasena.PERFIL
+                                    ? "desde tu perfil"
+                                    : "con un enlace de recuperación");
+                }
+                case EquipoVotacionAbierta v ->
+                    modelo.put(
+                            "cierraEnTexto",
+                            FORMATO_FECHA_HORA.format(v.cierraEn().atZone(ZONA)));
+                case EquipoLiderElegido l ->
+                    modelo.put(
+                            "origenTexto",
+                            l.origen() == OrigenLider.VOTACION
+                                    ? "elegido por votación"
+                                    : "elegido por el docente tras un empate");
+                case EquipoSinLider s -> {
+                    modelo.put("motivoTexto", s.motivo() == MotivoSinLider.EMPATE ? "en empate" : "sin votos");
+                    modelo.put(
+                            "accionTexto",
+                            s.motivo() == MotivoSinLider.EMPATE
+                                    ? "Elige al líder entre los empatados."
+                                    : "Nombra un líder o abre otra votación.");
+                }
+                case EquipoMiembroCambio m -> {
+                    modelo.put(
+                            "personasTexto",
+                            TextosEventos.listaNombres(
+                                    m.personas().stream().map(Persona::nombre).toList()));
+                    modelo.put(
+                            "verboTexto",
+                            TextosEventos.verbo(m.movimiento(), m.personas().size()));
+                }
+                case InscripcionPorCerrar i ->
+                    modelo.put(
+                            "cierreTexto", FORMATO_FECHA_HORA.format(i.cierre().atZone(ZONA)));
+                case InscripcionResumen r -> {
+                    modelo.put(
+                            "cierreTexto", FORMATO_FECHA_HORA.format(r.cierre().atZone(ZONA)));
+                    modelo.put("sinEquipoTexto", TextosEventos.cantidad(r.sinEquipo(), "estudiante", "estudiantes"));
+                    modelo.put(
+                            "cuposLibresTexto", TextosEventos.cantidad(r.cuposLibres(), "cupo libre", "cupos libres"));
                 }
                 default -> {}
             }
@@ -112,11 +165,13 @@ public class RenderizadorMustache implements RenderizadorAvisos {
         switch (nombre) {
             case "tarea.ruta_critica.riesgo" -> {
                 textoBoton = "Ver tarea";
-                ruta = RutasWeb.tarea(((TareaRutaCriticaRiesgo) evento.data()).tarea().id());
+                ruta = RutasWeb.tarea(
+                        ((TareaRutaCriticaRiesgo) evento.data()).tarea().id());
             }
             case "equipo.inactividad" -> {
                 textoBoton = "Ver tablero del equipo";
-                ruta = RutasWeb.tableroEquipo(((EquipoInactividad) evento.data()).equipo().id());
+                ruta = RutasWeb.tableroEquipo(
+                        ((EquipoInactividad) evento.data()).equipo().id());
             }
             case "hito.enviado" -> {
                 textoBoton = "Evaluar hito";
@@ -124,7 +179,8 @@ public class RenderizadorMustache implements RenderizadorAvisos {
             }
             case "hito.evaluado" -> {
                 textoBoton = "Ver evaluación";
-                ruta = RutasWeb.evaluacionHito(((HitoEvaluado) evento.data()).hito().id());
+                ruta = RutasWeb.evaluacionHito(
+                        ((HitoEvaluado) evento.data()).hito().id());
             }
             case "tarea.reasignada-nuevo" -> {
                 textoBoton = "Ver tarea";
@@ -141,6 +197,40 @@ public class RenderizadorMustache implements RenderizadorAvisos {
             case "cuenta.contrasena.cambiada" -> {
                 textoBoton = "Ir a UniProject";
                 ruta = RutasWeb.ingresar();
+            }
+            case "curso.estudiante_agregado" -> {
+                textoBoton = "Ver mis cursos";
+                ruta = RutasWeb.misCursos();
+            }
+            case "equipo.votacion_abierta" -> {
+                textoBoton = "Votar";
+                ruta = RutasWeb.votacionEquipo(
+                        ((EquipoVotacionAbierta) evento.data()).equipo().id());
+            }
+            case "equipo.lider_elegido" -> {
+                textoBoton = "Ver votación";
+                ruta = RutasWeb.votacionEquipo(
+                        ((EquipoLiderElegido) evento.data()).equipo().id());
+            }
+            case "equipo.sin_lider" -> {
+                textoBoton = "Ver votación";
+                ruta = RutasWeb.votacionEquipo(
+                        ((EquipoSinLider) evento.data()).equipo().id());
+            }
+            case "equipo.miembro_cambio", "equipo.miembro_cambio-nuevo" -> {
+                textoBoton = "Ver tablero del equipo";
+                ruta = RutasWeb.tableroEquipo(
+                        ((EquipoMiembroCambio) evento.data()).equipo().id());
+            }
+            case "equipo.inscripcion_por_cerrar" -> {
+                textoBoton = "Elegir equipo";
+                ruta = RutasWeb.inscripcionProyecto(
+                        ((InscripcionPorCerrar) evento.data()).proyecto().id());
+            }
+            case "equipo.inscripcion_resumen" -> {
+                textoBoton = "Ver equipos del proyecto";
+                ruta = RutasWeb.proyecto(
+                        ((InscripcionResumen) evento.data()).proyecto().id());
             }
             default -> throw new PlantillaException("No hay plantilla " + nombre);
         }
@@ -162,7 +252,11 @@ public class RenderizadorMustache implements RenderizadorAvisos {
             Map<String, Object> modelo = new HashMap<>();
             modelo.put("codigo", codigo);
             modelo.put("venceEnTexto", FORMATO_HORA.format(r.venceEn().atZone(ZONA)));
-            html = plantillas.get(RECUPERACION).execute(modelo).replace("\r\n", "\n").strip();
+            html = plantillas
+                    .get(RECUPERACION)
+                    .execute(modelo)
+                    .replace("\r\n", "\n")
+                    .strip();
         } catch (RuntimeException e) {
             throw new PlantillaException("La plantilla " + RECUPERACION + " falló", e);
         }

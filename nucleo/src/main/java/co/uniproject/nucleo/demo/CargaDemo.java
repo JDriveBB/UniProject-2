@@ -1,19 +1,27 @@
 package co.uniproject.nucleo.demo;
 
 import co.uniproject.nucleo.comun.FechasDominio;
+import co.uniproject.nucleo.configuracionacademica.cursos.ServicioCursos;
+import co.uniproject.nucleo.configuracionacademica.cursos.SolicitudCorreosCurso;
+import co.uniproject.nucleo.configuracionacademica.cursos.SolicitudCurso;
 import co.uniproject.nucleo.configuracionacademica.servicio.EquipoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.HitoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioCorreosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioHitos;
+import co.uniproject.nucleo.configuracionacademica.servicio.ServicioInscripcion;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioProyectos;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCorreos;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCriterio;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCursosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudEquipo;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudHito;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudInscripcion;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudLider;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudMiembro;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudProyecto;
+import co.uniproject.nucleo.configuracionacademica.votacion.ServicioVotacion;
+import co.uniproject.nucleo.configuracionacademica.votacion.SolicitudVoto;
 import co.uniproject.nucleo.ejecucion.servicio.EvidenciaVista;
 import co.uniproject.nucleo.ejecucion.servicio.PeticionCorreccion;
 import co.uniproject.nucleo.ejecucion.servicio.ServicioApoyo;
@@ -42,6 +50,9 @@ import co.uniproject.nucleo.seguridad.cuentas.SolicitudRegistro;
 import co.uniproject.nucleo.seguridad.cuentas.UsuarioSesion;
 import co.uniproject.nucleo.seguridad.dominio.RolPlataforma;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
@@ -52,7 +63,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Escenario demo (decisión 22-7) cargado con los servicios reales, actuando como cada usuario. Todo en una transacción:
- * si algo falla no queda nada a medias (22-4). Correos ficticios del dominio reservado .test (Ley 1581).
+ * si algo falla no queda nada a medias (22-4). Correos ficticios del dominio reservado .test (Ley 1581). El segundo
+ * proyecto queda con la inscripción a equipos abierta, un equipo con cupo y una votación de líder abierta (bloque 51).
  */
 @Component
 @Profile("demo")
@@ -62,10 +74,12 @@ public class CargaDemo {
     static final String DOCENTE = "docente@" + DOMINIO;
     static final String PROYECTO = "Biblioteca digital (demo)";
     static final String PROYECTO_2 = "App de turnos (demo)";
+    static final String CURSO = "Diseño de Software I (demo)";
 
     private final JdbcClient jdbc;
     private final PasswordEncoder codificador;
     private final ServicioCuentas cuentas;
+    private final ServicioCursos cursos;
     private final ServicioProyectos proyectos;
     private final ServicioHitos hitos;
     private final ServicioCorreosProyecto correos;
@@ -80,11 +94,15 @@ public class CargaDemo {
     private final ServicioCorrecciones correcciones;
     private final ServicioEnvio envio;
     private final ServicioEvaluacion evaluacion;
+    private final ServicioInscripcion inscripcion;
+    private final ServicioVotacion votacion;
+    private final Clock reloj;
 
     public CargaDemo(
             JdbcClient jdbc,
             PasswordEncoder codificador,
             ServicioCuentas cuentas,
+            ServicioCursos cursos,
             ServicioProyectos proyectos,
             ServicioHitos hitos,
             ServicioCorreosProyecto correos,
@@ -98,10 +116,14 @@ public class CargaDemo {
             ServicioReasignacion reasignacion,
             ServicioCorrecciones correcciones,
             ServicioEnvio envio,
-            ServicioEvaluacion evaluacion) {
+            ServicioEvaluacion evaluacion,
+            ServicioInscripcion inscripcion,
+            ServicioVotacion votacion,
+            Clock reloj) {
         this.jdbc = jdbc;
         this.codificador = codificador;
         this.cuentas = cuentas;
+        this.cursos = cursos;
         this.proyectos = proyectos;
         this.hitos = hitos;
         this.correos = correos;
@@ -116,6 +138,9 @@ public class CargaDemo {
         this.correcciones = correcciones;
         this.envio = envio;
         this.evaluacion = evaluacion;
+        this.inscripcion = inscripcion;
+        this.votacion = votacion;
+        this.reloj = reloj;
     }
 
     /** true si cargó; false si ya existían (22-5). */
@@ -139,7 +164,8 @@ public class CargaDemo {
                                 "Proyecto de demostración: préstamos y devoluciones de una biblioteca universitaria.",
                                 hoy.minusDays(21),
                                 hoy.plusDays(60),
-                                true))
+                                true,
+                                false))
                 .idProyecto();
         HitoVista hito1 = hitos.crear(
                 docente,
@@ -169,32 +195,33 @@ public class CargaDemo {
         criterio(docente, hito2, "Funcionalidad", "60");
         criterio(docente, hito2, "Calidad del código", "40");
 
-        correos.habilitar(
+        long idCurso =
+                cursos.crear(docente, new SolicitudCurso(CURSO, "2026-2", null)).idCurso();
+        cursos.agregarCorreos(
                 docente,
-                idProyecto,
-                new SolicitudCorreos(
-                        List.of(
-                                correo("ana"),
-                                correo("bruno"),
-                                correo("camila"),
-                                correo("diego"),
-                                correo("elena"),
-                                correo("felipe"),
-                                correo("hugo"),
-                                correo("ines"),
-                                correo("jorge")),
-                        RolPlataforma.ESTUDIANTE));
+                idCurso,
+                new SolicitudCorreosCurso(List.of(
+                        correo("ana"),
+                        correo("bruno"),
+                        correo("camila"),
+                        correo("diego"),
+                        correo("elena"),
+                        correo("felipe"),
+                        correo("hugo"),
+                        correo("ines"),
+                        correo("jorge"))));
+        proyectos.asignarCursos(docente, idProyecto, new SolicitudCursosProyecto(List.of(idCurso), false));
         correos.habilitar(docente, idProyecto, new SolicitudCorreos(List.of(correo("monitor")), RolPlataforma.MONITOR));
-        UsuarioAutenticado ana = registrar(docente, idProyecto, "Ana Rojas", "ana", contrasena);
-        UsuarioAutenticado bruno = registrar(docente, idProyecto, "Bruno Díaz", "bruno", contrasena);
-        UsuarioAutenticado camila = registrar(docente, idProyecto, "Camila Torres", "camila", contrasena);
-        UsuarioAutenticado diego = registrar(docente, idProyecto, "Diego Pérez", "diego", contrasena);
-        UsuarioAutenticado elena = registrar(docente, idProyecto, "Elena Gómez", "elena", contrasena);
-        UsuarioAutenticado felipe = registrar(docente, idProyecto, "Felipe Ruiz", "felipe", contrasena);
-        UsuarioAutenticado monitor = registrar(docente, idProyecto, "Gabriela Soto", "monitor", contrasena);
+        UsuarioAutenticado ana = registrarEstudiante(docente, idCurso, "Ana Rojas", "ana", contrasena);
+        UsuarioAutenticado bruno = registrarEstudiante(docente, idCurso, "Bruno Díaz", "bruno", contrasena);
+        UsuarioAutenticado camila = registrarEstudiante(docente, idCurso, "Camila Torres", "camila", contrasena);
+        UsuarioAutenticado diego = registrarEstudiante(docente, idCurso, "Diego Pérez", "diego", contrasena);
+        UsuarioAutenticado elena = registrarEstudiante(docente, idCurso, "Elena Gómez", "elena", contrasena);
+        UsuarioAutenticado felipe = registrarEstudiante(docente, idCurso, "Felipe Ruiz", "felipe", contrasena);
+        UsuarioAutenticado monitor = registrarMonitor(docente, idProyecto, "Gabriela Soto", "monitor", contrasena);
         // hugo = cuenta de sacrificio de la sesión de pruebas (límites, recuperación, supresión);
-        // ines/jorge = correos pendientes para probar registro y «Retirar».
-        registrar(docente, idProyecto, "Hugo Lara", "hugo", contrasena);
+        // ines/jorge = correos pendientes del curso para probar registro y «Retirar».
+        registrarEstudiante(docente, idCurso, "Hugo Lara", "hugo", contrasena);
 
         EquipoVista alfa = equipo(docente, idProyecto, "Equipo Alfa", ana, List.of(ana, bruno, camila));
         EquipoVista beta = equipo(docente, idProyecto, "Equipo Beta", diego, List.of(diego, elena, felipe));
@@ -309,8 +336,10 @@ public class CargaDemo {
                                 "Proyecto de demostración: turnos de atención de un consultorio universitario.",
                                 hoy.minusDays(14),
                                 hoy.plusDays(45),
-                                true))
+                                true,
+                                false))
                 .idProyecto();
+        proyectos.asignarCursos(docente, idProyecto2, new SolicitudCursosProyecto(List.of(idCurso), false));
         HitoVista p2Hito1 = hitos.crear(
                 docente,
                 idProyecto2,
@@ -322,13 +351,6 @@ public class CargaDemo {
         criterio(docente, p2Hito1, "Modelo de datos", "50");
         criterio(docente, p2Hito1, "Prototipo de pantallas", "50");
         criterio(docente, p2Hito2, "Funcionalidad", "100");
-
-        correos.habilitar(
-                docente,
-                idProyecto2,
-                new SolicitudCorreos(
-                        List.of(correo("ana"), correo("diego"), correo("bruno"), correo("elena")),
-                        RolPlataforma.ESTUDIANTE));
 
         EquipoVista gamma = equipo(docente, idProyecto2, "Equipo Gamma", ana, List.of(ana, diego));
         EquipoVista delta = equipo(docente, idProyecto2, "Equipo Delta", bruno, List.of(bruno, elena));
@@ -347,6 +369,16 @@ public class CargaDemo {
         long d2 = tarea(bruno, delta1, "Prototipo de pantallas", elena, "4", false);
         dependencias.agregar(bruno, d2, new SolicitudDependencias(List.of(d1)));
         avance.actualizar(bruno, d1, new SolicitudAvance(50, "Tablas de citas y horarios definidas"));
+
+        // Inscripción abierta 7 días, un equipo con cupo y una votación abierta (bloque 51).
+        inscripcion.configurar(
+                docente,
+                idProyecto2,
+                new SolicitudInscripcion(Instant.now(reloj).plus(Duration.ofDays(7)), 48));
+        EquipoVista epsilon = equipos.crear(docente, idProyecto2, new SolicitudEquipo("Equipo Épsilon", null, 3));
+        inscripcion.unirse(camila, epsilon.idEquipo());
+        votacion.abrir(docente, gamma.idEquipo());
+        votacion.votar(diego, gamma.idEquipo(), new SolicitudVoto(ana.idUsuario()));
         return true;
     }
 
@@ -367,7 +399,21 @@ public class CargaDemo {
         return new UsuarioAutenticado(id, nombre, DOCENTE, RolPlataforma.DOCENTE);
     }
 
-    private UsuarioAutenticado registrar(
+    private UsuarioAutenticado registrarEstudiante(
+            UsuarioAutenticado docente, long idCurso, String nombre, String usuario, String contrasena) {
+        String email = correo(usuario);
+        long idCorreo = jdbc.sql(
+                        "SELECT id_correo_habilitado FROM correo_habilitado WHERE id_curso = :c AND email = :e")
+                .param("c", idCurso)
+                .param("e", email)
+                .query(Long.class)
+                .single();
+        String codigo = cursos.generarEnlace(docente, idCurso, idCorreo).codigo();
+        UsuarioSesion s = cuentas.registrar(new SolicitudRegistro(nombre, email, contrasena, true, codigo));
+        return new UsuarioAutenticado(s.idUsuario(), s.nombre(), s.email(), s.rol());
+    }
+
+    private UsuarioAutenticado registrarMonitor(
             UsuarioAutenticado docente, long idProyecto, String nombre, String usuario, String contrasena) {
         String email = correo(usuario);
         long idCorreo = jdbc.sql(
@@ -395,9 +441,9 @@ public class CargaDemo {
             String nombre,
             UsuarioAutenticado lider,
             List<UsuarioAutenticado> miembros) {
-        EquipoVista equipo = equipos.crear(docente, idProyecto, new SolicitudEquipo(nombre));
+        EquipoVista equipo = equipos.crear(docente, idProyecto, new SolicitudEquipo(nombre, null, null));
         for (UsuarioAutenticado m : miembros) {
-            equipos.agregarMiembro(docente, equipo.idEquipo(), new SolicitudMiembro(m.email()));
+            equipos.agregarMiembro(docente, equipo.idEquipo(), new SolicitudMiembro(m.email(), false));
         }
         return equipos.cambiarLider(docente, equipo.idEquipo(), new SolicitudLider(lider.idUsuario()));
     }

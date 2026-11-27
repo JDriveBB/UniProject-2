@@ -10,6 +10,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -60,6 +63,7 @@ public abstract class ApiIntegracionBase {
         registry.add("spring.rabbitmq.password", rabbit::getAdminPassword);
         registry.add("uniproject.token-interno", () -> "token-de-prueba");
         registry.add("uniproject.outbox.intervalo-ms", () -> 600000L);
+        registry.add("uniproject.programador.cron-rondas", () -> "-");
     }
 
     @Value("${local.server.port}")
@@ -132,6 +136,126 @@ public abstract class ApiIntegracionBase {
                 docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null);
         assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
         return campoTexto(r.body(), "codigo");
+    }
+
+    /** Crea un curso del docente en el periodo 2026-2 y devuelve su id. */
+    protected long crearCurso(Navegador docente, String nombre) {
+        HttpResponse<String> r = docente.post("/api/cursos", "{\"nombre\":\"" + nombre + "\",\"periodo\":\"2026-2\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        return numero(r.body(), "idCurso");
+    }
+
+    /** Asigna cursos a un proyecto con confirmar=true y exige 200 con aplicado=true. */
+    protected void asignarCursos(Navegador docente, long idProyecto, long... idsCursos) {
+        String lista = Arrays.stream(idsCursos).mapToObj(String::valueOf).collect(Collectors.joining(","));
+        HttpResponse<String> r = docente.put(
+                "/api/proyectos/" + idProyecto + "/cursos", "{\"idsCursos\":[" + lista + "],\"confirmar\":true}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        assertThat(r.body()).contains("\"aplicado\":true");
+    }
+
+    /** Agrega o habilita correos de estudiantes en el curso y exige 201. */
+    protected void agregarAlCurso(Navegador docente, long idCurso, String... emails) {
+        String lista = Arrays.stream(emails).map(e -> "\"" + e + "\"").collect(Collectors.joining(","));
+        HttpResponse<String> r = docente.post("/api/cursos/" + idCurso + "/correos", "{\"emails\":[" + lista + "]}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+    }
+
+    /** Busca la habilitación pendiente del correo en el curso y pide al docente un enlace de registro nuevo. */
+    protected String enlaceCurso(Navegador docente, long idCurso, String email) {
+        long idCorreo = jdbc.sql("SELECT id_correo_habilitado FROM correo_habilitado "
+                        + "WHERE id_curso = :c AND email = :e AND fecha_uso IS NULL")
+                .param("c", idCurso)
+                .param("e", email.strip().toLowerCase(Locale.ROOT))
+                .query(Long.class)
+                .single();
+        HttpResponse<String> r = docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        return campoTexto(r.body(), "codigo");
+    }
+
+    /** Crea un curso por SQL con nombre único y lo asigna a los proyectos indicados. */
+    protected long cursoSql(long idDocente, long... idsProyectos) {
+        long idCurso = jdbc.sql("INSERT INTO curso (id_docente, nombre, periodo) VALUES (:d, :n, '2026-2') "
+                        + "RETURNING id_curso")
+                .param("d", idDocente)
+                .param("n", "Curso SQL " + SECUENCIA.incrementAndGet())
+                .query(Long.class)
+                .single();
+        for (long idProyecto : idsProyectos) {
+            jdbc.sql("INSERT INTO curso_proyecto (id_curso, id_proyecto) VALUES (:c, :p)")
+                    .param("c", idCurso)
+                    .param("p", idProyecto)
+                    .update();
+        }
+        return idCurso;
+    }
+
+    /** Inserta directamente miembro_curso y participante_proyecto para el estudiante. */
+    protected void participanteSql(long idCurso, long idProyecto, long idUsuario) {
+        jdbc.sql("INSERT INTO miembro_curso (id_curso, id_usuario) VALUES (:c, :u) ON CONFLICT DO NOTHING")
+                .param("c", idCurso)
+                .param("u", idUsuario)
+                .update();
+        jdbc.sql("INSERT INTO participante_proyecto (id_proyecto, id_usuario, id_curso) VALUES (:p, :u, :c) "
+                        + "ON CONFLICT DO NOTHING")
+                .param("p", idProyecto)
+                .param("u", idUsuario)
+                .param("c", idCurso)
+                .update();
+    }
+
+    /** Crea un equipo vía API omitiendo del JSON los campos nulos; exige 201 y devuelve idEquipo. */
+    protected long crearEquipoApi(Navegador docente, long idProyecto, String nombre, Long idCurso, Integer cupo) {
+        StringBuilder json =
+                new StringBuilder("{\"nombreEquipo\":\"").append(nombre).append("\"");
+        if (idCurso != null) {
+            json.append(",\"idCurso\":").append(idCurso);
+        }
+        if (cupo != null) {
+            json.append(",\"cupo\":").append(cupo);
+        }
+        json.append("}");
+        HttpResponse<String> r = docente.post("/api/proyectos/" + idProyecto + "/equipos", json.toString());
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        return numero(r.body(), "idEquipo");
+    }
+
+    /** Abre la autoinscripción del proyecto fijando el cierre en 7 días y horasRonda = 48. */
+    protected void abrirInscripcion(Navegador docente, long idProyecto) {
+        Instant cierre = Instant.now().plus(7, ChronoUnit.DAYS);
+        HttpResponse<String> r = docente.put(
+                "/api/proyectos/" + idProyecto + "/inscripcion",
+                "{\"cierreEquipos\":\"" + cierre + "\",\"horasRonda\":48}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+    }
+
+    /** Cierra la autoinscripción del proyecto en la BD poniendo cierre_equipos una hora en el pasado. */
+    protected void cerrarInscripcionSql(long idProyecto) {
+        jdbc.sql("UPDATE proyecto SET cierre_equipos = now() - interval '1 hour' WHERE id_proyecto = :p")
+                .param("p", idProyecto)
+                .update();
+    }
+
+    /** Abre una ronda de votación vía API; exige 201 y devuelve ronda.idRonda. */
+    protected long abrirRondaApi(Navegador docente, long idEquipo) {
+        HttpResponse<String> r = docente.post("/api/equipos/" + idEquipo + "/ronda", null);
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+        return numero(r.body(), "idRonda");
+    }
+
+    /** Registra o cambia el voto del estudiante por el candidato en la ronda abierta del equipo. */
+    protected HttpResponse<String> votarApi(Navegador estudiante, long idEquipo, long idCandidato) {
+        return estudiante.put("/api/equipos/" + idEquipo + "/ronda/voto", "{\"idCandidato\":" + idCandidato + "}");
+    }
+
+    /** Marca la ronda sin cerrar del equipo como vencida en la BD. */
+    protected void vencerRondaSql(long idEquipo) {
+        jdbc.sql(
+                        "UPDATE ronda_lider SET abre_en = now() - interval '49 hours', cierra_en = now() - interval '1 minute' "
+                                + "WHERE id_equipo = :e AND cerrada_en IS NULL")
+                .param("e", idEquipo)
+                .update();
     }
 
     /** true si el JSON tiene "campo": valor exacto (12 no casa con 123). */

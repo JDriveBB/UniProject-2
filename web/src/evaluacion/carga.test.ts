@@ -42,6 +42,9 @@ describe('carga', () => {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-11-30',
       usaMonitores: false,
+      equiposMixtos: false,
+      cierreEquipos: null,
+      horasRonda: 48,
     };
 
     const criteriosOriginales: CriterioVista[] = [
@@ -93,6 +96,8 @@ describe('carga', () => {
         idEquipo: 7,
         idProyecto: 3,
         nombreEquipo: 'Equipo 7',
+        idCurso: null,
+        cupo: null,
         miembros: [],
         hitos: [],
       },

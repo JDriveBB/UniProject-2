@@ -5,9 +5,12 @@ import {
   bloqueoParaQuitar,
   ES_LIDER_AHORA,
   pendientesDe,
+  preguntaDestituir,
+  preguntaNombrarConRonda,
   preguntaQuitarIntegrante,
   preguntaQuitarMonitor,
   preguntaRetirarCorreo,
+  preguntaRetirarCorreoCurso,
   quitarIntegrante,
   quitarMonitorDelProyecto,
   retirarHabilitacion,
@@ -17,7 +20,15 @@ import {
   YA_NO_ES_MONITOR,
 } from './quitar';
 
-const equipo: EquipoVista = { idEquipo: 3, idProyecto: 1, nombreEquipo: 'Equipo Alfa', miembros: [], hitos: [] };
+const equipo: EquipoVista = {
+  idEquipo: 3,
+  idProyecto: 1,
+  nombreEquipo: 'Equipo Alfa',
+  idCurso: null,
+  cupo: null,
+  miembros: [],
+  hitos: [],
+};
 
 describe('quitar integrantes y monitores', () => {
   it('al líder no se le ofrece quitar; las preguntas dicen que se conservan tareas e historial', () => {
@@ -91,100 +102,100 @@ describe('quitar integrantes y monitores', () => {
     expect(bloqueoParaQuitar(miembros, 8)).toBeNull();
     expect(bloqueoParaQuitar(miembros, 9)).toBe(ES_LIDER_AHORA);
     expect(bloqueoParaQuitar(miembros, 7)).toBe(YA_NO_ES_MIEMBRO);
-    expect(ES_LIDER_AHORA).toBe('Esa persona es ahora el líder del equipo. Designa a otro líder antes de quitarla.');
+    expect(ES_LIDER_AHORA).toBe('Esa persona es ahora el líder del equipo. Destitúyela o nombra a otro líder antes de quitarla.');
   });
 
   it('retirar un correo pendiente', async () => {
-    const llamadas: string[] = [];
-    const falsa = {
-      async retirarCorreo(idProyecto: number, idCorreoHabilitado: number) {
-        llamadas.push(`${idProyecto}:${idCorreoHabilitado}`);
-      },
+    const llamadas: number[] = [];
+    const falsa = async (idCorreoHabilitado: number) => {
+      llamadas.push(idCorreoHabilitado);
     };
-    expect(await retirarHabilitacion(falsa, 1, { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' })).toEqual({
+    expect(await retirarHabilitacion(falsa, { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' })).toEqual({
       mensaje: { tipo: 'exito', texto: 'Se retiró la habilitación de ana@uninorte.edu.co.' },
       recargar: true,
     });
-    expect(llamadas).toEqual(['1:40']);
+    expect(llamadas).toEqual([40]);
 
-    const falla = (error: ErrorApi) => ({
-      async retirarCorreo(): Promise<void> {
-        throw error;
-      },
-    });
+    const falla = (error: ErrorApi) => async (): Promise<void> => {
+      throw error;
+    };
 
     const msg409 = 'Esa persona ya creó su cuenta. Quítala de su equipo o de los monitores del proyecto';
     expect(
-      await retirarHabilitacion(
-        falla(new ErrorApi(409, 'HABILITACION_USADA', msg409)),
-        1,
-        { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' },
-      ),
+      await retirarHabilitacion(falla(new ErrorApi(409, 'HABILITACION_USADA', msg409)), {
+        idCorreoHabilitado: 40,
+        email: 'ana@uninorte.edu.co',
+      }),
     ).toEqual({
       mensaje: { tipo: 'error', texto: msg409 },
       recargar: true,
     });
 
     expect(
-      await retirarHabilitacion(
-        falla(new ErrorApi(404, 'NO_ENCONTRADO', 'No encontrado')),
-        1,
-        { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' },
-      ),
+      await retirarHabilitacion(falla(new ErrorApi(404, 'NO_ENCONTRADO', 'No encontrado')), {
+        idCorreoHabilitado: 40,
+        email: 'ana@uninorte.edu.co',
+      }),
     ).toEqual({
       mensaje: null,
       recargar: true,
     });
 
     expect(
-      await retirarHabilitacion(
-        falla(new ErrorApi(403, 'ACCESO_DENEGADO', 'Acceso denegado')),
-        1,
-        { idCorreoHabilitado: 40, email: 'ana@uninorte.edu.co' },
-      ),
+      await retirarHabilitacion(falla(new ErrorApi(403, 'ACCESO_DENEGADO', 'Acceso denegado')), {
+        idCorreoHabilitado: 40,
+        email: 'ana@uninorte.edu.co',
+      }),
     ).toEqual({
       mensaje: { tipo: 'error', texto: 'Solo el docente del proyecto puede cambiarlo' },
       recargar: false,
     });
 
     const correos: CorreoHabilitadoVista[] = [
-      { idCorreoHabilitado: 1, email: 'a@u.edu.co', rol: 'ESTUDIANTE', idProyecto: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: false },
-      { idCorreoHabilitado: 2, email: 'b@u.edu.co', rol: 'ESTUDIANTE', idProyecto: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: true },
-      { idCorreoHabilitado: 3, email: 'c@u.edu.co', rol: 'MONITOR', idProyecto: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: false },
+      { idCorreoHabilitado: 1, email: 'a@u.edu.co', rol: 'ESTUDIANTE', idProyecto: null, idCurso: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: false },
+      { idCorreoHabilitado: 2, email: 'b@u.edu.co', rol: 'ESTUDIANTE', idProyecto: null, idCurso: 1, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: true },
+      { idCorreoHabilitado: 3, email: 'c@u.edu.co', rol: 'MONITOR', idProyecto: 1, idCurso: null, fechaHabilitacion: '2026-11-01T00:00:00Z', registrado: false },
     ];
     expect(pendientesDe(correos)).toEqual([correos[0], correos[2]]);
 
     expect(preguntaRetirarCorreo('ana@uninorte.edu.co')).toBe(
       '¿Retirar la habilitación de ana@uninorte.edu.co? Esa persona ya no podrá crear su cuenta para este proyecto. Puedes volver a habilitarla cuando quieras.',
     );
+    expect(preguntaRetirarCorreoCurso('ana@uninorte.edu.co')).toBe(
+      '¿Retirar la habilitación de ana@uninorte.edu.co? Esa persona ya no podrá crear su cuenta con este curso. Puedes volver a agregar su correo cuando quieras.',
+    );
   });
 
   it('retirarHabilitacion pide recargar en éxito (204), 404 y 409, pero no en 403 u otros errores', async () => {
-    const apiExito = {
-      async retirarCorreo() {
-        return undefined;
-      },
+    const apiExito = async () => undefined;
+    const api404 = async (): Promise<void> => {
+      throw new ErrorApi(404, 'NO_ENCONTRADO', 'No encontrado');
     };
-    const api404 = {
-      async retirarCorreo(): Promise<void> {
-        throw new ErrorApi(404, 'NO_ENCONTRADO', 'No encontrado');
-      },
+    const api409 = async (): Promise<void> => {
+      throw new ErrorApi(409, 'HABILITACION_USADA', 'Usada');
     };
-    const api409 = {
-      async retirarCorreo(): Promise<void> {
-        throw new ErrorApi(409, 'HABILITACION_USADA', 'Usada');
-      },
-    };
-    const api403 = {
-      async retirarCorreo(): Promise<void> {
-        throw new ErrorApi(403, 'ACCESO_DENEGADO', 'Denegado');
-      },
+    const api403 = async (): Promise<void> => {
+      throw new ErrorApi(403, 'ACCESO_DENEGADO', 'Denegado');
     };
 
     const c = { idCorreoHabilitado: 10, email: 'x@u.edu.co' };
-    expect((await retirarHabilitacion(apiExito, 1, c)).recargar).toBe(true);
-    expect((await retirarHabilitacion(api404, 1, c)).recargar).toBe(true);
-    expect((await retirarHabilitacion(api409, 1, c)).recargar).toBe(true);
-    expect((await retirarHabilitacion(api403, 1, c)).recargar).toBe(false);
+    expect((await retirarHabilitacion(apiExito, c)).recargar).toBe(true);
+    expect((await retirarHabilitacion(api404, c)).recargar).toBe(true);
+    expect((await retirarHabilitacion(api409, c)).recargar).toBe(true);
+    expect((await retirarHabilitacion(api403, c)).recargar).toBe(false);
+  });
+});
+
+describe('preguntas de liderazgo (bloque 51)', () => {
+  it('preguntaDestituir avisa de la votación y sus horas', () => {
+    expect(preguntaDestituir('Ana', 48)).toBe(
+      '¿Destituir a Ana como líder? El equipo queda sin líder y se abre una votación de 48 horas entre sus integrantes.',
+    );
+  });
+
+  it('preguntaNombrarConRonda avisa de que la votación se cancela', () => {
+    expect(preguntaNombrarConRonda('Luis')).toBe(
+      'Hay una votación abierta en este equipo. Si nombras a Luis como líder, la votación se cancela. ¿Continuar?',
+    );
   });
 });

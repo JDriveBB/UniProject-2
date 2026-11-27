@@ -9,13 +9,31 @@ import org.springframework.web.bind.annotation.GetMapping;
  * Lista explícita: /api/**, /interno/** y /actuator/** nunca caen aquí.
  * Las rutas desconocidas fuera de /api, /interno y /actuator las atiende ResolutorErrorSpa (404 con index.html, solo
  * si el navegador pide HTML; bloque 43).
+ * Bloque 51: cursos del docente y Mis cursos del estudiante; /equipos/{id}/votacion y /proyectos/{id}/inscripcion ya caen en /equipos/** y /proyectos/**.
  */
 @Controller
 public class ControladorSpa {
 
-    @GetMapping({"/ingresar", "/registro", "/olvide-contrasena", "/restablecer-contrasena", "/mis-tareas",
-            "/notificaciones", "/perfil", "/panel", "/reportes", "/tablero", "/ruta-critica", "/proyectos/**",
-            "/equipos/**", "/hitos/**", "/tareas/**", "/admin/**"})
+    @GetMapping({
+        "/ingresar",
+        "/registro",
+        "/olvide-contrasena",
+        "/restablecer-contrasena",
+        "/mis-tareas",
+        "/mis-cursos",
+        "/notificaciones",
+        "/perfil",
+        "/panel",
+        "/reportes",
+        "/tablero",
+        "/ruta-critica",
+        "/cursos/**",
+        "/proyectos/**",
+        "/equipos/**",
+        "/hitos/**",
+        "/tareas/**",
+        "/admin/**"
+    })
     public String spa() {
         return "forward:/index.html";
     }

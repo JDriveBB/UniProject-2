@@ -22,15 +22,33 @@ public final class EjemplosEventos {
     public static final Persona INTEGRANTE_E = new Persona(103, "Estudiante E", 900000103L);
     public static final Persona DOCENTE = new Persona(200, "Docente D", 900000200L);
     public static final UUID SOLICITUD = UUID.fromString("3f1c2a4e-8b7d-4c1e-9a2f-5d6e7f809a1b");
+    public static final Referencia CURSO = new Referencia(30, "Diseño de Software I");
+    public static final Instant CIERRE_VOTACION = Instant.parse("2026-10-26T19:05:00Z");
+    public static final Instant CIERRE_INSCRIPCION = Instant.parse("2026-10-25T17:00:00Z");
 
     public static TareaRutaCriticaRiesgo tareaRutaCriticaRiesgo() {
-        return new TareaRutaCriticaRiesgo(PROYECTO, EQUIPO, TAREA, new Referencia(101, "Estudiante A"), 40, HITO,
-                LocalDate.of(2026, 11, 5), List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM), DOCENTE);
+        return new TareaRutaCriticaRiesgo(
+                PROYECTO,
+                EQUIPO,
+                TAREA,
+                new Referencia(101, "Estudiante A"),
+                40,
+                HITO,
+                LocalDate.of(2026, 11, 5),
+                List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM),
+                DOCENTE);
     }
 
     public static EquipoInactividad equipoInactividad(boolean notificarDocente) {
-        return new EquipoInactividad(PROYECTO, EQUIPO, new Referencia(102, "Estudiante B"),
-                Instant.parse("2026-10-20T14:30:00Z"), 3, LIDER_C, DOCENTE, notificarDocente);
+        return new EquipoInactividad(
+                PROYECTO,
+                EQUIPO,
+                new Referencia(102, "Estudiante B"),
+                Instant.parse("2026-10-20T14:30:00Z"),
+                3,
+                LIDER_C,
+                DOCENTE,
+                notificarDocente);
     }
 
     public static HitoEnviado hitoEnviado() {
@@ -38,17 +56,22 @@ public final class EjemplosEventos {
     }
 
     public static HitoEvaluado hitoEvaluado(CaracterNota caracterNota) {
-        return new HitoEvaluado(PROYECTO, EQUIPO, HITO, caracterNota,
-                List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM));
+        return new HitoEvaluado(
+                PROYECTO, EQUIPO, HITO, caracterNota, List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM));
     }
 
     public static TareaReasignada tareaReasignada() {
-        return new TareaReasignada(PROYECTO, EQUIPO, TAREA, INTEGRANTE_A, INTEGRANTE_E,
-                new Referencia(100, "Estudiante C"), FECHA);
+        return new TareaReasignada(
+                PROYECTO, EQUIPO, TAREA, INTEGRANTE_A, INTEGRANTE_E, new Referencia(100, "Estudiante C"), FECHA);
     }
 
     public static TareaCorreccion tareaCorreccion() {
-        return new TareaCorreccion(PROYECTO, EQUIPO, TAREA, INTEGRANTE_A, new Referencia(100, "Estudiante C"),
+        return new TareaCorreccion(
+                PROYECTO,
+                EQUIPO,
+                TAREA,
+                INTEGRANTE_A,
+                new Referencia(100, "Estudiante C"),
                 "Falta el caso \"sin conexión\" & revisar <notas>");
     }
 
@@ -60,7 +83,48 @@ public final class EjemplosEventos {
         return new ContrasenaCambiada(INTEGRANTE_A, FECHA, origen);
     }
 
-    /** Ejemplo por defecto de cada tipo (inactividad sin docente; hito evaluado provisional). */
+    public static CursoEstudianteAgregado cursoEstudianteAgregado() {
+        return new CursoEstudianteAgregado(CURSO, "2026-2", new Referencia(200, "Docente D"), INTEGRANTE_A);
+    }
+
+    public static EquipoVotacionAbierta equipoVotacionAbierta() {
+        return new EquipoVotacionAbierta(
+                PROYECTO, EQUIPO, CIERRE_VOTACION, List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM));
+    }
+
+    public static EquipoLiderElegido equipoLiderElegido(OrigenLider origen) {
+        return new EquipoLiderElegido(
+                PROYECTO,
+                EQUIPO,
+                new Referencia(100, "Estudiante C"),
+                origen,
+                List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM),
+                DOCENTE);
+    }
+
+    public static EquipoSinLider equipoSinLider(MotivoSinLider motivo) {
+        return new EquipoSinLider(PROYECTO, EQUIPO, motivo, DOCENTE);
+    }
+
+    public static EquipoMiembroCambio equipoMiembroCambio(MovimientoEquipo movimiento, boolean porDocente) {
+        return new EquipoMiembroCambio(
+                PROYECTO,
+                EQUIPO,
+                movimiento,
+                porDocente,
+                List.of(INTEGRANTE_E),
+                List.of(LIDER_C, INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM));
+    }
+
+    public static InscripcionPorCerrar inscripcionPorCerrar() {
+        return new InscripcionPorCerrar(PROYECTO, CIERRE_INSCRIPCION, List.of(INTEGRANTE_A, INTEGRANTE_B_SIN_TELEGRAM));
+    }
+
+    public static InscripcionResumen inscripcionResumen() {
+        return new InscripcionResumen(PROYECTO, CIERRE_INSCRIPCION, 2, 3, DOCENTE);
+    }
+
+    /** Ejemplo por defecto de cada tipo (inactividad sin docente; hito evaluado provisional; líder por votación; sin líder por empate; miembro entró por docente). */
     public static DatosEvento de(TipoEvento tipo) {
         return switch (tipo) {
             case TAREA_RUTA_CRITICA_RIESGO -> tareaRutaCriticaRiesgo();
@@ -71,6 +135,13 @@ public final class EjemplosEventos {
             case TAREA_CORRECCION -> tareaCorreccion();
             case CUENTA_RECUPERACION_SOLICITADA -> recuperacionSolicitada();
             case CUENTA_CONTRASENA_CAMBIADA -> contrasenaCambiada(OrigenCambioContrasena.PERFIL);
+            case CURSO_ESTUDIANTE_AGREGADO -> cursoEstudianteAgregado();
+            case EQUIPO_VOTACION_ABIERTA -> equipoVotacionAbierta();
+            case EQUIPO_LIDER_ELEGIDO -> equipoLiderElegido(OrigenLider.VOTACION);
+            case EQUIPO_SIN_LIDER -> equipoSinLider(MotivoSinLider.EMPATE);
+            case EQUIPO_MIEMBRO_CAMBIO -> equipoMiembroCambio(MovimientoEquipo.ENTRO, true);
+            case EQUIPO_INSCRIPCION_POR_CERRAR -> inscripcionPorCerrar();
+            case EQUIPO_INSCRIPCION_RESUMEN -> inscripcionResumen();
         };
     }
 }

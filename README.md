@@ -15,7 +15,8 @@ UniProject organiza cada proyecto por hitos con fechas límite y rúbrica, calcu
 ### Docente
 - Crea y actualiza proyectos con múltiples hitos, fechas límite y rúbricas de evaluación cuyos pesos suman 100 % (**RF1**).
 - Configura alertas de inactividad por hito (días sin actividad y si desea recibir copia además del líder) (**RF6**).
-- Habilita los correos de estudiantes y monitores en el proyecto, crea equipos, invita estudiantes aún sin cuenta, designa líderes y asigna o retira monitores cuando el proyecto los habilita (**RF14**).
+- Arma **cursos** (`/cursos`) con los correos de sus estudiantes (las cuentas que ya existen entran al momento y las demás reciben un enlace de registro de un solo uso) y asigna uno o varios cursos a cada proyecto (**RF14**).
+- Crea equipos armados a mano o **equipos con cupo** (de uno en uno o en lote), configura la fecha de cierre de autoinscripción y la duración de las rondas de votación, reparte automáticamente a los estudiantes sin equipo, nombra o destituye líderes y asigna o retira monitores cuando el proyecto los habilita (**RF14**).
 - Supervisa el curso desde el panel de control del proyecto, donde se resaltan los equipos con integrantes inactivos o tareas bloqueadas por más de 48 horas (**RF10**).
 - Califica los hitos enviados según la rúbrica (nota provisional mientras no venza la fecha límite y definitiva al vencer), ajusta la nota grupal y confirma la nota individual a partir de la sugerida (**RF8**).
 - Consulta el historial del equipo y descarga el reporte de trazabilidad en PDF (**RF15**).
@@ -27,6 +28,7 @@ UniProject organiza cada proyecto por hitos con fechas límite y rúbrica, calcu
 - Reasigna tareas de forma total o parcial (dividiendo horas en una tarea nueva que hereda dependencias) ante cambios o solicitudes de apoyo (**RF11**).
 
 ### Estudiante
+- Consulta sus cursos (`/mis-cursos`), se inscribe o cambia de equipo con cupo mientras la inscripción esté abierta (`/proyectos/{id}/inscripcion`) y vota en secreto al líder de su equipo por rondas (`/equipos/{id}/votacion`).
 - Consulta sus tareas asignadas, el tablero del equipo, la gráfica de ruta crítica y la evaluación de cada hito viendo únicamente su propia nota individual (**RF3**, **RF8**, **RF13**).
 - Actualiza el porcentaje de avance y adjunta evidencias (PDF, PNG o JPEG de hasta 10 MB, o enlaces `http`/`https`) solo en sus tareas asignadas; las tareas con prerrequisitos incompletos quedan bloqueadas (**RF12**, **RF13**).
 - Solicita apoyo al líder en sus tareas asignadas y deja comentarios en tareas en curso de su equipo.
@@ -39,9 +41,10 @@ UniProject organiza cada proyecto por hitos con fechas límite y rúbrica, calcu
 - Calcula orden topológico, ruta crítica, holguras y bloqueos por dependencia cada vez que cambian tareas, avances o dependencias (**RF3**).
 - Calcula el nivel de riesgo (`BAJO`, `MEDIO`, `ALTO`) y ejecuta revisiones horarias de riesgo en ruta crítica e inactividad sin repetir alertas mientras no cambie el estado o haya nueva actividad (**RF4**, **RF6**, **RF9**).
 - Registra avisos en la bandeja web y envía notificaciones por Telegram (vía outbox y RabbitMQ) ante tareas críticas en riesgo, inactividad, envío o evaluación de hitos, reasignaciones, correcciones y eventos de cuenta (**RF4**, **RF5**, **RF6**, **RF7**, **RF8**, **RF11**).
+- Abre automáticamente la votación de líder de cada equipo sin líder al vencer el cierre de inscripción, cierra las rondas vencidas proclamando al ganador (o avisando al docente si hubo empate o cero votos) y envía recordatorios antes del cierre.
 - Registra acciones críticas y rechazos de acceso en una auditoría inmutable (**RF11**).
 
-> El acceso requiere habilitación previa del correo: el **Administrador** (creado opcionalmente al arranque mediante variables de entorno) habilita correos de docentes en `/admin/docentes`, y cada docente habilita a los estudiantes y monitores de sus proyectos.
+> El acceso requiere habilitación previa del correo: el **Administrador** (creado opcionalmente al arranque mediante variables de entorno) habilita correos de docentes en `/admin/docentes`; cada docente arma sus cursos con los correos de los estudiantes (quienes ya tienen cuenta entran al instante y los demás reciben un enlace de registro) y habilita los monitores en los proyectos que los usan.
 
 ## Arquitectura
 
@@ -116,15 +119,15 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d --build
 
 ### Cuentas demo
 
-Al arrancar el núcleo con el perfil `demo` en `UNIPROJECT_PERFILES` y una contraseña válida en `UNIPROJECT_DEMO_CONTRASENA`, `DatosDemo` / `CargaDemo` (`nucleo/src/main/java/co/uniproject/nucleo/demo/`) cargan en una transacción dos proyectos de demostración («Biblioteca digital (demo)» y «App de turnos (demo)») con cuentas ficticias bajo el dominio `@demo.uniproject.test` usando la contraseña definida en esa variable (si `UNIPROJECT_ADMIN_EMAIL` y `UNIPROJECT_ADMIN_CONTRASENA` están configuradas, `InicializadorAdministrador` crea además la cuenta `ADMINISTRADOR`):
+Al arrancar el núcleo con el perfil `demo` en `UNIPROJECT_PERFILES` y una contraseña válida en `UNIPROJECT_DEMO_CONTRASENA`, `DatosDemo` / `CargaDemo` (`nucleo/src/main/java/co/uniproject/nucleo/demo/`) cargan en una transacción el curso «Diseño de Software I (demo)» (periodo `2026-2`) y dos proyectos de demostración asignados a ese curso («Biblioteca digital (demo)» y «App de turnos (demo)») con cuentas ficticias bajo el dominio `@demo.uniproject.test` usando la contraseña definida en esa variable. En «App de turnos (demo)» la inscripción a equipos queda abierta por 7 días (con rondas de votación de 48 h), existe «Equipo Épsilon» con cupo 3 (con Camila inscrita), Felipe y Hugo permanecen sin equipo y «Equipo Gamma» tiene una votación de líder abierta con 1 voto de 2 (si `UNIPROJECT_ADMIN_EMAIL` y `UNIPROJECT_ADMIN_CONTRASENA` están configuradas, `InicializadorAdministrador` crea además la cuenta `ADMINISTRADOR`):
 
 | Rol | Correos demo | Detalle del escenario |
 |---|---|---|
-| `DOCENTE` | `docente@demo.uniproject.test` | Laura Méndez, docente de ambos proyectos demo. |
-| `ESTUDIANTE` (Líder) | `ana@demo.uniproject.test`, `diego@demo.uniproject.test` | Ana Rojas (líder Equipo Alfa y Equipo Gamma) y Diego Pérez (líder Equipo Beta; integrante en Gamma). |
-| `ESTUDIANTE` (Integrante) | `bruno@demo.uniproject.test`, `camila@demo.uniproject.test`, `elena@demo.uniproject.test`, `felipe@demo.uniproject.test`, `hugo@demo.uniproject.test` | Bruno Díaz (Alfa y líder Delta), Camila Torres (Alfa), Elena Gómez (Beta y Delta; inactividad simulada), Felipe Ruiz (Beta; apoyo solicitado) y Hugo Lara (sin equipo). |
+| `DOCENTE` | `docente@demo.uniproject.test` | Laura Méndez, docente del curso «Diseño de Software I (demo)» y de ambos proyectos demo. |
+| `ESTUDIANTE` (Líder) | `ana@demo.uniproject.test`, `diego@demo.uniproject.test` | Ana Rojas (líder Equipo Alfa y Equipo Gamma) y Diego Pérez (líder Equipo Beta; integrante en Gamma, con voto emitido en la ronda abierta). |
+| `ESTUDIANTE` (Integrante) | `bruno@demo.uniproject.test`, `camila@demo.uniproject.test`, `elena@demo.uniproject.test`, `felipe@demo.uniproject.test`, `hugo@demo.uniproject.test` | Bruno Díaz (Alfa y líder Delta), Camila Torres (Alfa y Equipo Épsilon con cupo 3), Elena Gómez (Beta y Delta; inactividad simulada), Felipe Ruiz (Beta; apoyo solicitado; sin equipo en «App de turnos») y Hugo Lara (sin equipo en ambos proyectos). |
 | `MONITOR` | `monitor@demo.uniproject.test` | Gabriela Soto, monitora en «Biblioteca digital (demo)». |
-| Pendientes de registro | `ines@demo.uniproject.test`, `jorge@demo.uniproject.test` | Correos habilitados como estudiantes sin cuenta creada aún. |
+| Pendientes de registro | `ines@demo.uniproject.test`, `jorge@demo.uniproject.test` | Correos pendientes del curso «Diseño de Software I (demo)» sin cuenta creada aún. |
 
 ## Pruebas y calidad
 

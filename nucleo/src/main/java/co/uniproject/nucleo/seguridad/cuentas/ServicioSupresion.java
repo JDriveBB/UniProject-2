@@ -111,6 +111,12 @@ public class ServicioSupresion {
         jdbc.sql("DELETE FROM notificacion WHERE id_destinatario = :id")
                 .param("id", idUsuario)
                 .update();
+        jdbc.sql("DELETE FROM miembro_curso WHERE id_usuario = :id")
+                .param("id", idUsuario)
+                .update();
+        jdbc.sql("DELETE FROM participante_proyecto WHERE id_usuario = :id")
+                .param("id", idUsuario)
+                .update();
         // Bloque 29 (decisión 29-4): el texto libre que escribió sale; el hecho sigue en log_auditoria.
         jdbc.sql("UPDATE solicitud_apoyo SET mensaje = NULL WHERE id_solicitante = :id")
                 .param("id", idUsuario)

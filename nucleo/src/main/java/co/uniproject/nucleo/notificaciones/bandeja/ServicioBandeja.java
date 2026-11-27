@@ -36,9 +36,16 @@ public class ServicioBandeja {
                     long id = rs.getLong("id_referencia");
                     long encargado = rs.getLong("id_encargado");
                     boolean esEncargadoActual = !rs.wasNull() && encargado == idUsuario;
-                    return new NotificacionVista(rs.getLong("id_notificacion"), tipo, rs.getString("mensaje"), entidad,
-                            id, enlace(tipo, entidad, id, esEncargadoActual), rs.getObject("fecha_creacion", OffsetDateTime.class).toInstant(),
-                            EstadoEnvioNotificacion.valueOf(rs.getString("estado_envio")), rs.getBoolean("leida"));
+                    return new NotificacionVista(
+                            rs.getLong("id_notificacion"),
+                            tipo,
+                            rs.getString("mensaje"),
+                            entidad,
+                            id,
+                            enlace(tipo, entidad, id, esEncargadoActual),
+                            rs.getObject("fecha_creacion", OffsetDateTime.class).toInstant(),
+                            EstadoEnvioNotificacion.valueOf(rs.getString("estado_envio")),
+                            rs.getBoolean("leida"));
                 })
                 .list();
         long noLeidas = jdbc.sql("SELECT count(*) FROM notificacion WHERE id_destinatario = :usuario AND NOT leida")
@@ -69,17 +76,25 @@ public class ServicioBandeja {
     }
 
     /**
-     * La fila de tarea.reasignada es igual para el encargado anterior y el nuevo: se distingue al leer. Quien ya no es
-     * el encargado de la tarea (el anterior) va a /mis-tareas, porque /tareas/{id} podría darle 403.
+     * Enlace web del aviso: tarea.reasignada al encargado anterior va a /mis-tareas; votación, líder y sin líder a
+     * /equipos/{id}/votacion; inscripción por cerrar a /proyectos/{id}/inscripcion; curso a /mis-cursos; proyecto a
+     * /proyectos/{id}; equipo al tablero; tarea a /tareas/{id} y hito_equipo a evaluar o evaluación.
      */
     static String enlace(String tipo, String entidad, long id, boolean esEncargadoActual) {
         if ("tarea.reasignada".equals(tipo) && !esEncargadoActual) {
             return RutasWeb.misTareas();
         }
-        return switch (entidad) {
-            case "tarea" -> RutasWeb.tarea(id);
-            case "equipo" -> RutasWeb.tableroEquipo(id);
-            default -> "hito.enviado".equals(tipo) ? RutasWeb.evaluarHito(id) : RutasWeb.evaluacionHito(id);
+        return switch (tipo) {
+            case "equipo.votacion_abierta", "equipo.lider_elegido", "equipo.sin_lider" -> RutasWeb.votacionEquipo(id);
+            case "equipo.inscripcion_por_cerrar" -> RutasWeb.inscripcionProyecto(id);
+            default ->
+                switch (entidad) {
+                    case "tarea" -> RutasWeb.tarea(id);
+                    case "equipo" -> RutasWeb.tableroEquipo(id);
+                    case "curso" -> RutasWeb.misCursos();
+                    case "proyecto" -> RutasWeb.proyecto(id);
+                    default -> "hito.enviado".equals(tipo) ? RutasWeb.evaluarHito(id) : RutasWeb.evaluacionHito(id);
+                };
         };
     }
 }

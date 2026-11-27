@@ -20,6 +20,7 @@ security:
 tags:
   - name: sesion
   - name: administracion
+  - name: cursos
   - name: proyectos
   - name: equipos
   - name: tareas
@@ -205,6 +206,219 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/cursos:
+    post:
+      tags: [cursos]
+      operationId: crearCurso
+      summary: Solo DOCENTE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCurso'}
+      responses:
+        '201':
+          description: Curso creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CursoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409':
+          description: 'CURSO_REPETIDO: ya tienes un curso con ese nombre en ese periodo'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+    get:
+      tags: [cursos]
+      operationId: listarCursos
+      summary: Cursos del docente dueño o cursos de los que el estudiante es miembro
+      responses:
+        '200':
+          description: Lista ordenada por activos primero, periodo descendente y nombre
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CursoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/cursos/{idCurso}:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+    get:
+      tags: [cursos]
+      operationId: detalleCurso
+      summary: Detalle del curso con estudiantes activos y correos pendientes. Solo el docente dueño
+      responses:
+        '200':
+          description: Detalle del curso
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CursoDetalle'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    put:
+      tags: [cursos]
+      operationId: editarCurso
+      summary: Edita nombre, periodo y descripción del curso. Solo el docente dueño
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCurso'}
+      responses:
+        '200':
+          description: Curso actualizado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CursoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409':
+          description: 'CURSO_ARCHIVADO o CURSO_REPETIDO'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+    delete:
+      tags: [cursos]
+      operationId: borrarCurso
+      summary: Borra un curso que nunca se usó en un proyecto ni en un equipo. Solo el docente dueño
+      responses:
+        '204':
+          description: Curso borrado
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409':
+          description: 'CURSO_EN_USO: ese curso ya se usó en un proyecto; archívalo en vez de borrarlo'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/cursos/{idCurso}/archivado:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+    put:
+      tags: [cursos]
+      operationId: cambiarArchivadoCurso
+      summary: Archiva o desarchiva el curso. Solo el docente dueño
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudArchivado'}
+      responses:
+        '200':
+          description: Curso actualizado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CursoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/cursos/{idCurso}/companeros:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+    get:
+      tags: [cursos]
+      operationId: listarCompanerosCurso
+      summary: Nombres de los miembros activos del curso, sin correos ni ids (Ley 1581). Docente dueño o miembro del curso
+      responses:
+        '200':
+          description: Nombres ordenados alfabéticamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CompaneroVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/cursos/{idCurso}/correos:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+    post:
+      tags: [cursos]
+      operationId: agregarCorreosCurso
+      summary: Agrega estudiantes con cuenta existente al curso y habilita el registro de los demás. Solo el docente dueño
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCorreosCurso'}
+      responses:
+        '201':
+          description: Resultado por correo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoCorreosCurso'}
+        '400':
+          description: 'VALIDACION, CUERPO_INVALIDO o CORREO_RESERVADO'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409':
+          description: 'CURSO_ARCHIVADO o CORREO_HABILITADO_EN_PARALELO'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/cursos/{idCurso}/correos/{idCorreoHabilitado}:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+      - $ref: '#/components/parameters/idCorreoHabilitado'
+    delete:
+      tags: [cursos]
+      operationId: retirarCorreoCurso
+      summary: Retira una habilitación pendiente del curso. Solo el docente dueño
+      responses:
+        '204':
+          description: Habilitación retirada
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'HABILITACION_USADA: esa persona ya creó su cuenta; quítala del curso'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/cursos/{idCurso}/correos/{idCorreoHabilitado}/enlace:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+      - $ref: '#/components/parameters/idCorreoHabilitado'
+    post:
+      tags: [cursos]
+      operationId: generarEnlaceCurso
+      summary: 'Genera un enlace de invitación de un solo uso (30 días) para una habilitación pendiente del curso; anula el anterior. Solo el docente dueño'
+      responses:
+        '200':
+          description: 'Código recién generado (Cache-Control: no-store); solo se devuelve en esta respuesta'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnlaceRegistro'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'CURSO_ARCHIVADO o HABILITACION_USADA (esa persona ya creó su cuenta; quítala del curso)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/cursos/{idCurso}/estudiantes/{idUsuario}:
+    parameters:
+      - $ref: '#/components/parameters/idCurso'
+      - $ref: '#/components/parameters/idUsuario'
+    delete:
+      tags: [cursos]
+      operationId: quitarEstudianteCurso
+      summary: Quita a un estudiante del curso y sincroniza su participación en los proyectos del curso. Solo el docente dueño
+      responses:
+        '204':
+          description: Estudiante retirado del curso
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
   /api/proyectos:
     post:
       tags: [proyectos]
@@ -268,7 +482,11 @@ paths:
         '400': {$ref: '#/components/responses/Invalida'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
-        '409': {$ref: '#/components/responses/Conflicto'}
+        '409':
+          description: 'HITOS_FUERA_DE_FECHAS o EQUIPOS_MIXTOS_INMUTABLE'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/proyectos/{idProyecto}/hitos:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
@@ -298,6 +516,7 @@ paths:
       tags: [equipos]
       operationId: crearEquipo
       summary: Crea también los hito_equipo de los hitos existentes
+      description: 'Errores: 400 CURSO_EN_PROYECTO_MIXTO o CURSO_REQUERIDO; 409 PROYECTO_SIN_CURSOS, CURSO_NO_ASIGNADO o EQUIPO_REPETIDO'
       requestBody:
         required: true
         content:
@@ -313,13 +532,90 @@ paths:
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/equipos/lote:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [equipos]
+      operationId: crearEquiposEnLote
+      summary: Crea varios equipos con cupo en un solo paso. Solo el docente dueño
+      description: 'Errores: 400 CURSO_EN_PROYECTO_MIXTO o CURSO_REQUERIDO; 409 PROYECTO_SIN_CURSOS, CURSO_NO_ASIGNADO, SIN_ESTUDIANTES_SIN_EQUIPO, DEMASIADOS_EQUIPOS o EQUIPO_REPETIDO'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudEquiposLote'}
+      responses:
+        '201':
+          description: Equipos creados en orden de numeración
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/proyectos/{idProyecto}/equipos/reparto:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    post:
+      tags: [equipos]
+      operationId: repartirEquipos
+      summary: Reparte automáticamente a los participantes sin equipo entre equipos con cupo libre respetando el curso. Solo el docente dueño
+      description: Reparte sin pasar el cupo de ningún equipo y devuelve los asignados y los que quedaron sin cupo
+      responses:
+        '200':
+          description: Resultado del reparto automático
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoReparto'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/inscripcion:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [equipos]
+      operationId: vistaInscripcion
+      summary: Estado de autoinscripción a equipos del proyecto y equipos visibles (sin correos ni ids de usuario)
+      description: Visible para quienes pueden ver el proyecto; en proyectos no mixtos el participante ve solo equipos de su curso más el suyo
+      responses:
+        '200':
+          description: Vista de autoinscripción
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InscripcionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    put:
+      tags: [equipos]
+      operationId: configurarInscripcion
+      summary: Configura la fecha de cierre de autoinscripción y las horas de ronda de líder. Solo el docente dueño
+      description: 'Errores: 400 CIERRE_EN_EL_PASADO o VALIDACION; 409 INSCRIPCION_YA_CERRADA (si ya se abrieron las rondas de líder)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudInscripcion'}
+      responses:
+        '200':
+          description: Configuración actualizada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InscripcionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
   /api/proyectos/{idProyecto}/correos:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
     post:
       tags: [proyectos]
       operationId: habilitarCorreos
-      summary: Habilita correos de ESTUDIANTE o MONITOR en el proyecto (K2)
+      summary: Habilita correos de MONITOR en el proyecto (solo MONITOR; los estudiantes entran por sus cursos)
       requestBody:
         required: true
         content:
@@ -331,7 +627,11 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ResultadoHabilitacion'}
-        '400': {$ref: '#/components/responses/Invalida'}
+        '400':
+          description: 'VALIDACION, CUERPO_INVALIDO, ROL_INVALIDO o CORREO_RESERVADO'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '409': {$ref: '#/components/responses/Conflicto'}
@@ -389,16 +689,56 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RespuestaError'}
+  /api/proyectos/{idProyecto}/cursos:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+    get:
+      tags: [proyectos]
+      operationId: listarCursosProyecto
+      summary: Cursos asignados al proyecto en orden ascendente de id. Solo el docente dueño
+      responses:
+        '200':
+          description: Cursos asignados
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CursoResumen'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    put:
+      tags: [proyectos]
+      operationId: asignarCursosProyecto
+      summary: Asigna los cursos del proyecto (con 2 o más cursos y confirmar=false devuelve vista previa sin aplicar). Solo el docente dueño
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCursosProyecto'}
+      responses:
+        '200':
+          description: Resultado de la asignación o vista previa con estudiantes repetidos
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ResultadoCursosProyecto'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409':
+          description: 'CURSO_ARCHIVADO: uno de los cursos nuevos está archivado'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/proyectos/{idProyecto}/estudiantes:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
     get:
       tags: [proyectos]
       operationId: listarEstudiantes
-      summary: 'Correos de ESTUDIANTE habilitados en el proyecto, con o sin cuenta, con su equipo o su invitación (D-11, D-12). Solo el docente dueño'
+      summary: 'Participantes de los cursos del proyecto con el curso con que cuentan y su equipo. Solo el docente dueño'
       responses:
         '200':
-          description: Estudiantes habilitados, ordenados por correo
+          description: Participantes del proyecto, ordenados por nombre y correo
           content:
             application/json:
               schema:
@@ -406,13 +746,41 @@ paths:
                 items: {$ref: '#/components/schemas/EstudianteProyectoVista'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+  /api/proyectos/{idProyecto}/estudiantes/{idUsuario}/curso:
+    parameters:
+      - $ref: '#/components/parameters/idProyecto'
+      - $ref: '#/components/parameters/idUsuario'
+    put:
+      tags: [proyectos]
+      operationId: elegirCursoEstudiante
+      summary: Elige con qué curso cuenta un estudiante participante del proyecto. Solo el docente dueño
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCursoEstudiante'}
+      responses:
+        '200':
+          description: Vista actualizada del estudiante participante
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EstudianteProyectoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
+        '409':
+          description: 'CURSO_NO_VALIDO o EQUIPO_DE_OTRO_CURSO'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/proyectos/{idProyecto}/estudiantes-disponibles:
     parameters:
       - $ref: '#/components/parameters/idProyecto'
     get:
       tags: [proyectos]
       operationId: listarEstudiantesDisponibles
-      summary: 'Cuentas de ESTUDIANTE sin equipo ni habilitación de estudiante en el proyecto (T-046). Solo el docente dueño'
+      summary: 'Participantes de los cursos del proyecto sin equipo en el proyecto. Solo el docente dueño'
       responses:
         '200':
           description: Estudiantes disponibles (solo correo y nombre), ordenados por nombre y correo
@@ -549,6 +917,7 @@ paths:
     post:
       tags: [equipos]
       operationId: agregarMiembro
+      description: 'Errores: 409 ESTUDIANTE_SIN_CURSO, YA_TIENE_EQUIPO, CURSO_DEL_EQUIPO o CUPO_LLENO (se repite con pasarCupo: true para confirmar)'
       requestBody:
         required: true
         content:
@@ -580,38 +949,13 @@ paths:
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
         '404': {$ref: '#/components/responses/NoEncontrado'}
-  /api/equipos/{idEquipo}/invitaciones:
-    parameters:
-      - $ref: '#/components/parameters/idEquipo'
-    post:
-      tags: [equipos]
-      operationId: invitarAlEquipo
-      summary: 'Invita al equipo a un estudiante habilitado que aún no tiene cuenta: entra al equipo cuando se registra (D-12 20A). Invitarlo otra vez al mismo equipo no cambia nada. Solo el docente dueño'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/SolicitudInvitacion'}
-      responses:
-        '201':
-          description: Estudiante invitado al equipo
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/EstudianteProyectoVista'}
-        '400': {$ref: '#/components/responses/Invalida'}
-        '401': {$ref: '#/components/responses/NoAutenticado'}
-        '403': {$ref: '#/components/responses/Prohibido'}
-        '409':
-          description: 'CORREO_NO_HABILITADO (no está habilitado como estudiante en el proyecto), YA_TIENE_CUENTA (se agrega con /miembros) o YA_INVITADO (ya está invitado a otro equipo del proyecto)'
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/equipos/{idEquipo}/lider:
     parameters:
       - $ref: '#/components/parameters/idEquipo'
     put:
       tags: [equipos]
       operationId: cambiarLider
+      description: 'Nombra líder a un integrante del equipo; si hay una votación sin cerrar, se cancela. Errores: 409 NO_ES_MIEMBRO'
       requestBody:
         required: true
         content:
@@ -626,6 +970,147 @@ paths:
         '400': {$ref: '#/components/responses/Invalida'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    delete:
+      tags: [equipos]
+      operationId: destituirLider
+      summary: Destituye al líder del equipo y lo deja sin líder. Solo el docente dueño
+      description: 'Deja el equipo sin líder y abre una votación si no hay una abierta. Errores: 409 SIN_LIDER si el equipo no tiene líder'
+      responses:
+        '200':
+          description: Equipo sin líder
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/ronda:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    get:
+      tags: [equipos]
+      operationId: vistaVotacion
+      summary: Estado actual de la votación de líder del equipo
+      description: 'Visible para quienes pueden ver el equipo (integrantes, docente dueño y monitor activo); no expone correos ni votos de terceros ni conteo por candidato mientras la ronda no esté cerrada'
+      responses:
+        '200':
+          description: Estado de votación de líder del equipo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+    post:
+      tags: [equipos]
+      operationId: abrirRonda
+      summary: Abre una ronda de votación de líder a demanda. Solo el docente dueño
+      description: 'Si había una ronda vencida sin cerrar, la cierra primero con su resultado y abre la nueva. Errores: 409 EQUIPO_SIN_INTEGRANTES o RONDA_ABIERTA'
+      responses:
+        '201':
+          description: Ronda abierta
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/ronda/voto:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: votarLider
+      summary: Registra o cambia el voto del integrante en la ronda abierta
+      description: 'Solo integrantes actuales del equipo (docente y monitor reciben 403). Errores: 400 VALIDACION; 409 SIN_RONDA_ABIERTA o CANDIDATO_NO_VALIDO'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudVoto'}
+      responses:
+        '200':
+          description: Estado actualizado de la votación
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/ronda/desempate:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: desempatarLider
+      summary: El docente dueño elige al líder entre los empatados de la última ronda
+      description: 'Errores: 400 VALIDACION; 409 SIN_EMPATE, EMPATE_RESUELTO o NO_ESTA_EMPATADO'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudDesempate'}
+      responses:
+        '200':
+          description: Estado de la votación tras elegir al líder
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VotacionVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+  /api/equipos/{idEquipo}/cupo:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    put:
+      tags: [equipos]
+      operationId: cambiarCupo
+      summary: Cambia el cupo del equipo (null lo convierte en manual). Solo el docente dueño
+      description: Permite reducir el cupo por debajo de los integrantes actuales sin sacar a nadie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SolicitudCupo'}
+      responses:
+        '200':
+          description: Equipo con el nuevo cupo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '400': {$ref: '#/components/responses/Invalida'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+  /api/equipos/{idEquipo}/inscripcion:
+    parameters:
+      - $ref: '#/components/parameters/idEquipo'
+    post:
+      tags: [equipos]
+      operationId: unirseEquipo
+      summary: Un estudiante participante se une a un equipo con cupo mientras la inscripción está abierta
+      description: 'Errores: 409 EQUIPO_SIN_INSCRIPCION, INSCRIPCION_CERRADA, YA_TIENE_EQUIPO, CURSO_DEL_EQUIPO o EQUIPO_LLENO'
+      responses:
+        '200':
+          description: Equipo con el nuevo integrante
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EquipoVista'}
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '409': {$ref: '#/components/responses/Conflicto'}
+    delete:
+      tags: [equipos]
+      operationId: salirseEquipo
+      summary: Un estudiante sale de un equipo con cupo mientras la inscripción está abierta y no tenga tareas asignadas
+      description: 'Errores: 404 NO_ENCONTRADO si no está en el equipo; 409 EQUIPO_SIN_INSCRIPCION, INSCRIPCION_CERRADA o TIENE_TAREAS'
+      responses:
+        '204':
+          description: Salida registrada
+        '401': {$ref: '#/components/responses/NoAutenticado'}
+        '403': {$ref: '#/components/responses/Prohibido'}
+        '404': {$ref: '#/components/responses/NoEncontrado'}
         '409': {$ref: '#/components/responses/Conflicto'}
   /api/equipos/{idEquipo}/historial:
     parameters:
@@ -1274,6 +1759,7 @@ components:
       in: cookie
       name: JSESSIONID
   parameters:
+    idCurso: {name: idCurso, in: path, required: true, schema: {type: integer, format: int64}}
     idProyecto: {name: idProyecto, in: path, required: true, schema: {type: integer, format: int64}}
     idMonitor: {name: idMonitor, in: path, required: true, schema: {type: integer, format: int64}}
     idCorreoHabilitado: {name: idCorreoHabilitado, in: path, required: true, schema: {type: integer, format: int64}}
@@ -1399,8 +1885,98 @@ components:
         email: {type: string}
         rol: {$ref: '#/components/schemas/RolPlataforma'}
         idProyecto: {$ref: '#/components/schemas/IdNulo'}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
         fechaHabilitacion: {$ref: '#/components/schemas/Instante'}
         registrado: {type: boolean}
+    SolicitudCurso:
+      type: object
+      required: [nombre, periodo]
+      properties:
+        nombre: {type: string, maxLength: 150}
+        periodo: {type: string, maxLength: 20}
+        descripcion: {type: [string, 'null'], maxLength: 2000}
+    SolicitudArchivado:
+      type: object
+      required: [archivado]
+      properties:
+        archivado: {type: boolean}
+    SolicitudCorreosCurso:
+      type: object
+      required: [emails]
+      properties:
+        emails: {type: array, minItems: 1, maxItems: 200, items: {type: string, format: email, maxLength: 254}}
+    CursoResumen:
+      type: object
+      properties:
+        idCurso: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        periodo: {type: string}
+        archivado: {type: boolean}
+    ProyectoResumen:
+      type: object
+      properties:
+        idProyecto: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+    CursoVista:
+      type: object
+      properties:
+        idCurso: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        periodo: {type: string}
+        descripcion: {$ref: '#/components/schemas/TextoNulo'}
+        archivado: {type: boolean}
+        nombreDocente: {type: string}
+        estudiantes: {type: integer}
+        proyectos: {type: array, items: {$ref: '#/components/schemas/ProyectoResumen'}}
+    EstudianteCursoVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        email: {type: string}
+        fechaIngreso: {$ref: '#/components/schemas/Instante'}
+    CursoDetalle:
+      type: object
+      properties:
+        curso: {$ref: '#/components/schemas/CursoVista'}
+        estudiantes: {type: array, items: {$ref: '#/components/schemas/EstudianteCursoVista'}}
+        pendientes: {type: array, items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}}
+    CompaneroVista:
+      type: object
+      properties:
+        nombre: {type: string}
+    ResultadoCorreosCurso:
+      type: object
+      properties:
+        agregados: {type: array, items: {type: string}}
+        habilitados: {type: array, items: {$ref: '#/components/schemas/CorreoHabilitadoVista'}}
+        yaEnCurso: {type: array, items: {type: string}}
+        conOtroRol: {type: array, items: {type: string}}
+    SolicitudCursosProyecto:
+      type: object
+      required: [idsCursos]
+      properties:
+        idsCursos: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/Id'}}
+        confirmar: {type: boolean}
+    EstudianteRepetidoVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        email: {type: string}
+        cursos: {type: array, items: {$ref: '#/components/schemas/CursoResumen'}}
+        idCursoQueCuenta: {$ref: '#/components/schemas/Id'}
+    ResultadoCursosProyecto:
+      type: object
+      properties:
+        aplicado: {type: boolean}
+        cursos: {type: array, items: {$ref: '#/components/schemas/CursoResumen'}}
+        repetidos: {type: array, items: {$ref: '#/components/schemas/EstudianteRepetidoVista'}}
+    SolicitudCursoEstudiante:
+      type: object
+      required: [idCurso]
+      properties:
+        idCurso: {$ref: '#/components/schemas/Id'}
     EnlaceRegistro:
       type: object
       required: [codigo, venceEn]
@@ -1416,6 +1992,7 @@ components:
         fechaInicio: {$ref: '#/components/schemas/Fecha'}
         fechaFin: {$ref: '#/components/schemas/Fecha'}
         usaMonitores: {type: boolean}
+        equiposMixtos: {type: [boolean, 'null']}
     ProyectoVista:
       type: object
       properties:
@@ -1426,6 +2003,9 @@ components:
         fechaInicio: {$ref: '#/components/schemas/Fecha'}
         fechaFin: {$ref: '#/components/schemas/Fecha'}
         usaMonitores: {type: boolean}
+        equiposMixtos: {type: boolean}
+        cierreEquipos: {$ref: '#/components/schemas/InstanteNulo'}
+        horasRonda: {type: integer}
     ProyectoDetalle:
       type: object
       properties:
@@ -1484,29 +2064,80 @@ components:
       required: [nombreEquipo]
       properties:
         nombreEquipo: {type: string, maxLength: 100}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        cupo: {type: [integer, 'null'], minimum: 1, maximum: 100}
+    SolicitudEquiposLote:
+      type: object
+      required: [prefijo, cupo]
+      properties:
+        prefijo: {type: string, maxLength: 90}
+        cantidad: {type: [integer, 'null'], minimum: 1, maximum: 50}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        cupo: {type: integer, minimum: 1, maximum: 100}
+    SolicitudCupo:
+      type: object
+      properties:
+        cupo: {type: [integer, 'null'], minimum: 1, maximum: 100}
+    SolicitudInscripcion:
+      type: object
+      required: [horasRonda]
+      properties:
+        cierreEquipos: {$ref: '#/components/schemas/InstanteNulo'}
+        horasRonda: {type: integer, minimum: 1, maximum: 336}
+    InscripcionVista:
+      type: object
+      properties:
+        cierreEquipos: {$ref: '#/components/schemas/InstanteNulo'}
+        horasRonda: {type: integer}
+        abierta: {type: boolean}
+        idCursoQueCuenta: {$ref: '#/components/schemas/IdNulo'}
+        idMiEquipo: {$ref: '#/components/schemas/IdNulo'}
+        equipos: {type: array, items: {$ref: '#/components/schemas/EquipoInscripcionVista'}}
+    EquipoInscripcionVista:
+      type: object
+      properties:
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        nombreCurso: {$ref: '#/components/schemas/TextoNulo'}
+        cupo: {type: [integer, 'null']}
+        integrantes: {type: integer}
+        nombres: {type: array, items: {type: string}}
+        puedeUnirse: {type: boolean}
+    AsignacionRepartoVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        nombreEquipo: {type: string}
+    ResultadoReparto:
+      type: object
+      properties:
+        asignados: {type: array, items: {$ref: '#/components/schemas/AsignacionRepartoVista'}}
+        sinCupo: {type: array, items: {$ref: '#/components/schemas/EstudianteDisponibleVista'}}
     SolicitudMiembro:
       type: object
       required: [email]
       properties:
         email: {type: string, format: email, maxLength: 254}
-    SolicitudInvitacion:
-      type: object
-      required: [email]
-      properties:
-        email: {type: string, format: email, maxLength: 254}
+        pasarCupo: {type: [boolean, 'null']}
     EstudianteProyectoVista:
       type: object
       properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
         email: {type: string}
-        nombre: {$ref: '#/components/schemas/TextoNulo'}
-        registrado: {type: boolean}
+        nombre: {type: string}
+        idCurso: {$ref: '#/components/schemas/Id'}
+        nombreCurso: {type: string}
         idEquipo: {$ref: '#/components/schemas/IdNulo'}
-        idEquipoInvitado: {$ref: '#/components/schemas/IdNulo'}
     EstudianteDisponibleVista:
       type: object
       properties:
         email: {type: string}
         nombre: {type: string}
+        idCurso: {$ref: '#/components/schemas/Id'}
+        nombreCurso: {type: string}
     SolicitudLider:
       type: object
       required: [idUsuario]
@@ -1520,6 +2151,8 @@ components:
         nombreEquipo: {type: string}
         miembros: {type: array, items: {$ref: '#/components/schemas/MiembroVista'}}
         hitos: {type: array, items: {$ref: '#/components/schemas/HitoEquipoVista'}}
+        idCurso: {$ref: '#/components/schemas/IdNulo'}
+        cupo: {type: [integer, 'null']}
     MiembroVista:
       type: object
       properties:
@@ -1935,3 +2568,54 @@ components:
         notaSugerida: {type: [number, 'null'], description: Nula para el propio estudiante}
         notaFinal: {$ref: '#/components/schemas/DecimalNulo'}
         fechaConfirmacion: {$ref: '#/components/schemas/InstanteNulo'}
+    OrigenRonda: {type: string, enum: [PROGRAMADA, DEMANDA]}
+    ResultadoRonda: {type: string, enum: [LIDER_ELEGIDO, EMPATE, SIN_VOTOS, CANCELADA]}
+    SolicitudVoto:
+      type: object
+      required: [idCandidato]
+      properties:
+        idCandidato: {$ref: '#/components/schemas/Id'}
+    SolicitudDesempate:
+      type: object
+      required: [idUsuario]
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+    CandidatoVista:
+      type: object
+      properties:
+        idUsuario: {$ref: '#/components/schemas/Id'}
+        nombre: {type: string}
+        votos: {type: [integer, 'null']}
+        empatado: {type: boolean}
+    RondaVista:
+      type: object
+      properties:
+        idRonda: {$ref: '#/components/schemas/Id'}
+        origen: {$ref: '#/components/schemas/OrigenRonda'}
+        abreEn: {$ref: '#/components/schemas/Instante'}
+        cierraEn: {$ref: '#/components/schemas/Instante'}
+        cerradaEn: {$ref: '#/components/schemas/InstanteNulo'}
+        abierta: {type: boolean}
+        resultado:
+          oneOf:
+            - $ref: '#/components/schemas/ResultadoRonda'
+            - type: 'null'
+        idLiderElegido: {$ref: '#/components/schemas/IdNulo'}
+        nombreLiderElegido: {$ref: '#/components/schemas/TextoNulo'}
+        votosEmitidos: {type: integer}
+        votantes: {type: integer}
+        miVoto: {$ref: '#/components/schemas/IdNulo'}
+        puedoVotar: {type: boolean}
+        candidatos: {type: array, items: {$ref: '#/components/schemas/CandidatoVista'}}
+    VotacionVista:
+      type: object
+      properties:
+        idEquipo: {$ref: '#/components/schemas/Id'}
+        idLiderActual: {$ref: '#/components/schemas/IdNulo'}
+        nombreLiderActual: {$ref: '#/components/schemas/TextoNulo'}
+        ronda:
+          oneOf:
+            - $ref: '#/components/schemas/RondaVista'
+            - type: 'null'
+        puedeAbrir: {type: boolean}
+        puedeDesempatar: {type: boolean}

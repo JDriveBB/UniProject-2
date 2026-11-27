@@ -6,24 +6,17 @@ import co.uniproject.nucleo.ApiIntegracionBase;
 import co.uniproject.nucleo.seguridad.cuentas.ServicioSupresion;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** T-046: listado de cuentas de estudiante disponibles para agregar a un equipo (sin habilitar ni en otro equipo). */
+/** Listado de participantes de los cursos del proyecto disponibles (sin equipo en el proyecto). */
 class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-
-    private static String correos(String rol, String... emails) {
-        return "{\"emails\":[" + Arrays.stream(emails).map(e -> "\"" + e + "\"").collect(Collectors.joining(","))
-                + "],\"rol\":\"" + rol + "\"}";
-    }
 
     private Navegador docente() {
         String email = correoUnico("docente");
@@ -31,12 +24,11 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         return sesion(email);
     }
 
-    private long crearProyecto(Navegador docente, boolean usaMonitores) {
+    private long crearProyecto(Navegador docente) {
         HttpResponse<String> r = docente.post(
                 "/api/proyectos",
                 "{\"nombre\":\"Proyecto de prueba\","
-                        + "\"fechaInicio\":\"2026-08-03\",\"fechaFin\":\"2026-11-27\",\"usaMonitores\":" + usaMonitores
-                        + "}");
+                        + "\"fechaInicio\":\"2026-08-03\",\"fechaFin\":\"2026-11-27\",\"usaMonitores\":false}");
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
         return numero(r.body(), "idProyecto");
     }
@@ -48,63 +40,58 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         return numero(r.body(), "idEquipo");
     }
 
-    private void habilitar(Navegador docente, long idProyecto, String rol, String... emails) {
-        HttpResponse<String> r = docente.post("/api/proyectos/" + idProyecto + "/correos", correos(rol, emails));
-        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
-    }
-
     private void agregarMiembro(Navegador docente, long idEquipo, String email) {
         HttpResponse<String> r =
                 docente.post("/api/equipos/" + idEquipo + "/miembros", "{\"email\":\"" + email + "\"}");
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
     }
 
-    private static Map<String, String> leerDisponibles(String json) {
+    private static Map<String, JsonNode> leerDisponibles(String json) {
         JsonNode lista = JSON.readTree(json);
         assertThat(lista.isArray()).isTrue();
-        Map<String, String> porCorreo = new LinkedHashMap<>();
+        Map<String, JsonNode> porCorreo = new LinkedHashMap<>();
         for (JsonNode elemento : lista) {
             assertThat(elemento.isObject()).isTrue();
-            assertThat(elemento.size()).isEqualTo(2);
+            assertThat(elemento.size()).isEqualTo(4);
             assertThat(elemento.has("email")).isTrue();
             assertThat(elemento.has("nombre")).isTrue();
+            assertThat(elemento.has("idCurso")).isTrue();
+            assertThat(elemento.has("nombreCurso")).isTrue();
             String email = JSON.treeToValue(elemento.get("email"), String.class);
-            String nombre = JSON.treeToValue(elemento.get("nombre"), String.class);
-            porCorreo.put(email, nombre);
+            porCorreo.put(email, elemento);
         }
         return porCorreo;
     }
 
     @Test
-    void listaCuentasDeEstudianteSinEquipoNiHabilitacionYSoloEmailYNombre() {
-        String emailDocente = correoUnico("docente");
-        crearUsuario("Docente Duena", emailDocente, "DOCENTE");
-        Navegador docente = sesion(emailDocente);
+    void listaSoloParticipantesDelProyectoSinEquipo() {
+        Navegador docente = docente();
+        Navegador otraDocente = docente();
 
-        long idProyecto = crearProyecto(docente, false);
-        long idA = crearEquipo(docente, idProyecto, "Equipo A");
-        long otroProyecto = crearProyecto(docente, false);
-        long idOtro = crearEquipo(docente, otroProyecto, "Equipo Otro");
+        long idProyecto = crearProyecto(docente);
+        long cursoAsignado = crearCurso(docente, "Curso Asignado");
+        long cursoSinAsignar = crearCurso(docente, "Curso Sin Asignar");
+        long cursoAjeno = crearCurso(otraDocente, "Curso Ajeno");
+        asignarCursos(docente, idProyecto, cursoAsignado);
+        long idEquipo = crearEquipo(docente, idProyecto, "Equipo A");
 
-        String libre = correoUnico("libre");
-        crearUsuario("Zulma Libre", libre, "ESTUDIANTE");
+        String libreZ = correoUnico("librez");
+        crearUsuario("Zulma Libre", libreZ, "ESTUDIANTE");
+        String libreA = correoUnico("librea");
+        crearUsuario("Alicia Libre", libreA, "ESTUDIANTE");
         String conEquipo = correoUnico("conequipo");
         crearUsuario("Carlos Con Equipo", conEquipo, "ESTUDIANTE");
-        String habilitado = correoUnico("habilitado");
-        crearUsuario("Beto Habilitado", habilitado, "ESTUDIANTE");
-        String enOtro = correoUnico("enotro");
-        crearUsuario("Alicia En Otro", enOtro, "ESTUDIANTE");
-        String otraDocente = correoUnico("otradocente");
-        crearUsuario("Otra Docente", otraDocente, "DOCENTE");
-        String monitor = correoUnico("monitor");
-        crearUsuario("Mario Monitor", monitor, "MONITOR");
+        String otroCursoMismoDoc = correoUnico("otrocurso");
+        crearUsuario("Beto Otro Curso", otroCursoMismoDoc, "ESTUDIANTE");
+        String otroDocenteEst = correoUnico("otrodoc");
+        crearUsuario("Diana Otro Docente", otroDocenteEst, "ESTUDIANTE");
         String suprimido = correoUnico("suprimido");
         long idSuprimido = crearUsuario("Suprimido Prueba", suprimido, "ESTUDIANTE");
 
-        habilitar(docente, idProyecto, "ESTUDIANTE", conEquipo, habilitado);
-        agregarMiembro(docente, idA, conEquipo);
-        habilitar(docente, otroProyecto, "ESTUDIANTE", enOtro);
-        agregarMiembro(docente, idOtro, enOtro);
+        agregarAlCurso(docente, cursoAsignado, libreZ, libreA, conEquipo, suprimido);
+        agregarAlCurso(docente, cursoSinAsignar, otroCursoMismoDoc);
+        agregarAlCurso(otraDocente, cursoAjeno, otroDocenteEst);
+        agregarMiembro(docente, idEquipo, conEquipo);
 
         HttpResponse<String> supresion =
                 sesion(suprimido).post("/api/perfil/supresion", "{\"contrasena\":\"" + CLAVE + "\"}");
@@ -113,40 +100,41 @@ class EstudiantesDisponiblesIntegracionTest extends ApiIntegracionBase {
         HttpResponse<String> respuesta = docente.get("/api/proyectos/" + idProyecto + "/estudiantes-disponibles");
         assertThat(respuesta.statusCode()).as(respuesta.body()).isEqualTo(200);
 
-        Map<String, String> disponibles = leerDisponibles(respuesta.body());
+        Map<String, JsonNode> disponibles = leerDisponibles(respuesta.body());
         assertThat(disponibles)
-                .containsEntry(libre, "Zulma Libre")
-                .containsEntry(enOtro, "Alicia En Otro")
+                .containsKeys(libreA, libreZ)
                 .doesNotContainKeys(
                         conEquipo,
-                        habilitado,
-                        emailDocente,
-                        otraDocente,
-                        monitor,
+                        otroCursoMismoDoc,
+                        otroDocenteEst,
                         suprimido,
                         ServicioSupresion.correoAnonimo(idSuprimido));
+        assertThat(disponibles.get(libreA).get("nombre").asString()).isEqualTo("Alicia Libre");
+        assertThat(disponibles.get(libreA).get("idCurso").asLong()).isEqualTo(cursoAsignado);
+        assertThat(disponibles.get(libreA).get("nombreCurso").asString()).isEqualTo("Curso Asignado");
+        assertThat(disponibles.get(libreZ).get("nombre").asString()).isEqualTo("Zulma Libre");
+        assertThat(disponibles.get(libreZ).get("idCurso").asLong()).isEqualTo(cursoAsignado);
+        assertThat(disponibles.get(libreZ).get("nombreCurso").asString()).isEqualTo("Curso Asignado");
         List<String> orden = new ArrayList<>(disponibles.keySet());
-        assertThat(orden.indexOf(enOtro)).isLessThan(orden.indexOf(libre));
+        assertThat(orden).containsExactly(libreA, libreZ);
 
-        // Como lo hace la web: habilitar con rol ESTUDIANTE y agregar al equipo; deja de aparecer en disponibles.
-        habilitar(docente, idProyecto, "ESTUDIANTE", libre);
-        agregarMiembro(docente, idA, libre);
-
+        agregarMiembro(docente, idEquipo, libreZ);
         HttpResponse<String> trasAgregar = docente.get("/api/proyectos/" + idProyecto + "/estudiantes-disponibles");
         assertThat(trasAgregar.statusCode()).as(trasAgregar.body()).isEqualTo(200);
-        assertThat(leerDisponibles(trasAgregar.body())).doesNotContainKey(libre);
+        assertThat(leerDisponibles(trasAgregar.body())).containsOnlyKeys(libreA);
     }
 
     @Test
     void soloLaDocenteDuenaDelProyectoPuedeListarDisponibles() {
         Navegador docente = docente();
-        long idProyecto = crearProyecto(docente, false);
-        long idA = crearEquipo(docente, idProyecto, "Equipo A");
-
+        long idProyecto = crearProyecto(docente);
+        long curso = crearCurso(docente, "Curso Permisos");
         String estudianteCorreo = correoUnico("est");
         crearUsuario("Estudiante Prueba", estudianteCorreo, "ESTUDIANTE");
-        habilitar(docente, idProyecto, "ESTUDIANTE", estudianteCorreo);
-        agregarMiembro(docente, idA, estudianteCorreo);
+        agregarAlCurso(docente, curso, estudianteCorreo);
+        asignarCursos(docente, idProyecto, curso);
+        long idEquipo = crearEquipo(docente, idProyecto, "Equipo A");
+        agregarMiembro(docente, idEquipo, estudianteCorreo);
 
         Navegador otraDocente = docente();
         Navegador estudiante = sesion(estudianteCorreo);

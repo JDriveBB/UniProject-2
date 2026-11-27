@@ -23,6 +23,9 @@ public class CorreoHabilitado {
     @Column(name = "id_proyecto")
     private Long idProyecto;
 
+    @Column(name = "id_curso")
+    private Long idCurso;
+
     @Column(name = "email")
     private String email;
 
@@ -41,10 +44,6 @@ public class CorreoHabilitado {
 
     @Column(name = "fecha_uso")
     private Instant fechaUso;
-
-    /** V8 (D-12 20A): equipo al que entra el estudiante al crear su cuenta; null = sin invitación. */
-    @Column(name = "id_equipo_invitado")
-    private Long idEquipoInvitado;
 
     /** V9 (D-15 5A): enlace de invitación de un solo uso; los tres nulos cuando aún no se genera o tras registrarse. */
     @Column(name = "enlace_selector")
@@ -70,6 +69,14 @@ public class CorreoHabilitado {
 
     public void setIdProyecto(Long idProyecto) {
         this.idProyecto = idProyecto;
+    }
+
+    public Long getIdCurso() {
+        return idCurso;
+    }
+
+    public void setIdCurso(Long idCurso) {
+        this.idCurso = idCurso;
     }
 
     public String getEmail() {
@@ -118,14 +125,6 @@ public class CorreoHabilitado {
 
     public void setFechaUso(Instant fechaUso) {
         this.fechaUso = fechaUso;
-    }
-
-    public Long getIdEquipoInvitado() {
-        return idEquipoInvitado;
-    }
-
-    public void setIdEquipoInvitado(Long idEquipoInvitado) {
-        this.idEquipoInvitado = idEquipoInvitado;
     }
 
     public byte[] getEnlaceSelector() {

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { decimalEsCo, fechaCorta, fechaDia, fechaHora, fechaIsoBogota, rangoFechas } from './formato';
+import {
+  decimalEsCo,
+  fechaCorta,
+  fechaDia,
+  fechaHora,
+  fechaIsoBogota,
+  instanteDeValorLocal,
+  rangoFechas,
+  valorLocalBogota,
+} from './formato';
 
 describe('fechaCorta', () => {
   it('usa la hora de Bogotá (UTC-5) y acepta microsegundos', () => {
@@ -49,3 +58,23 @@ describe('fechaIsoBogota', () => {
   });
 });
 
+
+describe('valorLocalBogota e instanteDeValorLocal', () => {
+  it('convierte entre el campo datetime-local y el instante UTC', () => {
+    expect(instanteDeValorLocal('2026-11-30T17:00')).toBe('2026-11-30T22:00:00.000Z');
+    expect(valorLocalBogota('2026-11-30T22:00:00Z')).toBe('2026-11-30T17:00');
+  });
+
+  it('ida y vuelta', () => {
+    const instante = instanteDeValorLocal('2026-12-01T08:30');
+    expect(instante).not.toBeNull();
+    expect(valorLocalBogota(instante as string)).toBe('2026-12-01T08:30');
+  });
+
+  it('rechaza lo que no es un valor local', () => {
+    expect(instanteDeValorLocal('')).toBeNull();
+    expect(instanteDeValorLocal('30/11/2026')).toBeNull();
+    expect(instanteDeValorLocal('2026-13-45T99:99')).toBeNull();
+    expect(valorLocalBogota('x')).toBe('');
+  });
+});

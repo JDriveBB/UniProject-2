@@ -7,14 +7,13 @@ import type { Mensaje } from './errores';
 export interface ApiQuitar {
   quitarMiembro(idEquipo: number, idUsuario: number): Promise<EquipoVista>;
   quitarMonitor(idProyecto: number, idMonitor: number): Promise<void>;
-  retirarCorreo(idProyecto: number, idCorreoHabilitado: number): Promise<void>;
 }
 
 export type ResultadoQuitarIntegrante = { tipo: 'quitado'; equipo: EquipoVista } | { tipo: 'error'; mensaje: string };
 
 export const YA_NO_ES_MIEMBRO = 'Esa persona ya no estaba en el equipo. Recarga la página para ver la lista actual.';
 export const YA_NO_ES_MONITOR = 'Ese monitor ya no estaba asignado al proyecto.';
-export const ES_LIDER_AHORA = 'Esa persona es ahora el líder del equipo. Designa a otro líder antes de quitarla.';
+export const ES_LIDER_AHORA = 'Esa persona es ahora el líder del equipo. Destitúyela o nombra a otro líder antes de quitarla.';
 
 /** Decisión 26b-16: al líder no se le ofrece "Quitar"; primero se designa otro líder. */
 export function sePuedeQuitar(miembro: MiembroVista): boolean {
@@ -48,6 +47,10 @@ export function preguntaRetirarCorreo(correo: string): string {
   return `¿Retirar la habilitación de ${correo}? Esa persona ya no podrá crear su cuenta para este proyecto. Puedes volver a habilitarla cuando quieras.`;
 }
 
+export function preguntaRetirarCorreoCurso(correo: string): string {
+  return `¿Retirar la habilitación de ${correo}? Esa persona ya no podrá crear su cuenta con este curso. Puedes volver a agregar su correo cuando quieras.`;
+}
+
 export function textoCorreoRetirado(correo: string): string {
   return `Se retiró la habilitación de ${correo}.`;
 }
@@ -57,14 +60,13 @@ export interface ResultadoRetirar {
   recargar: boolean;
 }
 
-/** Decisión 30f-6: retira una habilitación pendiente; 409 = la persona se registró entretanto (se recarga para verla en su equipo o en monitores); 404 = ya no existía. */
+/** Decisión 30f-6: retira una habilitación pendiente; 409 = la persona se registró entretanto (se recarga); 404 = ya no existía. */
 export async function retirarHabilitacion(
-  api: Pick<ApiQuitar, 'retirarCorreo'>,
-  idProyecto: number,
+  retirar: (idCorreoHabilitado: number) => Promise<void>,
   correo: Pick<CorreoHabilitadoVista, 'idCorreoHabilitado' | 'email'>,
 ): Promise<ResultadoRetirar> {
   try {
-    await api.retirarCorreo(idProyecto, correo.idCorreoHabilitado);
+    await retirar(correo.idCorreoHabilitado);
     return { mensaje: { tipo: 'exito', texto: textoCorreoRetirado(correo.email) }, recargar: true };
   } catch (e) {
     if (e instanceof ErrorApi) {
@@ -112,4 +114,14 @@ export async function quitarMonitorDelProyecto(api: Pick<ApiQuitar, 'quitarMonit
     }
     return { tipo: 'error', texto: mensajeErrorApi(e, []) };
   }
+}
+
+/** Bloque 51: destituir deja al equipo sin líder y el núcleo abre una votación. */
+export function preguntaDestituir(nombre: string, horas: number): string {
+  return `¿Destituir a ${nombre} como líder? El equipo queda sin líder y se abre una votación de ${horas} horas entre sus integrantes.`;
+}
+
+/** Bloque 51: nombrar a un líder con una votación abierta la cancela. */
+export function preguntaNombrarConRonda(nombre: string): string {
+  return `Hay una votación abierta en este equipo. Si nombras a ${nombre} como líder, la votación se cancela. ¿Continuar?`;
 }

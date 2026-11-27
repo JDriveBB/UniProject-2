@@ -6,6 +6,7 @@ describe('barra de navegación', () => {
     expect(enlacesDe('DOCENTE', '/proyectos/5')).toEqual([
       { texto: 'Panel', a: '/proyectos/5/panel', activo: false },
       { texto: 'Proyectos', a: '/proyectos', activo: true },
+      { texto: 'Cursos', a: '/cursos', activo: false },
       { texto: 'Reportes', a: '/reportes', activo: false },
     ]);
   });
@@ -14,18 +15,24 @@ describe('barra de navegación', () => {
     expect(enlacesDe('DOCENTE', '/proyectos')[0]).toEqual({ texto: 'Panel', a: '/panel', activo: false });
     expect(enlacesDe('DOCENTE', '/proyectos/nuevo')[0]).toEqual({ texto: 'Panel', a: '/panel', activo: false });
     expect(enlacesDe('DOCENTE', '/proyectos/nuevo')[1].activo).toBe(true);
-    expect(enlacesDe('DOCENTE', '/proyectos/5/panel').map((e) => e.activo)).toEqual([true, false, false]);
-    expect(enlacesDe('DOCENTE', '/equipos/3/historial').map((e) => e.activo)).toEqual([false, false, true]);
+    expect(enlacesDe('DOCENTE', '/proyectos/5/panel').map((e) => e.activo)).toEqual([true, false, false, false]);
+    expect(enlacesDe('DOCENTE', '/cursos/3').map((e) => e.activo)).toEqual([false, false, true, false]);
+    expect(enlacesDe('DOCENTE', '/equipos/4/votacion').map((e) => e.activo)).toEqual([false, true, false, false]);
+    expect(enlacesDe('DOCENTE', '/equipos/3/historial').map((e) => e.activo)).toEqual([false, false, false, true]);
   });
 
-  it('estudiante: Tablero, Mis tareas y Ruta crítica', () => {
+  it('estudiante: Mis cursos, Tablero, Mis tareas y Ruta crítica', () => {
     expect(enlacesDe('ESTUDIANTE', '/equipos/3/tablero')).toEqual([
+      { texto: 'Mis cursos', a: '/mis-cursos', activo: false },
       { texto: 'Tablero', a: '/tablero', activo: true },
       { texto: 'Mis tareas', a: '/mis-tareas', activo: false },
       { texto: 'Ruta crítica', a: '/ruta-critica', activo: false },
     ]);
-    expect(enlacesDe('ESTUDIANTE', '/hitos/7/ruta-critica').map((e) => e.activo)).toEqual([false, false, true]);
-    expect(enlacesDe('ESTUDIANTE', '/equipos/3/historial').map((e) => e.activo)).toEqual([true, false, false]);
+    expect(enlacesDe('ESTUDIANTE', '/mis-cursos').map((e) => e.activo)).toEqual([true, false, false, false]);
+    expect(enlacesDe('ESTUDIANTE', '/proyectos/5/inscripcion').map((e) => e.activo)).toEqual([true, false, false, false]);
+    expect(enlacesDe('ESTUDIANTE', '/equipos/4/votacion').map((e) => e.activo)).toEqual([true, false, false, false]);
+    expect(enlacesDe('ESTUDIANTE', '/hitos/7/ruta-critica').map((e) => e.activo)).toEqual([false, false, false, true]);
+    expect(enlacesDe('ESTUDIANTE', '/equipos/3/historial').map((e) => e.activo)).toEqual([false, true, false, false]);
   });
 
   it('monitor y administrador tienen su propia navegación', () => {
@@ -46,9 +53,9 @@ describe('barra de navegación', () => {
   });
 
   it('navegación de tareas, rol de líder y pertenencia a equipos', () => {
-    expect(enlacesDe('ESTUDIANTE', '/tareas/5')[1].activo).toBe(true);
-    expect(enlacesDe('ESTUDIANTE', '/tareas/5/')[1].activo).toBe(true);
-    expect(enlacesDe('ESTUDIANTE', '/tareas/abc')[1].activo).toBe(false);
+    expect(enlacesDe('ESTUDIANTE', '/tareas/5')[2].activo).toBe(true);
+    expect(enlacesDe('ESTUDIANTE', '/tareas/5/')[2].activo).toBe(true);
+    expect(enlacesDe('ESTUDIANTE', '/tareas/abc')[2].activo).toBe(false);
 
     expect(etiquetaRol('ESTUDIANTE', true)).toBe('Líder de equipo');
     expect(etiquetaRol('ESTUDIANTE')).toBe('Estudiante');

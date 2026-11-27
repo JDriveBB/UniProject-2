@@ -25,22 +25,13 @@ class ConcurrenciaRegistroIntegracionTest extends ApiIntegracionBase {
         jdbc.sql("DELETE FROM limite_recuperacion").update();
     }
 
-    private long proyecto(Navegador docente) {
-        HttpResponse<String> r = docente.post(
-                "/api/proyectos",
-                "{\"nombre\":\"Proyecto Registro\",\"fechaInicio\":\"2026-08-03\","
-                        + "\"fechaFin\":\"2026-11-27\",\"usaMonitores\":true}");
-        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
-        return numero(r.body(), "idProyecto");
-    }
-
-    /** Habilita el correo en el proyecto, genera el enlace y devuelve el código. */
-    private String codigo(Navegador docente, long idProyecto, String email) {
-        HttpResponse<String> h = docente.post(
-                "/api/proyectos/" + idProyecto + "/correos", "{\"emails\":[\"" + email + "\"],\"rol\":\"ESTUDIANTE\"}");
+    /** Habilita el correo en el curso, genera el enlace y devuelve el código. */
+    private String codigo(Navegador docente, long idCurso, String email) {
+        HttpResponse<String> h =
+                docente.post("/api/cursos/" + idCurso + "/correos", "{\"emails\":[\"" + email + "\"]}");
         assertThat(h.statusCode()).as(h.body()).isEqualTo(201);
         long idCorreo = numero(h.body(), "idCorreoHabilitado");
-        HttpResponse<String> e = docente.post("/api/proyectos/" + idProyecto + "/correos/" + idCorreo + "/enlace", null);
+        HttpResponse<String> e = docente.post("/api/cursos/" + idCurso + "/correos/" + idCorreo + "/enlace", null);
         assertThat(e.statusCode()).as(e.body()).isEqualTo(200);
         return campoTexto(e.body(), "codigo");
     }
@@ -75,8 +66,8 @@ class ConcurrenciaRegistroIntegracionTest extends ApiIntegracionBase {
         crearUsuario("Docente Doble", emailDocente, "DOCENTE");
         Navegador docente = sesion(emailDocente);
         String email = correoUnico("estdoble");
-        String codigo1 = codigo(docente, proyecto(docente), email);
-        String codigo2 = codigo(docente, proyecto(docente), email);
+        String codigo1 = codigo(docente, crearCurso(docente, "Curso Registro 1"), email);
+        String codigo2 = codigo(docente, crearCurso(docente, "Curso Registro 2"), email);
 
         HttpResponse<String> r1;
         HttpResponse<String> r2;

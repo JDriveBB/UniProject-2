@@ -4,139 +4,121 @@ import type {
   CorreoHabilitadoVista,
   EquipoVista,
   EstudianteDisponibleVista,
-  EstudianteProyectoVista,
   ResultadoHabilitacion,
   SolicitudCorreos,
 } from '../api/tipos';
 import {
-  agregarEstudiante,
+  agregarEstudiantes,
   agregarMonitor,
   claveIntegrantes,
-  invitadosDe,
   reemplazarEquipo,
   sugerenciasDe,
 } from './equipos';
 import type { ApiEquipos } from './equipos';
 
-const equipo: EquipoVista = { idEquipo: 3, idProyecto: 1, nombreEquipo: 'Equipo Alfa', miembros: [], hitos: [] };
+const equipo: EquipoVista = {
+  idEquipo: 3,
+  idProyecto: 1,
+  nombreEquipo: 'Equipo Alfa',
+  idCurso: null,
+  cupo: null,
+  miembros: [],
+  hitos: [],
+};
 
 function habilitacion(parcial: Partial<ResultadoHabilitacion>): ResultadoHabilitacion {
   return { habilitados: [], yaHabilitados: [], conOtroRol: [], ...parcial };
 }
 
-function estudiante(parcial: Partial<EstudianteProyectoVista> & { email: string }): EstudianteProyectoVista {
-  return { nombre: null, registrado: false, idEquipo: null, idEquipoInvitado: null, ...parcial };
-}
-
-function apiFalsa(
-  resultado: ResultadoHabilitacion,
-  alAgregar: (email: string) => Promise<EquipoVista>,
-  pedidos: SolicitudCorreos[],
-  agregados: string[],
-  invitaciones: string[] = [],
-  alInvitar: (email: string) => Promise<void> = async () => {},
-): ApiEquipos {
-  return {
-    async habilitarCorreos(_idProyecto, solicitud) {
-      pedidos.push(solicitud);
-      return resultado;
-    },
-    async agregarMiembro(_idEquipo, email) {
-      agregados.push(email);
-      return alAgregar(email);
-    },
-    async invitarAlEquipo(idEquipo, email) {
-      invitaciones.push(email);
-      await alInvitar(email);
-      return estudiante({ email, idEquipoInvitado: idEquipo });
-    },
-  };
-}
-
-describe('agregarEstudiante y agregarMonitor en lote', () => {
-  it('resumen de estudiantes con API simulada: agrega a los que tienen cuenta, invita a los que no (también al ya habilitado sin cuenta), otro rol y un fallo al agregar (los demás continúan)', async () => {
-    const pedidos: SolicitudCorreos[] = [];
-    const llamadosMiembro: string[] = [];
-    const llamadosInvitar: string[] = [];
-
-    const nuevoSinCuenta: CorreoHabilitadoVista = {
-      idCorreoHabilitado: 10,
-      email: 'nuevo@uninorte.edu.co',
-      rol: 'ESTUDIANTE',
-      idProyecto: 1,
-      fechaHabilitacion: '2026-11-06T10:00:00Z',
-      registrado: false,
-    };
-    const registradoFalla: CorreoHabilitadoVista = {
-      idCorreoHabilitado: 11,
-      email: 'falla@uninorte.edu.co',
-      rol: 'ESTUDIANTE',
-      idProyecto: 1,
-      fechaHabilitacion: '2026-11-06T10:00:00Z',
-      registrado: true,
-    };
-    const registradoOk: CorreoHabilitadoVista = {
-      idCorreoHabilitado: 12,
-      email: 'ok@uninorte.edu.co',
-      rol: 'ESTUDIANTE',
-      idProyecto: 1,
-      fechaHabilitacion: '2026-11-06T10:00:00Z',
-      registrado: true,
-    };
-
-    const respuestaHabilitar = habilitacion({
-      habilitados: [nuevoSinCuenta, registradoFalla, registradoOk],
-      yaHabilitados: ['ya@uninorte.edu.co'],
-      conOtroRol: ['docente@uninorte.edu.co'],
-    });
-
-    const equipoActualizado: EquipoVista = {
+describe('agregarEstudiantes y agregarMonitor en lote', () => {
+  it('agrega todos los correos en orden y devuelve el último equipo', async () => {
+    const llamados: Array<{ idEquipo: number; email: string; pasarCupo?: boolean }> = [];
+    const equipoFinal: EquipoVista = {
       ...equipo,
-      miembros: [{ idUsuario: 99, nombre: 'OK', rolEquipo: 'INTEGRANTE' }],
+      miembros: [
+        { idUsuario: 1, nombre: 'Ana', rolEquipo: 'INTEGRANTE' },
+        { idUsuario: 2, nombre: 'Beto', rolEquipo: 'INTEGRANTE' },
+      ],
     };
+    const api: Pick<ApiEquipos, 'agregarMiembro'> = {
+      async agregarMiembro(idEquipo, email, pasarCupo) {
+        llamados.push({ idEquipo, email, pasarCupo });
+        return email === 'beto@uninorte.edu.co' ? equipoFinal : equipo;
+      },
+    };
+    const resumen = await agregarEstudiantes(api, 3, ' ana@uninorte.edu.co, beto@uninorte.edu.co ');
+    expect(llamados).toEqual([
+      { idEquipo: 3, email: 'ana@uninorte.edu.co', pasarCupo: false },
+      { idEquipo: 3, email: 'beto@uninorte.edu.co', pasarCupo: false },
+    ]);
+    expect(resumen).toEqual({
+      agregados: ['ana@uninorte.edu.co', 'beto@uninorte.edu.co'],
+      cupoLleno: [],
+      errores: [],
+      equipo: equipoFinal,
+    });
+  });
 
-    const api = apiFalsa(
-      respuestaHabilitar,
-      async (email) => {
-        if (email === 'falla@uninorte.edu.co') {
+  it('separa 409 CUPO_LLENO en cupoLleno, otros 409 en errores y no detiene los demás', async () => {
+    const equipoOk: EquipoVista = {
+      ...equipo,
+      miembros: [{ idUsuario: 9, nombre: 'OK', rolEquipo: 'INTEGRANTE' }],
+    };
+    const api: Pick<ApiEquipos, 'agregarMiembro'> = {
+      async agregarMiembro(_idEquipo, email) {
+        if (email === 'lleno@uninorte.edu.co') {
+          throw new ErrorApi(409, 'CUPO_LLENO', 'El equipo ya tiene su cupo completo');
+        }
+        if (email === 'otro@uninorte.edu.co') {
           throw new ErrorApi(409, 'YA_TIENE_EQUIPO', 'Ese estudiante ya pertenece a un equipo de este proyecto');
         }
-        if (email === 'ya@uninorte.edu.co') {
-          throw new ErrorApi(409, 'ESTUDIANTE_NO_REGISTRADO', 'El correo está habilitado pero no tiene cuenta');
-        }
-        return equipoActualizado;
+        return equipoOk;
       },
-      pedidos,
-      llamadosMiembro,
-      llamadosInvitar,
-    );
-
-    const correosEntrada = [
-      'nuevo@uninorte.edu.co',
-      'falla@uninorte.edu.co',
+    };
+    const resumen = await agregarEstudiantes(api, 3, [
+      'lleno@uninorte.edu.co',
+      'otro@uninorte.edu.co',
       'ok@uninorte.edu.co',
-      'ya@uninorte.edu.co',
-      'docente@uninorte.edu.co',
-    ];
-
-    const resumen = await agregarEstudiante(api, 1, 3, correosEntrada);
-
-    expect(pedidos).toEqual([{ emails: correosEntrada, rol: 'ESTUDIANTE' }]);
-    expect(llamadosMiembro).toEqual(['falla@uninorte.edu.co', 'ok@uninorte.edu.co', 'ya@uninorte.edu.co']);
-    expect(llamadosInvitar).toEqual(['nuevo@uninorte.edu.co', 'ya@uninorte.edu.co']);
-
+    ]);
     expect(resumen).toEqual({
       agregados: ['ok@uninorte.edu.co'],
-      invitados: ['nuevo@uninorte.edu.co', 'ya@uninorte.edu.co'],
-      conOtroRol: ['docente@uninorte.edu.co'],
+      cupoLleno: ['lleno@uninorte.edu.co'],
       errores: [
-        {
-          email: 'falla@uninorte.edu.co',
-          motivo: 'Ese estudiante ya pertenece a un equipo de este proyecto',
-        },
+        { email: 'otro@uninorte.edu.co', motivo: 'Ese estudiante ya pertenece a un equipo de este proyecto' },
       ],
-      equipo: equipoActualizado,
+      equipo: equipoOk,
     });
+  });
+
+  it('con pasarCupo true reenvía true al API y si aun así responde 409 CUPO_LLENO va a errores', async () => {
+    const recibidos: Array<boolean | undefined> = [];
+    const api: Pick<ApiEquipos, 'agregarMiembro'> = {
+      async agregarMiembro(_idEquipo, email, pasarCupo) {
+        recibidos.push(pasarCupo);
+        if (email === 'falla@u.co') {
+          throw new ErrorApi(409, 'CUPO_LLENO', 'Cupo lleno');
+        }
+        return equipo;
+      },
+    };
+    const resumen = await agregarEstudiantes(api, 3, ['ok@u.co', 'falla@u.co'], true);
+    expect(recibidos).toEqual([true, true]);
+    expect(resumen.agregados).toEqual(['ok@u.co']);
+    expect(resumen.cupoLleno).toEqual([]);
+    expect(resumen.errores).toEqual([{ email: 'falla@u.co', motivo: 'Cupo lleno' }]);
+  });
+
+  it('lista o texto vacío no hace llamadas al API', async () => {
+    let llamadas = 0;
+    const api: Pick<ApiEquipos, 'agregarMiembro'> = {
+      async agregarMiembro() {
+        llamadas += 1;
+        return equipo;
+      },
+    };
+    expect(await agregarEstudiantes(api, 3, [])).toEqual({ agregados: [], cupoLleno: [], errores: [] });
+    expect(await agregarEstudiantes(api, 3, '   , ; ')).toEqual({ agregados: [], cupoLleno: [], errores: [] });
+    expect(llamadas).toBe(0);
   });
 
   it('resumen de monitores con API simulada', async () => {
@@ -146,6 +128,7 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
       email: 'registrado@uninorte.edu.co',
       rol: 'MONITOR',
       idProyecto: 1,
+      idCurso: null,
       fechaHabilitacion: '2026-11-06T10:00:00Z',
       registrado: true,
     };
@@ -154,6 +137,7 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
       email: 'pendiente@uninorte.edu.co',
       rol: 'MONITOR',
       idProyecto: 1,
+      idCurso: null,
       fechaHabilitacion: '2026-11-06T10:00:00Z',
       registrado: false,
     };
@@ -188,117 +172,26 @@ describe('agregarEstudiante y agregarMonitor en lote', () => {
     });
   });
 
-  it('correo ya habilitado que sí tiene cuenta queda en agregados', async () => {
-    const pedidos: SolicitudCorreos[] = [];
-    const llamadosMiembro: string[] = [];
-    const respuesta = habilitacion({
-      yaHabilitados: ['ana@uninorte.edu.co'],
-    });
-    const equipoActualizado: EquipoVista = {
-      ...equipo,
-      miembros: [{ idUsuario: 10, nombre: 'Ana', rolEquipo: 'INTEGRANTE' }],
-    };
-    const api = apiFalsa(respuesta, async () => equipoActualizado, pedidos, llamadosMiembro);
-    const resumen = await agregarEstudiante(api, 1, 3, ['ana@uninorte.edu.co']);
-
-    expect(llamadosMiembro).toEqual(['ana@uninorte.edu.co']);
-    expect(resumen.agregados).toEqual(['ana@uninorte.edu.co']);
-    expect(resumen.equipo).toEqual(equipoActualizado);
-  });
-
-  it('correo ya habilitado sin cuenta (409 ESTUDIANTE_NO_REGISTRADO) queda invitado al equipo', async () => {
-    const pedidos: SolicitudCorreos[] = [];
-    const llamadosMiembro: string[] = [];
-    const llamadosInvitar: string[] = [];
-    const respuesta = habilitacion({
-      yaHabilitados: ['sin-cuenta@uninorte.edu.co'],
-    });
-    const api = apiFalsa(
-      respuesta,
-      async () => {
-        throw new ErrorApi(409, 'ESTUDIANTE_NO_REGISTRADO', 'El correo está habilitado pero no tiene cuenta');
-      },
-      pedidos,
-      llamadosMiembro,
-      llamadosInvitar,
-    );
-    const resumen = await agregarEstudiante(api, 1, 3, ['sin-cuenta@uninorte.edu.co']);
-
-    expect(llamadosMiembro).toEqual(['sin-cuenta@uninorte.edu.co']);
-    expect(llamadosInvitar).toEqual(['sin-cuenta@uninorte.edu.co']);
-    expect(resumen.agregados).toEqual([]);
-    expect(resumen.invitados).toEqual(['sin-cuenta@uninorte.edu.co']);
-    expect(resumen.errores).toEqual([]);
-  });
-
-  it('si la invitación falla (ya invitado a otro equipo) queda en errores con el motivo del API', async () => {
-    const sinCuenta: CorreoHabilitadoVista = {
-      idCorreoHabilitado: 30,
-      email: 'ines@uninorte.edu.co',
-      rol: 'ESTUDIANTE',
-      idProyecto: 1,
-      fechaHabilitacion: '2026-11-06T10:00:00Z',
-      registrado: false,
-    };
-    const api = apiFalsa(
-      habilitacion({ habilitados: [sinCuenta] }),
-      async () => equipo,
-      [],
-      [],
-      [],
-      async () => {
-        throw new ErrorApi(409, 'YA_INVITADO', 'Ese estudiante ya está invitado a otro equipo de este proyecto');
-      },
-    );
-    const resumen = await agregarEstudiante(api, 1, 3, ['ines@uninorte.edu.co']);
-
-    expect(resumen.invitados).toEqual([]);
-    expect(resumen.errores).toEqual([
-      { email: 'ines@uninorte.edu.co', motivo: 'Ese estudiante ya está invitado a otro equipo de este proyecto' },
-    ]);
-    expect(resumen.equipo).toBeUndefined();
-  });
-
-  it('sugerenciasDe deja solo a los que no tienen equipo ni invitación; invitadosDe, los invitados de un equipo', () => {
-    const lista = [
-      estudiante({ email: 'ana@u.co', nombre: 'Ana', registrado: true, idEquipo: 3 }),
-      estudiante({ email: 'beto@u.co', nombre: 'Beto', registrado: true }),
-      estudiante({ email: 'ines@u.co', idEquipoInvitado: 3 }),
-      estudiante({ email: 'juan@u.co', idEquipoInvitado: 4 }),
-      estudiante({ email: 'luz@u.co' }),
-    ];
-    expect(sugerenciasDe(lista)).toEqual([
-      { email: 'beto@u.co', nombre: 'Beto', registrado: true },
-      { email: 'luz@u.co', nombre: null, registrado: false },
-    ]);
-    expect(invitadosDe(lista, 3)).toEqual(['ines@u.co']);
-    expect(invitadosDe(lista, 9)).toEqual([]);
-  });
-
-  it('sugerenciasDe mezcla disponibles sin repetir, ordena con tildes y usa correo sin nombre', () => {
-    const estudiantes = [
-      estudiante({ email: 'ana@u.co', nombre: 'Ana', registrado: true, idEquipo: 3 }),
-      estudiante({ email: 'diego@u.co', idEquipoInvitado: 3 }),
-      estudiante({ email: 'camila@u.co', nombre: 'Camila Habilitada', registrado: true }),
-      estudiante({ email: 'elena@u.co' }),
-    ];
+  it('sugerenciasDe filtra por curso cuando el equipo tiene curso, devuelve todos con null y ordena por nombre y correo', () => {
     const disponibles: EstudianteDisponibleVista[] = [
-      { email: 'CAMILA@U.CO', nombre: 'Camila Disponible' },
-      { email: 'ANA@U.CO', nombre: 'Ana Con Equipo' },
-      { email: 'juan@u.co', nombre: 'Juan' },
-      { email: 'ingrid@u.co', nombre: 'Íngrid' },
-      { email: 'hugo@u.co', nombre: 'Hugo' },
-      { email: 'pedro.b@u.co', nombre: 'Pedro' },
-      { email: 'pedro.a@u.co', nombre: 'Pedro' },
+      { email: 'juan@u.co', nombre: 'Juan', idCurso: 2, nombreCurso: 'Curso B' },
+      { email: 'ingrid@u.co', nombre: 'Íngrid', idCurso: 1, nombreCurso: 'Curso A' },
+      { email: 'hugo@u.co', nombre: 'Hugo', idCurso: 1, nombreCurso: 'Curso A' },
+      { email: 'pedro.b@u.co', nombre: 'Pedro', idCurso: 1, nombreCurso: 'Curso A' },
+      { email: 'pedro.a@u.co', nombre: 'Pedro', idCurso: 1, nombreCurso: 'Curso A' },
     ];
-    expect(sugerenciasDe(estudiantes, disponibles)).toEqual([
-      { email: 'camila@u.co', nombre: 'Camila Habilitada', registrado: true },
-      { email: 'elena@u.co', nombre: null, registrado: false },
+    expect(sugerenciasDe(disponibles, 1)).toEqual([
       { email: 'hugo@u.co', nombre: 'Hugo', registrado: true },
       { email: 'ingrid@u.co', nombre: 'Íngrid', registrado: true },
-      { email: 'juan@u.co', nombre: 'Juan', registrado: true },
       { email: 'pedro.a@u.co', nombre: 'Pedro', registrado: true },
       { email: 'pedro.b@u.co', nombre: 'Pedro', registrado: true },
+    ]);
+    expect(sugerenciasDe(disponibles, null).map((s) => s.email)).toEqual([
+      'hugo@u.co',
+      'ingrid@u.co',
+      'juan@u.co',
+      'pedro.a@u.co',
+      'pedro.b@u.co',
     ]);
   });
 

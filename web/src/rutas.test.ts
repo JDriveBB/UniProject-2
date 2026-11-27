@@ -14,4 +14,11 @@ describe('rutas del SPA', () => {
     expect(rutas.restablecerContrasena()).toBe('/restablecer-contrasena');
     expect(rutas.olvideContrasena()).toBe('/olvide-contrasena');
   });
+
+  it('coinciden con RutasWeb de cursos y equipos (bloque 50)', () => {
+    expect(rutas.misCursos()).toBe('/mis-cursos');
+    expect(rutas.votacionEquipo(4)).toBe('/equipos/4/votacion');
+    expect(rutas.inscripcionProyecto(12)).toBe('/proyectos/12/inscripcion');
+    expect(rutas.proyecto(12)).toBe('/proyectos/12');
+  });
 });

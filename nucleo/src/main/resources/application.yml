@@ -74,6 +74,7 @@ uniproject:
   programador:
     cron-riesgo: "0 0 * * * *"
     cron-inactividad: "0 0 * * * *"
+    cron-rondas: "0 */5 * * * *"
   admin:
     email: ${UNIPROJECT_ADMIN_EMAIL:}
     nombre: ${UNIPROJECT_ADMIN_NOMBRE:Administrador}

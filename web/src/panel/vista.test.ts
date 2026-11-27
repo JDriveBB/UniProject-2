@@ -39,6 +39,9 @@ function detalle(parcial: Partial<ProyectoDetalle> = {}): ProyectoDetalle {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-11-30',
       usaMonitores: false,
+      equiposMixtos: false,
+      cierreEquipos: null,
+      horasRonda: 48,
       ...parcial.proyecto,
     },
     hitos: parcial.hitos ?? [],
@@ -97,6 +100,8 @@ describe('vista', () => {
       idEquipo: 8,
       idProyecto: 3,
       nombreEquipo: 'Beta',
+      idCurso: null,
+      cupo: null,
       miembros: [],
       hitos: [
         { idHitoEquipo: 81, idHito: 2, estado: 'ENVIADO', fechaEnvio: null },
@@ -107,6 +112,8 @@ describe('vista', () => {
       idEquipo: 7,
       idProyecto: 3,
       nombreEquipo: 'Alfa',
+      idCurso: null,
+      cupo: null,
       miembros: [],
       hitos: [
         { idHitoEquipo: 71, idHito: 2, estado: 'ENVIADO', fechaEnvio: null },
@@ -117,6 +124,8 @@ describe('vista', () => {
       idEquipo: 9,
       idProyecto: 3,
       nombreEquipo: 'Gamma',
+      idCurso: null,
+      cupo: null,
       miembros: [],
       hitos: [{ idHitoEquipo: 91, idHito: 99, estado: 'ENVIADO', fechaEnvio: null }],
     },
@@ -149,6 +158,9 @@ describe('vista', () => {
         fechaInicio: '2026-01-01',
         fechaFin: '2026-06-01',
         usaMonitores: false,
+        equiposMixtos: false,
+        cierreEquipos: null,
+        horasRonda: 48,
       },
       {
         idProyecto: 2,
@@ -158,6 +170,9 @@ describe('vista', () => {
         fechaInicio: '2026-01-01',
         fechaFin: '2026-06-01',
         usaMonitores: false,
+        equiposMixtos: false,
+        cierreEquipos: null,
+        horasRonda: 48,
       },
       {
         idProyecto: 3,
@@ -167,6 +182,9 @@ describe('vista', () => {
         fechaInicio: '2026-01-01',
         fechaFin: '2026-06-01',
         usaMonitores: false,
+        equiposMixtos: false,
+        cierreEquipos: null,
+        horasRonda: 48,
       },
     ];
     expect(proyectosPropios(proyectos, 5).map((p) => p.idProyecto)).toEqual([1, 3]);
@@ -319,6 +337,8 @@ describe('vista', () => {
         idEquipo: 2,
         idProyecto: 3,
         nombreEquipo: 'Equipo Beta',
+        idCurso: null,
+        cupo: null,
         miembros: [],
         hitos: [
           { idHitoEquipo: 201, idHito: 10, estado: 'EN_CURSO', fechaEnvio: null },
@@ -329,6 +349,8 @@ describe('vista', () => {
         idEquipo: 1,
         idProyecto: 3,
         nombreEquipo: 'Equipo Alfa',
+        idCurso: null,
+        cupo: null,
         miembros: [],
         hitos: [
           { idHitoEquipo: 101, idHito: 10, estado: 'ENVIADO', fechaEnvio: '2026-11-20T15:00:00.123456Z' },
@@ -425,6 +447,8 @@ describe('vista', () => {
           idEquipo: 1,
           idProyecto: 3,
           nombreEquipo: 'Equipo Alfa',
+          idCurso: null,
+          cupo: null,
           miembros: [],
           hitos: [{ idHitoEquipo: 103, idHito: 30, estado: 'EN_CURSO', fechaEnvio: null }],
         },
@@ -445,6 +469,8 @@ describe('vista', () => {
         idEquipo: 2,
         idProyecto: 3,
         nombreEquipo: 'Equipo Beta',
+        idCurso: null,
+        cupo: null,
         miembros: [],
         hitos: [
           { idHitoEquipo: 21, idHito: 1, estado: 'EVALUADO', fechaEnvio: null },
@@ -456,6 +482,8 @@ describe('vista', () => {
         idEquipo: 1,
         idProyecto: 3,
         nombreEquipo: 'Equipo Alfa',
+        idCurso: null,
+        cupo: null,
         miembros: [],
         hitos: [
           { idHitoEquipo: 11, idHito: 1, estado: 'EVALUADO', fechaEnvio: '2026-11-08T15:00:00Z' },

@@ -43,6 +43,16 @@ describe('notificaciones/vista', () => {
     expect(textoNoLeidas(7)).toBe('Tienes 7 notificaciones sin leer.');
   });
 
+  it('marcaTipo de cursos y equipos', () => {
+    expect(marcaTipo('curso.estudiante_agregado')).toEqual({ texto: 'Curso', tono: 'info' });
+    expect(marcaTipo('equipo.votacion_abierta')).toEqual({ texto: 'Votación abierta', tono: 'info' });
+    expect(marcaTipo('equipo.lider_elegido')).toEqual({ texto: 'Nuevo líder', tono: 'exito' });
+    expect(marcaTipo('equipo.sin_lider')).toEqual({ texto: 'Equipo sin líder', tono: 'aviso' });
+    expect(marcaTipo('equipo.miembro_cambio')).toEqual({ texto: 'Cambio en el equipo', tono: 'info' });
+    expect(marcaTipo('equipo.inscripcion_por_cerrar')).toEqual({ texto: 'Cierre de equipos', tono: 'aviso' });
+    expect(marcaTipo('equipo.inscripcion_resumen')).toEqual({ texto: 'Resumen de equipos', tono: 'info' });
+  });
+
   it('enlaceInterno acepta solo rutas internas seguras', () => {
     expect(enlaceInterno('/tareas/5')).toBe('/tareas/5');
     expect(enlaceInterno('/hitos/3/evaluar')).toBe('/hitos/3/evaluar');

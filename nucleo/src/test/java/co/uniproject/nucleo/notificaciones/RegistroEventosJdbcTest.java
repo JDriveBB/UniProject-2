@@ -1,5 +1,8 @@
 package co.uniproject.nucleo.notificaciones;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import co.uniproject.eventos.CodecEventos;
 import co.uniproject.eventos.EventoCloud;
 import co.uniproject.eventos.EventoInvalidoException;
@@ -21,9 +24,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 class RegistroEventosJdbcTest {
 
     private DataSource ds;
@@ -35,7 +35,7 @@ class RegistroEventosJdbcTest {
 
     @BeforeEach
     void setUp() {
-        ds = PostgresPrueba.baseLimpia("5");
+        ds = PostgresPrueba.baseLimpia("12");
         jdbc = JdbcClient.create(ds);
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         reloj = Clock.fixed(Instant.parse("2026-10-24T19:05:00Z"), ZoneId.of("America/Bogota"));
@@ -48,7 +48,9 @@ class RegistroEventosJdbcTest {
         UUID id = tx.execute(s -> registro.registrar(EjemplosEventos.tareaReasignada()));
         assertThat(id).isNotNull();
 
-        Integer totalFilas = jdbc.sql("SELECT count(*) FROM evento_saliente").query(Integer.class).single();
+        Integer totalFilas = jdbc.sql("SELECT count(*) FROM evento_saliente")
+                .query(Integer.class)
+                .single();
         assertThat(totalFilas).isEqualTo(1);
 
         var fila = jdbc.sql("""
@@ -63,8 +65,7 @@ class RegistroEventosJdbcTest {
                         "publicado_en_null", rs.getObject("publicado_en") == null,
                         "intentos", rs.getInt("intentos"),
                         "carga_type", rs.getString("carga_type"),
-                        "carga_id", rs.getString("carga_id")
-                ))
+                        "carga_id", rs.getString("carga_id")))
                 .single();
 
         assertThat(fila.get("id")).isEqualTo(id);
@@ -80,7 +81,9 @@ class RegistroEventosJdbcTest {
         assertThatThrownBy(() -> registro.registrar(EjemplosEventos.hitoEnviado()))
                 .isInstanceOf(IllegalStateException.class);
 
-        Integer total = jdbc.sql("SELECT count(*) FROM evento_saliente").query(Integer.class).single();
+        Integer total = jdbc.sql("SELECT count(*) FROM evento_saliente")
+                .query(Integer.class)
+                .single();
         assertThat(total).isEqualTo(0);
     }
 
@@ -91,7 +94,9 @@ class RegistroEventosJdbcTest {
             s.setRollbackOnly();
         });
 
-        Integer total = jdbc.sql("SELECT count(*) FROM evento_saliente").query(Integer.class).single();
+        Integer total = jdbc.sql("SELECT count(*) FROM evento_saliente")
+                .query(Integer.class)
+                .single();
         assertThat(total).isEqualTo(0);
     }
 
@@ -103,7 +108,9 @@ class RegistroEventosJdbcTest {
         assertThatThrownBy(() -> tx.execute(s -> registro.registrar(invalido)))
                 .isInstanceOf(EventoInvalidoException.class);
 
-        Integer total = jdbc.sql("SELECT count(*) FROM evento_saliente").query(Integer.class).single();
+        Integer total = jdbc.sql("SELECT count(*) FROM evento_saliente")
+                .query(Integer.class)
+                .single();
         assertThat(total).isEqualTo(0);
     }
 

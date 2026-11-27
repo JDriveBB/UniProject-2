@@ -1,17 +1,27 @@
 import { Campo } from '../componentes/Campo';
 import { CampoArea } from '../componentes/CampoArea';
+import { Casilla } from '../componentes/Casilla';
 import { Tarjeta } from '../componentes/Tarjeta';
 import type { BorradorProyecto } from './borrador';
 import { MAXIMO_DESCRIPCION, MAXIMO_NOMBRE_PROYECTO } from './validacion';
 import type { ErroresProyecto } from './validacion';
 
-export type CambiosProyecto = Partial<Pick<BorradorProyecto, 'nombre' | 'descripcion' | 'fechaInicio' | 'fechaFin'>>;
+export type CambiosProyecto = Partial<
+  Pick<BorradorProyecto, 'nombre' | 'descripcion' | 'fechaInicio' | 'fechaFin' | 'equiposMixtos'>
+>;
 
-/** P03 izquierda 1: nombre, descripción (80 px) y las dos fechas en una fila. */
-export function TarjetaDatosProyecto({ borrador, errores, editable, alCambiar }: {
+/** P03 izquierda 1: nombre, descripción (80 px), las dos fechas en una fila y regla de equipos mixtos. */
+export function TarjetaDatosProyecto({
+  borrador,
+  errores,
+  editable,
+  esNuevo,
+  alCambiar,
+}: {
   borrador: BorradorProyecto;
   errores: ErroresProyecto;
   editable: boolean;
+  esNuevo: boolean;
   alCambiar: (cambios: CambiosProyecto) => void;
 }) {
   return (
@@ -53,6 +63,22 @@ export function TarjetaDatosProyecto({ borrador, errores, editable, alCambiar }:
           required
         />
       </div>
+      {esNuevo && editable ? (
+        <div className="pila">
+          <Casilla checked={borrador.equiposMixtos} onChange={(e) => alCambiar({ equiposMixtos: e.target.checked })}>
+            Equipos mixtos: un equipo puede tener estudiantes de distintos cursos
+          </Casilla>
+          <p className="texto-secundario">
+            Solo se decide al crear el proyecto. Si no la marcas, cada equipo es de un solo curso.
+          </p>
+        </div>
+      ) : !esNuevo ? (
+        <p className="texto-secundario">
+          {borrador.equiposMixtos
+            ? 'Equipos mixtos: un equipo puede combinar estudiantes de distintos cursos.'
+            : 'Equipos por curso: cada equipo es de un solo curso.'}
+        </p>
+      ) : null}
     </Tarjeta>
   );
 }

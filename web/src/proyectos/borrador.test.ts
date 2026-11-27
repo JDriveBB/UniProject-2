@@ -21,6 +21,9 @@ const detalle: ProyectoDetalle = {
     fechaInicio: '2026-08-01',
     fechaFin: '2026-11-30',
     usaMonitores: true,
+    equiposMixtos: true,
+    cierreEquipos: null,
+    horasRonda: 48,
   },
   hitos: [
     {
@@ -47,6 +50,7 @@ describe('borrador del proyecto', () => {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-11-30',
       usaMonitores: true,
+      equiposMixtos: true,
       hitos: [
         {
           clave: 'h11',

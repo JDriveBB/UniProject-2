@@ -35,6 +35,7 @@ export interface CorreoHabilitadoVista {
   email: string;
   rol: RolPlataforma;
   idProyecto: number | null;
+  idCurso: number | null;
   fechaHabilitacion: string;
   registrado: boolean;
 }
@@ -51,13 +52,14 @@ export type RolEquipo = 'LIDER' | 'INTEGRANTE';
 export type EstadoHitoEquipo = 'EN_CURSO' | 'ENVIADO' | 'EVALUADO';
 export type EstadoEnvioNotificacion = 'EN_COLA' | 'SIN_TELEGRAM';
 
-/** POST /api/proyectos y PUT /api/proyectos/{id} (reemplaza todo). Fechas "aaaa-mm-dd". */
+/** POST /api/proyectos y PUT /api/proyectos/{id} (reemplaza todo). Fechas "aaaa-mm-dd". equiposMixtos solo viaja al crear. */
 export interface SolicitudProyecto {
   nombre: string;
   descripcion: string | null;
   fechaInicio: string;
   fechaFin: string;
   usaMonitores: boolean;
+  equiposMixtos?: boolean;
 }
 
 export interface ProyectoVista {
@@ -68,6 +70,9 @@ export interface ProyectoVista {
   fechaInicio: string;
   fechaFin: string;
   usaMonitores: boolean;
+  equiposMixtos: boolean;
+  cierreEquipos: string | null;
+  horasRonda: number;
 }
 
 export interface CriterioVista {
@@ -128,6 +133,8 @@ export interface EquipoVista {
   idEquipo: number;
   idProyecto: number;
   nombreEquipo: string;
+  idCurso: number | null;
+  cupo: number | null;
   miembros: MiembroVista[];
   hitos: HitoEquipoVista[];
 }
@@ -140,43 +147,41 @@ export interface ProyectoDetalle {
 
 export interface SolicitudEquipo {
   nombreEquipo: string;
+  idCurso: number | null;
+  cupo: number | null;
 }
 
 export interface SolicitudMiembro {
   email: string;
+  pasarCupo?: boolean;
 }
 
 export interface SolicitudLider {
   idUsuario: number;
 }
 
-/** POST /api/equipos/{id}/invitaciones (D-12): correo habilitado de un estudiante sin cuenta. */
-export interface SolicitudInvitacion {
-  email: string;
-}
-
-/** GET /api/proyectos/{id}/estudiantes (D-11, D-12): correo de estudiante habilitado, con o sin cuenta. */
+/** GET /api/proyectos/{id}/estudiantes: estudiantes participantes del proyecto con su curso y equipo. */
 export interface EstudianteProyectoVista {
+  idUsuario: number;
   email: string;
-  /** null si aún no tiene cuenta. */
-  nombre: string | null;
-  registrado: boolean;
-  /** Equipo del proyecto donde es integrante, o null. */
+  nombre: string;
+  idCurso: number;
+  nombreCurso: string;
   idEquipo: number | null;
-  /** Equipo al que entrará cuando cree su cuenta, o null. */
-  idEquipoInvitado: number | null;
 }
 
-/** GET /api/proyectos/{id}/estudiantes-disponibles (T-046): cuenta de estudiante sin equipo ni habilitación en el proyecto. */
+/** GET /api/proyectos/{id}/estudiantes-disponibles: estudiantes participantes sin equipo en el proyecto, con su curso. */
 export interface EstudianteDisponibleVista {
   email: string;
   nombre: string;
+  idCurso: number;
+  nombreCurso: string;
 }
 
-/** POST /api/proyectos/{id}/correos (K2): habilita correos de estudiantes o monitores en el proyecto. */
+/** POST /api/proyectos/{id}/correos: habilita correos de monitores en el proyecto. */
 export interface SolicitudCorreos {
   emails: string[];
-  rol: 'ESTUDIANTE' | 'MONITOR';
+  rol: 'MONITOR';
 }
 
 export interface ResultadoHabilitacion {
@@ -577,4 +582,208 @@ export interface EntradaHistorial {
   valorAnterior: string | null;
   valorNuevo: string | null;
   detalle: string;
+}
+
+/* ===== Bloque 51: cursos, equipos con cupo, inscripción y votación ===== */
+
+/** POST /api/cursos y PUT /api/cursos/{id}. */
+export interface SolicitudCurso {
+  nombre: string;
+  periodo: string;
+  descripcion: string | null;
+}
+
+/** PUT /api/cursos/{id}/archivado. */
+export interface SolicitudArchivado {
+  archivado: boolean;
+}
+
+/** POST /api/cursos/{id}/correos. */
+export interface SolicitudCorreosCurso {
+  emails: string[];
+}
+
+/** Resumen de un curso en listados y asignaciones de proyecto. */
+export interface CursoResumen {
+  idCurso: number;
+  nombre: string;
+  periodo: string;
+  archivado: boolean;
+}
+
+/** Resumen de un proyecto dentro de un curso. */
+export interface ProyectoResumen {
+  idProyecto: number;
+  nombre: string;
+}
+
+/** GET /api/cursos y respuestas de POST/PUT /api/cursos. */
+export interface CursoVista {
+  idCurso: number;
+  nombre: string;
+  periodo: string;
+  descripcion: string | null;
+  archivado: boolean;
+  nombreDocente: string;
+  estudiantes: number;
+  proyectos: ProyectoResumen[];
+}
+
+/** Estudiante con cuenta inscrito en un curso (GET /api/cursos/{id}). */
+export interface EstudianteCursoVista {
+  idUsuario: number;
+  nombre: string;
+  email: string;
+  fechaIngreso: string;
+}
+
+/** GET /api/cursos/{id}. */
+export interface CursoDetalle {
+  curso: CursoVista;
+  estudiantes: EstudianteCursoVista[];
+  pendientes: CorreoHabilitadoVista[];
+}
+
+/** GET /api/cursos/{id}/companeros (solo nombre, Ley 1581). */
+export interface CompaneroVista {
+  nombre: string;
+}
+
+/** POST /api/cursos/{id}/correos. */
+export interface ResultadoCorreosCurso {
+  agregados: string[];
+  habilitados: CorreoHabilitadoVista[];
+  yaEnCurso: string[];
+  conOtroRol: string[];
+}
+
+/** PUT /api/proyectos/{id}/cursos. */
+export interface SolicitudCursosProyecto {
+  idsCursos: number[];
+  confirmar: boolean;
+}
+
+/** Estudiante que aparece en varios cursos asignados a un mismo proyecto. */
+export interface EstudianteRepetidoVista {
+  idUsuario: number;
+  nombre: string;
+  email: string;
+  cursos: CursoResumen[];
+  idCursoQueCuenta: number;
+}
+
+/** Respuesta de PUT /api/proyectos/{id}/cursos. */
+export interface ResultadoCursosProyecto {
+  aplicado: boolean;
+  cursos: CursoResumen[];
+  repetidos: EstudianteRepetidoVista[];
+}
+
+/** PUT /api/proyectos/{id}/estudiantes/{idUsuario}/curso. */
+export interface SolicitudCursoEstudiante {
+  idCurso: number;
+}
+
+/** POST /api/proyectos/{id}/equipos/lote. */
+export interface SolicitudEquiposLote {
+  prefijo: string;
+  cantidad: number | null;
+  idCurso: number | null;
+  cupo: number;
+}
+
+/** PUT /api/equipos/{id}/cupo. */
+export interface SolicitudCupo {
+  cupo: number | null;
+}
+
+/** PUT /api/proyectos/{id}/inscripcion. */
+export interface SolicitudInscripcion {
+  cierreEquipos: string | null;
+  horasRonda: number;
+}
+
+/** Equipo mostrado en la pantalla de inscripción del proyecto. */
+export interface EquipoInscripcionVista {
+  idEquipo: number;
+  nombreEquipo: string;
+  idCurso: number | null;
+  nombreCurso: string | null;
+  cupo: number | null;
+  integrantes: number;
+  nombres: string[];
+  puedeUnirse: boolean;
+}
+
+/** GET y PUT /api/proyectos/{id}/inscripcion. */
+export interface InscripcionVista {
+  cierreEquipos: string | null;
+  horasRonda: number;
+  abierta: boolean;
+  idCursoQueCuenta: number | null;
+  idMiEquipo: number | null;
+  equipos: EquipoInscripcionVista[];
+}
+
+/** Asignación realizada por el reparto automático de equipos. */
+export interface AsignacionRepartoVista {
+  idUsuario: number;
+  nombre: string;
+  idEquipo: number;
+  nombreEquipo: string;
+}
+
+/** POST /api/proyectos/{id}/equipos/reparto. */
+export interface ResultadoReparto {
+  asignados: AsignacionRepartoVista[];
+  sinCupo: EstudianteDisponibleVista[];
+}
+
+export type OrigenRonda = 'PROGRAMADA' | 'DEMANDA';
+export type ResultadoRonda = 'LIDER_ELEGIDO' | 'EMPATE' | 'SIN_VOTOS' | 'CANCELADA';
+
+/** Candidato de una ronda de votación; votos es null mientras la ronda no cierre y en CANCELADA. */
+export interface CandidatoVista {
+  idUsuario: number;
+  nombre: string;
+  votos: number | null;
+  empatado: boolean;
+}
+
+/** Ronda de votación de líder de un equipo. */
+export interface RondaVista {
+  idRonda: number;
+  origen: OrigenRonda;
+  abreEn: string;
+  cierraEn: string;
+  cerradaEn: string | null;
+  abierta: boolean;
+  resultado: ResultadoRonda | null;
+  idLiderElegido: number | null;
+  nombreLiderElegido: string | null;
+  votosEmitidos: number;
+  votantes: number;
+  miVoto: number | null;
+  puedoVotar: boolean;
+  candidatos: CandidatoVista[];
+}
+
+/** GET/POST /api/equipos/{id}/ronda y PUT voto/desempate. */
+export interface VotacionVista {
+  idEquipo: number;
+  idLiderActual: number | null;
+  nombreLiderActual: string | null;
+  ronda: RondaVista | null;
+  puedeAbrir: boolean;
+  puedeDesempatar: boolean;
+}
+
+/** PUT /api/equipos/{id}/ronda/voto. */
+export interface SolicitudVoto {
+  idCandidato: number;
+}
+
+/** PUT /api/equipos/{id}/ronda/desempate. */
+export interface SolicitudDesempate {
+  idUsuario: number;
 }

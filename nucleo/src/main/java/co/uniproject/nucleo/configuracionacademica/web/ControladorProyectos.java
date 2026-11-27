@@ -1,20 +1,29 @@
 package co.uniproject.nucleo.configuracionacademica.web;
 
+import co.uniproject.nucleo.configuracionacademica.cursos.CursoResumen;
 import co.uniproject.nucleo.configuracionacademica.servicio.EquipoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.EstudianteDisponibleVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.EstudianteProyectoVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.HitoVista;
+import co.uniproject.nucleo.configuracionacademica.servicio.InscripcionVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.MonitorVista;
 import co.uniproject.nucleo.configuracionacademica.servicio.ProyectoDetalle;
 import co.uniproject.nucleo.configuracionacademica.servicio.ProyectoVista;
+import co.uniproject.nucleo.configuracionacademica.servicio.ResultadoCursosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.ResultadoHabilitacion;
+import co.uniproject.nucleo.configuracionacademica.servicio.ResultadoReparto;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioCorreosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioEquipos;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioHitos;
+import co.uniproject.nucleo.configuracionacademica.servicio.ServicioInscripcion;
 import co.uniproject.nucleo.configuracionacademica.servicio.ServicioProyectos;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCorreos;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCursoEstudiante;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudCursosProyecto;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudEquipo;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudEquiposLote;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudHito;
+import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudInscripcion;
 import co.uniproject.nucleo.configuracionacademica.servicio.SolicitudProyecto;
 import co.uniproject.nucleo.seguridad.UsuarioAutenticado;
 import co.uniproject.nucleo.seguridad.cuentas.CorreoHabilitadoVista;
@@ -44,16 +53,19 @@ public class ControladorProyectos {
     private final ServicioHitos hitos;
     private final ServicioEquipos equipos;
     private final ServicioCorreosProyecto correos;
+    private final ServicioInscripcion inscripcion;
 
     public ControladorProyectos(
             ServicioProyectos proyectos,
             ServicioHitos hitos,
             ServicioEquipos equipos,
-            ServicioCorreosProyecto correos) {
+            ServicioCorreosProyecto correos,
+            ServicioInscripcion inscripcion) {
         this.proyectos = proyectos;
         this.hitos = hitos;
         this.equipos = equipos;
         this.correos = correos;
+        this.inscripcion = inscripcion;
     }
 
     @PostMapping
@@ -100,6 +112,35 @@ public class ControladorProyectos {
         return equipos.crear(usuario, idProyecto, solicitud);
     }
 
+    @PostMapping("/{idProyecto}/equipos/lote")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<EquipoVista> crearEquiposEnLote(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudEquiposLote solicitud) {
+        return equipos.crearEnLote(usuario, idProyecto, solicitud);
+    }
+
+    @PostMapping("/{idProyecto}/equipos/reparto")
+    public ResultadoReparto repartirEquipos(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
+        return inscripcion.repartir(usuario, idProyecto);
+    }
+
+    @GetMapping("/{idProyecto}/inscripcion")
+    public InscripcionVista vistaInscripcion(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
+        return inscripcion.vista(usuario, idProyecto);
+    }
+
+    @PutMapping("/{idProyecto}/inscripcion")
+    public InscripcionVista configurarInscripcion(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudInscripcion solicitud) {
+        return inscripcion.configurar(usuario, idProyecto, solicitud);
+    }
+
     @PostMapping("/{idProyecto}/correos")
     @ResponseStatus(HttpStatus.CREATED)
     public ResultadoHabilitacion habilitarCorreos(
@@ -134,14 +175,37 @@ public class ControladorProyectos {
                 .body(correos.generarEnlace(usuario, idProyecto, idCorreoHabilitado));
     }
 
-    /** D-11 y D-12: estudiantes habilitados del proyecto con su equipo o invitación. Solo el docente dueño. */
+    @GetMapping("/{idProyecto}/cursos")
+    public List<CursoResumen> listarCursos(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
+        return proyectos.cursos(usuario, idProyecto);
+    }
+
+    @PutMapping("/{idProyecto}/cursos")
+    public ResultadoCursosProyecto asignarCursos(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @Valid @RequestBody SolicitudCursosProyecto solicitud) {
+        return proyectos.asignarCursos(usuario, idProyecto, solicitud);
+    }
+
+    /** Participantes de los cursos del proyecto con el curso con que cuentan y su equipo. Solo el docente dueño. */
     @GetMapping("/{idProyecto}/estudiantes")
     public List<EstudianteProyectoVista> listarEstudiantes(
             @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {
         return correos.estudiantes(usuario, idProyecto);
     }
 
-    /** T-046: cuentas de ESTUDIANTE sin equipo ni habilitación en el proyecto. Solo el docente dueño. */
+    @PutMapping("/{idProyecto}/estudiantes/{idUsuario}/curso")
+    public EstudianteProyectoVista elegirCursoEstudiante(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable("idProyecto") long idProyecto,
+            @PathVariable("idUsuario") long idUsuario,
+            @Valid @RequestBody SolicitudCursoEstudiante solicitud) {
+        return proyectos.elegirCurso(usuario, idProyecto, idUsuario, solicitud);
+    }
+
+    /** Participantes de los cursos del proyecto sin equipo en el proyecto. Solo el docente dueño. */
     @GetMapping("/{idProyecto}/estudiantes-disponibles")
     public List<EstudianteDisponibleVista> listarEstudiantesDisponibles(
             @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable("idProyecto") long idProyecto) {

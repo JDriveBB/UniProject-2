@@ -14,8 +14,8 @@ public interface CorreoHabilitadoRepositorio extends JpaRepository<CorreoHabilit
     List<CorreoHabilitado> findByEmailAndFechaUsoIsNull(String email);
 
     /**
-     * Las habilitaciones sin usar del correo, bloqueadas hasta el fin de la transacción (registro): una invitación a
-     * equipo que se guarda al mismo tiempo no se pierde ni queda en una habilitación ya usada (T-027).
+     * Las habilitaciones sin usar del correo, bloqueadas hasta el fin de la transacción en orden ascendente de id para
+     * evitar interbloqueos entre registros simultáneos del mismo correo.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM CorreoHabilitado c WHERE c.email = :email AND c.fechaUso IS NULL "
@@ -23,6 +23,8 @@ public interface CorreoHabilitadoRepositorio extends JpaRepository<CorreoHabilit
     List<CorreoHabilitado> bloquearPendientes(@Param("email") String email);
 
     List<CorreoHabilitado> findByIdProyectoOrderByEmail(Long idProyecto);
+
+    List<CorreoHabilitado> findByIdCursoAndFechaUsoIsNullOrderByEmail(Long idCurso);
 
     List<CorreoHabilitado> findByRolPlataformaOrderByEmail(RolPlataforma rolPlataforma);
 }

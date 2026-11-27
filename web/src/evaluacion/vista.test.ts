@@ -132,6 +132,9 @@ describe('vista', () => {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-11-30',
       usaMonitores: false,
+      equiposMixtos: false,
+      cierreEquipos: null,
+      horasRonda: 48,
     };
     const tableroEnviado: TableroHito = {
       idHitoEquipo: 5,

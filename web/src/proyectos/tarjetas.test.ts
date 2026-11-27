@@ -30,6 +30,9 @@ function proyectoBase(parcial: Partial<ProyectoVista> = {}): ProyectoVista {
     fechaInicio: '2026-08-01',
     fechaFin: '2026-11-30',
     usaMonitores: false,
+    equiposMixtos: false,
+    cierreEquipos: null,
+    horasRonda: 48,
     ...parcial,
   };
 }
@@ -142,6 +145,8 @@ describe('tarjetas de proyectos', () => {
         idEquipo: 10,
         idProyecto: 1,
         nombreEquipo: 'Alfa',
+        idCurso: null,
+        cupo: null,
         miembros: [
           { idUsuario: 101, nombre: 'E1', rolEquipo: 'LIDER' },
           { idUsuario: 102, nombre: 'E2', rolEquipo: 'INTEGRANTE' },
@@ -155,6 +160,8 @@ describe('tarjetas de proyectos', () => {
         idEquipo: 20,
         idProyecto: 1,
         nombreEquipo: 'Beta',
+        idCurso: null,
+        cupo: null,
         miembros: [
           { idUsuario: 201, nombre: 'E3', rolEquipo: 'LIDER' },
           { idUsuario: 202, nombre: 'E4', rolEquipo: 'INTEGRANTE' },
@@ -261,6 +268,8 @@ describe('tarjetas de proyectos', () => {
       idEquipo: 20,
       idProyecto: 1,
       nombreEquipo: 'Equipo Beta',
+      idCurso: null,
+      cupo: null,
       miembros: [
         { idUsuario: 11, nombre: 'Líder', rolEquipo: 'LIDER' },
         { idUsuario: 12, nombre: 'Integrante', rolEquipo: 'INTEGRANTE' },
@@ -354,6 +363,8 @@ describe('tarjetas de proyectos', () => {
           idEquipo: 30,
           idProyecto: 3,
           nombreEquipo: 'Gamma',
+          idCurso: null,
+          cupo: null,
           miembros: [{ idUsuario: 22, nombre: 'Est', rolEquipo: 'INTEGRANTE' }],
           hitos: [{ idHitoEquipo: 301, idHito: 10, estado: 'EN_CURSO', fechaEnvio: null }],
         },

@@ -18,6 +18,9 @@ function proyecto(parcial: Partial<ProyectoVista>): ProyectoVista {
     fechaInicio: '2026-01-01',
     fechaFin: '2026-06-30',
     usaMonitores: false,
+    equiposMixtos: false,
+    cierreEquipos: null,
+    horasRonda: 48,
     ...parcial,
   };
 }
@@ -27,6 +30,8 @@ function equipo(parcial: Partial<EquipoVista>): EquipoVista {
     idEquipo: 1,
     idProyecto: 1,
     nombreEquipo: 'E',
+    idCurso: null,
+    cupo: null,
     miembros: [],
     hitos: [],
     ...parcial,

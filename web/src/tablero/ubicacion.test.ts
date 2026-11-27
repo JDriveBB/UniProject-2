@@ -34,6 +34,8 @@ function equipo(idEquipo: number, miembros: number[], hitos: HitoEquipoVista[] =
     idEquipo,
     idProyecto: 1,
     nombreEquipo: 'Equipo ' + idEquipo,
+    idCurso: null,
+    cupo: null,
     miembros: miembros.map((idUsuario, i): MiembroVista => ({
       idUsuario,
       nombre: 'Persona ' + idUsuario,
@@ -53,6 +55,9 @@ function proyecto(idProyecto: number, equipos: EquipoVista[]): ProyectoDetalle {
       fechaInicio: '2026-08-01',
       fechaFin: '2026-12-01',
       usaMonitores: false,
+      equiposMixtos: false,
+      cierreEquipos: null,
+      horasRonda: 48,
     },
     hitos: [],
     equipos,

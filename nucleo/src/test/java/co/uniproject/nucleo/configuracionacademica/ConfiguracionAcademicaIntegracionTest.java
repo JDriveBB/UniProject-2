@@ -56,8 +56,21 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
         assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
     }
 
-    /** Crea la cuenta como lo haría el estudiante (correo ya habilitado), con la contraseña CLAVE. */
-    private void registrar(Navegador docente, long idProyecto, String email, String nombre) {
+    /** Crea la cuenta de estudiante desde una habilitación pendiente de curso, con la contraseña CLAVE. */
+    private void registrarEnCurso(Navegador docente, long idCurso, String email, String nombre) {
+        String codigo = enlaceCurso(docente, idCurso, email);
+        Navegador n = new Navegador(puerto);
+        n.pedirCsrf();
+        HttpResponse<String> r = n.post(
+                "/api/cuentas/registro",
+                "{\"nombre\":\"" + nombre + "\",\"email\":\"" + email
+                        + "\",\"contrasena\":\"" + CLAVE + "\",\"autorizaTratamientoDatos\":true,\"codigo\":\"" + codigo
+                        + "\"}");
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(201);
+    }
+
+    /** Crea la cuenta de monitor desde una habilitación pendiente del proyecto, con la contraseña CLAVE. */
+    private void registrarMonitor(Navegador docente, long idProyecto, String email, String nombre) {
         String codigo = enlace(docente, idProyecto, email);
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
@@ -117,6 +130,8 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void hitosYEquiposCreanLosHitosDeCadaEquipo() {
         Navegador docente = docente();
         long id = crearProyecto(docente, false);
+        long idCurso = crearCurso(docente, "Curso Hitos");
+        asignarCursos(docente, id, idCurso);
         crearEquipo(docente, id, "Equipo 1");
         HttpResponse<String> h1 =
                 docente.post("/api/proyectos/" + id + "/hitos", hito("Diagramas", 1, "2026-08-03", "2026-09-15"));
@@ -198,6 +213,8 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void laRubricaUsadaNoSeCambia() {
         Navegador docente = docente();
         long id = crearProyecto(docente, false);
+        long idCurso = crearCurso(docente, "Curso Rubrica");
+        asignarCursos(docente, id, idCurso);
         crearEquipo(docente, id, "Equipo R");
         long idHito = numero(
                 docente.post("/api/proyectos/" + id + "/hitos", hito("H", 1, "2026-08-03", "2026-09-15"))
@@ -233,30 +250,36 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void correosHabilitadosYMiembros() {
         Navegador docente = docente();
         long id = crearProyecto(docente, false);
+        long idCurso = crearCurso(docente, "Curso Miembros");
+        asignarCursos(docente, id, idCurso);
         long idEquipo1 = crearEquipo(docente, id, "Equipo A");
         long idEquipo2 = crearEquipo(docente, id, "Equipo B");
         String a = correoUnico("est");
         String b = correoUnico("est");
+        HttpResponse<String> estPorProyecto =
+                docente.post("/api/proyectos/" + id + "/correos", correos("ESTUDIANTE", a));
+        assertThat(estPorProyecto.statusCode()).as(estPorProyecto.body()).isEqualTo(400);
+        assertThat(estPorProyecto.body()).contains("\"codigo\":\"ROL_INVALIDO\"");
+
         HttpResponse<String> alta = docente.post(
-                "/api/proyectos/" + id + "/correos", correos("ESTUDIANTE", a.toUpperCase(Locale.ROOT), a, b));
+                "/api/cursos/" + idCurso + "/correos",
+                "{\"emails\":[\"" + a.toUpperCase(Locale.ROOT) + "\",\"" + a + "\",\"" + b + "\"]}");
         assertThat(alta.statusCode()).isEqualTo(201);
         assertThat(alta.body())
                 .contains("\"email\":\"" + a + "\"")
                 .contains("\"email\":\"" + b + "\"")
-                .contains("\"yaHabilitados\":[]")
+                .contains("\"yaEnCurso\":[]")
                 .contains("\"conOtroRol\":[]");
-        HttpResponse<String> otraVez = docente.post("/api/proyectos/" + id + "/correos", correos("ESTUDIANTE", a));
-        assertThat(otraVez.body()).contains("\"yaHabilitados\":[\"" + a + "\"]");
-        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado WHERE id_proyecto = :p")
-                        .param("p", id)
+        HttpResponse<String> otraVez =
+                docente.post("/api/cursos/" + idCurso + "/correos", "{\"emails\":[\"" + a + "\"]}");
+        assertThat(otraVez.body()).contains("\"yaEnCurso\":[\"" + a + "\"]");
+        assertThat(jdbc.sql("SELECT count(*) FROM correo_habilitado WHERE id_curso = :c")
+                        .param("c", idCurso)
                         .query(Integer.class)
                         .single())
                 .isEqualTo(2);
-        assertThat(docente.get("/api/proyectos/" + id + "/correos").body())
-                .contains(a)
-                .contains(b);
 
-        registrar(docente, id, a, "Ana Prueba");
+        registrarEnCurso(docente, idCurso, a, "Ana Prueba");
         HttpResponse<String> miembro =
                 docente.post("/api/equipos/" + idEquipo1 + "/miembros", "{\"email\":\"" + a + "\"}");
         assertThat(miembro.statusCode()).isEqualTo(201);
@@ -266,12 +289,12 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
                 .contains("\"codigo\":\"YA_TIENE_EQUIPO\"");
         assertThat(docente.post("/api/equipos/" + idEquipo2 + "/miembros", "{\"email\":\"" + b + "\"}")
                         .body())
-                .contains("\"codigo\":\"ESTUDIANTE_NO_REGISTRADO\"");
+                .contains("\"codigo\":\"ESTUDIANTE_SIN_CURSO\"");
         assertThat(docente.post(
                                 "/api/equipos/" + idEquipo2 + "/miembros",
                                 "{\"email\":\"" + correoUnico("nadie") + "\"}")
                         .body())
-                .contains("\"codigo\":\"CORREO_NO_HABILITADO\"");
+                .contains("\"codigo\":\"ESTUDIANTE_SIN_CURSO\"");
 
         Navegador ana = sesion(a);
         assertThat(tieneValor(ana.get("/api/proyectos").body(), "idProyecto", id))
@@ -295,12 +318,14 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void unSoloLiderPorEquipo() {
         Navegador docente = docente();
         long id = crearProyecto(docente, false);
+        long idCurso = crearCurso(docente, "Curso Lider");
+        asignarCursos(docente, id, idCurso);
         long idEquipo = crearEquipo(docente, id, "Equipo L");
         String a = correoUnico("est");
         String b = correoUnico("est");
-        habilitar(docente, id, "ESTUDIANTE", a, b);
-        registrar(docente, id, a, "Lider Uno");
-        registrar(docente, id, b, "Lider Dos");
+        agregarAlCurso(docente, idCurso, a, b);
+        registrarEnCurso(docente, idCurso, a, "Lider Uno");
+        registrarEnCurso(docente, idCurso, b, "Lider Dos");
         assertThat(docente.post("/api/equipos/" + idEquipo + "/miembros", "{\"email\":\"" + a + "\"}")
                         .statusCode())
                 .isEqualTo(201);
@@ -463,23 +488,23 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     void seRetiraUnCorreoHabilitadoPendiente() {
         Navegador docente = docente();
         long id = crearProyecto(docente, true);
-        String correoEst = correoUnico("pend");
-        HttpResponse<String> rHab = docente.post("/api/proyectos/" + id + "/correos", correos("ESTUDIANTE", correoEst));
+        String correoMon = correoUnico("pend");
+        HttpResponse<String> rHab = docente.post("/api/proyectos/" + id + "/correos", correos("MONITOR", correoMon));
         assertThat(rHab.statusCode()).isEqualTo(201);
         long idCorreo = numero(rHab.body(), "idCorreoHabilitado");
-        String codigo = enlace(docente, id, correoEst);
+        String codigo = enlace(docente, id, correoMon);
 
         assertThat(docente.delete("/api/proyectos/" + id + "/correos/" + idCorreo)
                         .statusCode())
                 .isEqualTo(204);
-        assertThat(docente.get("/api/proyectos/" + id + "/correos").body()).doesNotContain(correoEst);
+        assertThat(docente.get("/api/proyectos/" + id + "/correos").body()).doesNotContain(correoMon);
 
         Navegador n = new Navegador(puerto);
         n.pedirCsrf();
         HttpResponse<String> reg = n.post(
                 "/api/cuentas/registro",
-                "{\"nombre\":\"Estudiante Pendiente\",\"email\":\""
-                        + correoEst + "\",\"contrasena\":\"" + CLAVE
+                "{\"nombre\":\"Monitor Pendiente\",\"email\":\""
+                        + correoMon + "\",\"contrasena\":\"" + CLAVE
                         + "\",\"autorizaTratamientoDatos\":true,\"codigo\":\""
                         + codigo + "\"}");
         assertThat(reg.statusCode()).isEqualTo(409);
@@ -498,8 +523,7 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
                         .single())
                 .isEqualTo(1);
 
-        HttpResponse<String> rHab2 =
-                docente.post("/api/proyectos/" + id + "/correos", correos("ESTUDIANTE", correoEst));
+        HttpResponse<String> rHab2 = docente.post("/api/proyectos/" + id + "/correos", correos("MONITOR", correoMon));
         assertThat(rHab2.statusCode()).isEqualTo(201);
         assertThat(rHab2.body()).contains("\"yaHabilitados\":[]");
         assertThat(docente.delete("/api/proyectos/" + id + "/correos/" + idCorreo)
@@ -525,12 +549,11 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     @Test
     void noSeRetiraUnCorreoYaRegistradoNiAjeno() {
         Navegador docenteA = docente();
-        long idA = crearProyecto(docenteA, false);
+        long idA = crearProyecto(docenteA, true);
         String correoReg = correoUnico("reg");
-        HttpResponse<String> rHabA =
-                docenteA.post("/api/proyectos/" + idA + "/correos", correos("ESTUDIANTE", correoReg));
+        HttpResponse<String> rHabA = docenteA.post("/api/proyectos/" + idA + "/correos", correos("MONITOR", correoReg));
         long idUsado = numero(rHabA.body(), "idCorreoHabilitado");
-        registrar(docenteA, idA, correoReg, "Estudiante Registrado");
+        registrarMonitor(docenteA, idA, correoReg, "Monitor Registrado");
 
         HttpResponse<String> delUsado = docenteA.delete("/api/proyectos/" + idA + "/correos/" + idUsado);
         assertThat(delUsado.statusCode()).isEqualTo(409);
@@ -543,9 +566,9 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
                 .isEqualTo(1);
 
         Navegador docenteB = docente();
-        long idBProyecto = crearProyecto(docenteB, false);
-        HttpResponse<String> rHabB = docenteB.post(
-                "/api/proyectos/" + idBProyecto + "/correos", correos("ESTUDIANTE", correoUnico("pendb")));
+        long idBProyecto = crearProyecto(docenteB, true);
+        HttpResponse<String> rHabB =
+                docenteB.post("/api/proyectos/" + idBProyecto + "/correos", correos("MONITOR", correoUnico("pendb")));
         long idB = numero(rHabB.body(), "idCorreoHabilitado");
 
         assertThat(docenteB.delete("/api/proyectos/" + idA + "/correos/" + idUsado)
@@ -576,14 +599,14 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
     @Test
     void laConfiguracionQuedaAuditadaSinCorreos() {
         Navegador docente = docente();
-        long id = crearProyecto(docente, false);
+        long id = crearProyecto(docente, true);
         assertThat(docente.put(
                                 "/api/proyectos/" + id,
                                 "{\"nombre\":\"Proyecto de prueba\",\"descripcion\":\"Curso de prueba\","
-                                        + "\"fechaInicio\":\"2026-08-03\",\"fechaFin\":\"2026-12-04\",\"usaMonitores\":false}")
+                                        + "\"fechaInicio\":\"2026-08-03\",\"fechaFin\":\"2026-12-04\",\"usaMonitores\":true}")
                         .statusCode())
                 .isEqualTo(200);
-        habilitar(docente, id, "ESTUDIANTE", correoUnico("est"));
+        habilitar(docente, id, "MONITOR", correoUnico("mon"));
         assertThat(jdbc.sql(
                                 "SELECT accion || ':' || coalesce(campo_modificado, '-') || ':' || coalesce(valor_anterior, '-') "
                                         + "|| ':' || coalesce(valor_nuevo, '-') FROM log_auditoria WHERE entidad_afectada = 'proyecto' "
@@ -593,7 +616,7 @@ class ConfiguracionAcademicaIntegracionTest extends ApiIntegracionBase {
                         .list())
                 .containsExactly("CREAR:-:-:-", "ACTUALIZAR:fecha_fin:2026-11-27:2026-12-04");
         assertThat(jdbc.sql("SELECT count(*) FROM log_auditoria WHERE accion = 'HABILITAR_CORREO' "
-                                + "AND valor_nuevo = 'ESTUDIANTE' AND id_registro_afectado IN "
+                                + "AND valor_nuevo = 'MONITOR' AND id_registro_afectado IN "
                                 + "(SELECT id_correo_habilitado FROM correo_habilitado WHERE id_proyecto = :p)")
                         .param("p", id)
                         .query(Integer.class)

@@ -22,8 +22,17 @@ import tools.jackson.databind.node.ObjectNode;
 public class PersonasEnEventos {
 
     /** Campos de data que guardan una Persona o la Referencia de una persona (eventos-contrato, paquete datos). */
-    static final List<String> CAMPOS_PERSONA = List.of("responsable", "docente", "integrantes", "estudiante", "lider",
-            "integranteAnterior", "integranteNuevo", "titular");
+    static final List<String> CAMPOS_PERSONA = List.of(
+            "responsable",
+            "docente",
+            "integrantes",
+            "estudiante",
+            "lider",
+            "integranteAnterior",
+            "integranteNuevo",
+            "titular",
+            "personas",
+            "estudiantes");
 
     /** Filtro grueso en la BD (cualquier id igual dentro de data); el filtro exacto es CAMPOS_PERSONA. */
     private static final String RUTA = "$.data.** ? (@.id == $id)";
@@ -89,7 +98,8 @@ public class PersonasEnEventos {
                         .param("carga", json)
                         .param("id", f.id())
                         .update();
-                notificaciones.regenerar(codec.leer(f.carga().getBytes(StandardCharsets.UTF_8)),
+                notificaciones.regenerar(
+                        codec.leer(f.carga().getBytes(StandardCharsets.UTF_8)),
                         codec.leer(json.getBytes(StandardCharsets.UTF_8)));
                 cambiados++;
             }
@@ -100,7 +110,8 @@ public class PersonasEnEventos {
     /** Decide con el evento tipado (no con la cadena type) y sobre la carga original, aún sin cambios. */
     private boolean esCorreccionDelLider(String carga, long idUsuario) {
         return codec.leer(carga.getBytes(StandardCharsets.UTF_8)).data() instanceof TareaCorreccion c
-                && c.lider() != null && c.lider().id() == idUsuario;
+                && c.lider() != null
+                && c.lider().id() == idUsuario;
     }
 
     private static boolean cambiarPersona(JsonNode nodo, long idUsuario, String nombre, boolean quitarChat) {

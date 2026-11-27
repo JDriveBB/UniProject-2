@@ -13,6 +13,9 @@ const HISTORIAL = /^\/equipos\/\d+\/historial\/?$/;
 const TABLERO = /^\/equipos\/\d+\/tablero\/?$/;
 const RUTA_CRITICA = /^\/hitos\/\d+\/ruta-critica\/?$/;
 const TAREA = /^\/tareas\/\d+\/?$/;
+const CURSO = /^\/cursos(?:\/|$)/;
+const VOTACION = /^\/equipos\/\d+\/votacion\/?$/;
+const INSCRIPCION = /^\/proyectos\/\d+\/inscripcion\/?$/;
 
 const ROLES: Record<RolPlataforma, string> = {
   ADMINISTRADOR: 'Administrador',
@@ -32,8 +35,9 @@ export function idProyectoEnRuta(ruta: string): number | null {
 }
 
 /**
- * Navegación de la barra por rol (decisión 26b-2, Figma P02/P03/P04). "Panel" abre el panel del proyecto que se está
- * viendo; fuera de un proyecto va a /panel.
+ * Navegación de la barra por rol (decisión 26b-2, bloque 51). "Panel" abre el panel del proyecto que se está
+ * viendo; fuera de un proyecto va a /panel. Docente: Panel, Proyectos, Cursos, Reportes. Estudiante: Mis cursos,
+ * Tablero, Mis tareas, Ruta crítica.
  */
 export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
   if (rol === 'DOCENTE') {
@@ -41,13 +45,19 @@ export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
     const enPanel = ruta === rutas.panel() || PANEL_PROYECTO.test(ruta);
     return [
       { texto: 'Panel', a: id === null ? rutas.panel() : rutas.panelProyecto(id), activo: enPanel },
-      { texto: 'Proyectos', a: rutas.proyectos(), activo: !enPanel && enProyectos(ruta) },
+      { texto: 'Proyectos', a: rutas.proyectos(), activo: !enPanel && (enProyectos(ruta) || VOTACION.test(ruta)) },
+      { texto: 'Cursos', a: rutas.cursos(), activo: CURSO.test(ruta) },
       { texto: 'Reportes', a: rutas.reportes(), activo: ruta === rutas.reportes() || HISTORIAL.test(ruta) },
     ];
   }
   if (rol === 'ESTUDIANTE') {
     return [
-      { texto: 'Tablero', a: rutas.tablero(), activo: ruta === rutas.tablero() || TABLERO.test(ruta) || HISTORIAL.test(ruta) },
+      { texto: 'Mis cursos', a: rutas.misCursos(), activo: ruta === rutas.misCursos() || INSCRIPCION.test(ruta) || VOTACION.test(ruta) },
+      {
+        texto: 'Tablero',
+        a: rutas.tablero(),
+        activo: ruta === rutas.tablero() || TABLERO.test(ruta) || HISTORIAL.test(ruta),
+      },
       { texto: 'Mis tareas', a: rutas.misTareas(), activo: ruta === rutas.misTareas() || TAREA.test(ruta) },
       {
         texto: 'Ruta crítica',

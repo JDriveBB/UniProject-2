@@ -38,36 +38,50 @@ public class EnlacesRegistro {
         this.reloj = reloj;
     }
 
-    /** Para una habilitación de estudiante o monitor de un proyecto (el llamador ya verificó el permiso del docente). */
+    /** Para una habilitación de monitor de un proyecto (el llamador ya verificó el permiso del docente). */
     @Transactional
     public EnlaceRegistroVista generarParaProyecto(long idDocente, long idProyecto, long idCorreoHabilitado) {
         return generar(
                 idDocente,
                 idCorreoHabilitado,
                 c -> Objects.equals(c.getIdProyecto(), idProyecto),
-                "Esa habilitación no existe en el proyecto");
+                "Esa habilitación no existe en el proyecto",
+                MENSAJE_HABILITACION_USADA);
     }
 
-    /** Para una habilitación de docente sin proyecto (el llamador ya verificó que es ADMINISTRADOR). */
+    /** Para una habilitación de estudiante de un curso (el llamador ya verificó el permiso del docente). */
+    @Transactional
+    public EnlaceRegistroVista generarParaCurso(long idDocente, long idCurso, long idCorreoHabilitado) {
+        return generar(
+                idDocente,
+                idCorreoHabilitado,
+                c -> Objects.equals(c.getIdCurso(), idCurso) && c.getRolPlataforma() == RolPlataforma.ESTUDIANTE,
+                "Esa habilitación no existe en el curso",
+                "Esa persona ya creó su cuenta. Quítala del curso");
+    }
+
+    /** Para una habilitación de docente sin proyecto ni curso (el llamador ya verificó que es ADMINISTRADOR). */
     @Transactional
     public EnlaceRegistroVista generarParaDocente(long idAdministrador, long idCorreoHabilitado) {
         return generar(
                 idAdministrador,
                 idCorreoHabilitado,
                 c -> c.getRolPlataforma() == RolPlataforma.DOCENTE && c.getIdProyecto() == null,
-                "Esa habilitación de docente no existe");
+                "Esa habilitación de docente no existe",
+                MENSAJE_HABILITACION_USADA);
     }
 
     private EnlaceRegistroVista generar(
             long idUsuarioAccion,
             long idCorreoHabilitado,
             Predicate<CorreoHabilitado> perteneceAlAmbito,
-            String mensajeNoEncontrado) {
+            String mensajeNoEncontrado,
+            String mensajeUsada) {
         CorreoHabilitado c = correos.findById(idCorreoHabilitado)
                 .filter(perteneceAlAmbito)
                 .orElseThrow(() -> new RecursoNoEncontradoException(mensajeNoEncontrado));
         if (c.getFechaUso() != null) {
-            throw new ReglaNegocioException(CODIGO_HABILITACION_USADA, MENSAJE_HABILITACION_USADA);
+            throw new ReglaNegocioException(CODIGO_HABILITACION_USADA, mensajeUsada);
         }
         CodigosRecuperacion.Nuevo nuevo = CodigosRecuperacion.nuevo();
         Instant venceEn = Instant.now(reloj).plus(VIGENCIA);

@@ -33,6 +33,7 @@ export interface BorradorProyecto {
   fechaInicio: string;
   fechaFin: string;
   usaMonitores: boolean;
+  equiposMixtos: boolean;
   hitos: BorradorHito[];
 }
 
@@ -46,6 +47,7 @@ export const BORRADOR_VACIO: BorradorProyecto = {
   fechaInicio: '',
   fechaFin: '',
   usaMonitores: false,
+  equiposMixtos: false,
   hitos: [],
 };
 
@@ -87,6 +89,7 @@ export function borradorDe(detalle: ProyectoDetalle): BorradorProyecto {
     fechaInicio: detalle.proyecto.fechaInicio,
     fechaFin: detalle.proyecto.fechaFin,
     usaMonitores: detalle.proyecto.usaMonitores,
+    equiposMixtos: detalle.proyecto.equiposMixtos,
     hitos: detalle.hitos.map(borradorDeHito),
   };
 }
