@@ -445,7 +445,7 @@ export function TarjetaEquipo({
         <div className="pila">
           <p className={`equipo__votacion equipo__votacion--${resumen.tono}`}>{resumen.texto}</p>
           <div>
-            <Link className="enlace-tarea" to={rutas.votacionEquipo(equipo.idEquipo)}>
+            <Link className="enlace-fuerte" to={rutas.votacionEquipo(equipo.idEquipo)}>
               {resumen.desempatar ? 'Desempatar' : 'Ver votación'}
             </Link>
           </div>

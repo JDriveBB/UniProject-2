@@ -30,7 +30,7 @@ describe('barra de navegación', () => {
     ]);
     expect(enlacesDe('ESTUDIANTE', '/mis-cursos').map((e) => e.activo)).toEqual([true, false, false, false]);
     expect(enlacesDe('ESTUDIANTE', '/proyectos/5/inscripcion').map((e) => e.activo)).toEqual([true, false, false, false]);
-    expect(enlacesDe('ESTUDIANTE', '/equipos/4/votacion').map((e) => e.activo)).toEqual([false, true, false, false]);
+    expect(enlacesDe('ESTUDIANTE', '/equipos/4/votacion').map((e) => e.activo)).toEqual([true, false, false, false]);
     expect(enlacesDe('ESTUDIANTE', '/hitos/7/ruta-critica').map((e) => e.activo)).toEqual([false, false, false, true]);
     expect(enlacesDe('ESTUDIANTE', '/equipos/3/historial').map((e) => e.activo)).toEqual([false, true, false, false]);
   });

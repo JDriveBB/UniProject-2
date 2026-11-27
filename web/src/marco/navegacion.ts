@@ -52,11 +52,11 @@ export function enlacesDe(rol: RolPlataforma, ruta: string): EnlaceBarra[] {
   }
   if (rol === 'ESTUDIANTE') {
     return [
-      { texto: 'Mis cursos', a: rutas.misCursos(), activo: ruta === rutas.misCursos() || INSCRIPCION.test(ruta) },
+      { texto: 'Mis cursos', a: rutas.misCursos(), activo: ruta === rutas.misCursos() || INSCRIPCION.test(ruta) || VOTACION.test(ruta) },
       {
         texto: 'Tablero',
         a: rutas.tablero(),
-        activo: ruta === rutas.tablero() || TABLERO.test(ruta) || HISTORIAL.test(ruta) || VOTACION.test(ruta),
+        activo: ruta === rutas.tablero() || TABLERO.test(ruta) || HISTORIAL.test(ruta),
       },
       { texto: 'Mis tareas', a: rutas.misTareas(), activo: ruta === rutas.misTareas() || TAREA.test(ruta) },
       {
