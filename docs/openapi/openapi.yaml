@@ -482,7 +482,11 @@ paths:
         '400': {$ref: '#/components/responses/Invalida'}
         '401': {$ref: '#/components/responses/NoAutenticado'}
         '403': {$ref: '#/components/responses/Prohibido'}
-        '409': {$ref: '#/components/responses/Conflicto'}
+        '409':
+          description: 'HITOS_FUERA_DE_FECHAS o EQUIPOS_MIXTOS_INMUTABLE'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaError'}
   /api/proyectos/{idProyecto}/hitos:
     parameters:
       - $ref: '#/components/parameters/idProyecto'

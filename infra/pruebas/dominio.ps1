@@ -113,9 +113,9 @@ function Registrar([string]$actor, [string]$nombre, [string]$email, [string]$cod
     return Api $actor "POST" "/api/cuentas/registro" (ComoJson @{ nombre = $nombre; email = $email; contrasena = $CLAVE; autorizaTratamientoDatos = $true; codigo = $codigo })
 }
 
-function EnlaceProyecto([long]$idProyecto, [string]$email) {
-    $idCorreo = Sql "SELECT id_correo_habilitado FROM correo_habilitado WHERE id_proyecto = $idProyecto AND email = '$email' AND fecha_uso IS NULL"
-    $r = Api "docente" "POST" "/api/proyectos/$idProyecto/correos/$idCorreo/enlace"
+function EnlaceCurso([long]$idCurso, [string]$email) {
+    $idCorreo = Sql "SELECT id_correo_habilitado FROM correo_habilitado WHERE id_curso = $idCurso AND email = '$email' AND fecha_uso IS NULL"
+    $r = Api "docente" "POST" "/api/cursos/$idCurso/correos/$idCorreo/enlace"
     return (Leer $r).codigo
 }
 
@@ -174,17 +174,20 @@ try {
     $rc2 = Api "docente" "POST" "/api/hitos/$ID_HITO/criterios" (ComoJson @{ descripcion = "Documento"; pesoPorcentaje = 40; puntajeMaximo = 5 })
     $C1 = (Leer $rc1).idCriterio
     $C2 = (Leer $rc2).idCriterio
-    $re = Api "docente" "POST" "/api/proyectos/$ID_PROYECTO/equipos" (ComoJson @{ nombreEquipo = "Equipo E2E" })
+    $rcu = Api "docente" "POST" "/api/cursos" (ComoJson @{ nombre = "Curso E2E $SUFIJO"; periodo = "2026-2" })
+    $ID_CURSO = (Leer $rcu).idCurso
+    $rac = Api "docente" "PUT" "/api/proyectos/$ID_PROYECTO/cursos" (ComoJson @{ idsCursos = @($ID_CURSO); confirmar = $true })
+    $rco = Api "docente" "POST" "/api/cursos/$ID_CURSO/correos" (ComoJson @{ emails = @($LIDER, $INTEGRANTE) })
+    $re = Api "docente" "POST" "/api/proyectos/$ID_PROYECTO/equipos" (ComoJson @{ nombreEquipo = "Equipo E2E"; idCurso = $ID_CURSO })
     $equipo = Leer $re
     $ID_EQUIPO = $equipo.idEquipo
     $ID_HE = @($equipo.hitos | Where-Object { $_.idHito -eq $ID_HITO })[0].idHitoEquipo
-    $rco = Api "docente" "POST" "/api/proyectos/$ID_PROYECTO/correos" (ComoJson @{ emails = @($LIDER, $INTEGRANTE); rol = "ESTUDIANTE" })
-    $codigos = @($rp.Codigo, $rh.Codigo, $rc1.Codigo, $rc2.Codigo, $re.Codigo, $rco.Codigo) -join ","
-    if ($codigos -eq "201,201,201,201,201,201" -and $ID_HE -gt 0) {
+    $codigos = @($rp.Codigo, $rh.Codigo, $rc1.Codigo, $rc2.Codigo, $rcu.Codigo, $rac.Codigo, $rco.Codigo, $re.Codigo) -join ","
+    if ($codigos -eq "201,201,201,201,201,200,201,201" -and $ID_HE -gt 0) {
         $ok++
         Write-Host "D2 OK"
     } else {
-        Write-Host "D2 FALLO: esperado [201,201,201,201,201,201, idHitoEquipo > 0] pero salio [$codigos, $ID_HE]"
+        Write-Host "D2 FALLO: esperado [201,201,201,201,201,200,201,201, idHitoEquipo > 0] pero salio [$codigos, $ID_HE]"
     }
 } catch {
     Write-Host "D2 FALLO: $($_.Exception.Message)"
@@ -192,8 +195,8 @@ try {
 
 # D3 Estudiantes registrados, equipo con lider y permiso negado (4a, 4b)
 try {
-    $rl = Registrar "lider" "Lider E2E" $LIDER (EnlaceProyecto $ID_PROYECTO $LIDER)
-    $ri = Registrar "integrante" "Integrante E2E" $INTEGRANTE (EnlaceProyecto $ID_PROYECTO $INTEGRANTE)
+    $rl = Registrar "lider" "Lider E2E" $LIDER (EnlaceCurso $ID_CURSO $LIDER)
+    $ri = Registrar "integrante" "Integrante E2E" $INTEGRANTE (EnlaceCurso $ID_CURSO $INTEGRANTE)
     $ID_LIDER = (Leer $rl).idUsuario
     $ID_INTEGRANTE = (Leer $ri).idUsuario
     $il = Ingresar "lider" $LIDER

@@ -90,11 +90,54 @@ classDiagram
     class ServicioEquipos {
         <<service>>
         +crear(UsuarioAutenticado, long, SolicitudEquipo) EquipoVista
+        +crearEnLote(UsuarioAutenticado, long, SolicitudEquiposLote) List~EquipoVista~
+        +cambiarCupo(UsuarioAutenticado, long, SolicitudCupo) EquipoVista
         +agregarMiembro(UsuarioAutenticado, long, SolicitudMiembro) EquipoVista
-        +invitar(UsuarioAutenticado, long, SolicitudInvitacion) EstudianteProyectoVista
-        +incorporarInvitado(long, long, long, long) boolean
         +quitarMiembro(UsuarioAutenticado, long, long) EquipoVista
         +cambiarLider(UsuarioAutenticado, long, SolicitudLider) EquipoVista
+        +destituir(UsuarioAutenticado, long) EquipoVista
+    }
+
+    class ServicioCursos {
+        <<service>>
+        +crear(UsuarioAutenticado, SolicitudCurso) CursoVista
+        +listar(UsuarioAutenticado) List~CursoVista~
+        +detalle(UsuarioAutenticado, long) CursoDetalle
+        +editar(UsuarioAutenticado, long, SolicitudCurso) CursoVista
+        +cambiarArchivado(UsuarioAutenticado, long, SolicitudArchivado) CursoVista
+        +borrar(UsuarioAutenticado, long) void
+        +agregarCorreos(UsuarioAutenticado, long, SolicitudCorreosCurso) ResultadoCorreosCurso
+        +retirarCorreo(UsuarioAutenticado, long, long) void
+        +generarEnlace(UsuarioAutenticado, long, long) EnlaceRegistroVista
+        +quitarEstudiante(UsuarioAutenticado, long, long) void
+        +companeros(UsuarioAutenticado, long) List~CompaneroVista~
+    }
+
+    class ParticipacionCursos {
+        <<service>>
+        +bloquearCurso(long) void
+        +incorporar(long, long, long) boolean
+        +retirar(long, long, long) void
+        +cursosValidos(long, long) List~Long~
+        +sincronizar(long, long) void
+        +sincronizarProyecto(long) void
+    }
+
+    class ServicioInscripcion {
+        <<service>>
+        +vista(UsuarioAutenticado, long) InscripcionVista
+        +configurar(UsuarioAutenticado, long, SolicitudInscripcion) InscripcionVista
+        +unirse(UsuarioAutenticado, long) EquipoVista
+        +salirse(UsuarioAutenticado, long) void
+        +repartir(UsuarioAutenticado, long) ResultadoReparto
+    }
+
+    class ServicioVotacion {
+        <<service>>
+        +vista(UsuarioAutenticado, long) VotacionVista
+        +abrir(UsuarioAutenticado, long) VotacionVista
+        +votar(UsuarioAutenticado, long, SolicitudVoto) VotacionVista
+        +desempatar(UsuarioAutenticado, long, SolicitudDesempate) VotacionVista
     }
 
     class ServicioCorreosProyecto {
@@ -116,18 +159,24 @@ classDiagram
     MiembroEquipo --> RolEquipo
     ServicioProyectos ..> Proyecto
     ServicioProyectos ..> ApoyoConfiguracion
+    ServicioProyectos ..> ParticipacionCursos
     ServicioHitos ..> Hito
     ServicioHitos ..> CriterioRubrica
     ServicioHitos ..> ApoyoConfiguracion
     ServicioEquipos ..> Equipo
     ServicioEquipos ..> MiembroEquipo
     ServicioEquipos ..> ApoyoConfiguracion
+    ServicioCursos ..> ParticipacionCursos
+    ServicioInscripcion ..> Equipo
+    ServicioInscripcion ..> ApoyoConfiguracion
+    ServicioVotacion ..> Equipo
+    ServicioVotacion ..> ApoyoConfiguracion
     ServicioCorreosProyecto ..> MonitorProyecto
 ```
 
-El paquete `configuracionacademica` concentra la administración académica del docente (RF1, RF6, RF14 y habilitación de correos por proyecto). Al crear hitos o equipos, `ApoyoConfiguracion.completarHitosEquipo` genera automáticamente las filas `hito_equipo` faltantes mediante `INSERT ... ON CONFLICT DO NOTHING`.
+El paquete `configuracionacademica` concentra la administración académica del docente (RF1, RF6, RF14): gestión de cursos (`ServicioCursos`, `ParticipacionCursos`), asignación de cursos y monitores a proyectos, equipos con cupo y autoinscripción/reparto (`ServicioEquipos`, `ServicioInscripcion`) y votación de líder por rondas (`ServicioVotacion`). Al crear hitos o equipos, `ApoyoConfiguracion.completarHitosEquipo` genera automáticamente las filas `hito_equipo` faltantes mediante `INSERT ... ON CONFLICT DO NOTHING`.
 
-**Fuentes:** [`Proyecto.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/Proyecto.java), [`Hito.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/Hito.java), [`CriterioRubrica.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/CriterioRubrica.java), [`Equipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/Equipo.java), [`MiembroEquipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MiembroEquipo.java), [`MiembroEquipoId.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MiembroEquipoId.java), [`MonitorProyecto.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MonitorProyecto.java), [`MonitorProyectoId.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MonitorProyectoId.java), [`RolEquipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/RolEquipo.java), [`ServicioProyectos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioProyectos.java), [`ServicioHitos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioHitos.java), [`ServicioEquipos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioEquipos.java), [`ServicioCorreosProyecto.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioCorreosProyecto.java), [`ApoyoConfiguracion.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ApoyoConfiguracion.java).
+**Fuentes:** [`Proyecto.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/Proyecto.java), [`Hito.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/Hito.java), [`CriterioRubrica.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/CriterioRubrica.java), [`Equipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/Equipo.java), [`MiembroEquipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MiembroEquipo.java), [`MiembroEquipoId.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MiembroEquipoId.java), [`MonitorProyecto.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MonitorProyecto.java), [`MonitorProyectoId.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/MonitorProyectoId.java), [`RolEquipo.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/dominio/RolEquipo.java), [`ServicioProyectos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioProyectos.java), [`ServicioHitos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioHitos.java), [`ServicioEquipos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioEquipos.java), [`ServicioCursos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/cursos/ServicioCursos.java), [`ParticipacionCursos.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/cursos/ParticipacionCursos.java), [`ServicioInscripcion.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioInscripcion.java), [`ServicioVotacion.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/votacion/ServicioVotacion.java), [`ServicioCorreosProyecto.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ServicioCorreosProyecto.java), [`ApoyoConfiguracion.java`](../../nucleo/src/main/java/co/uniproject/nucleo/configuracionacademica/servicio/ApoyoConfiguracion.java).
 
 ---
 
@@ -589,13 +638,13 @@ classDiagram
         <<entity>>
         -Long idCorreoHabilitado
         -Long idProyecto
+        -Long idCurso
         -String email
         -RolPlataforma rolPlataforma
         -Long idHabilitadoPor
         -Instant fechaHabilitacion
         -Long idUsuarioRegistrado
         -Instant fechaUso
-        -Long idEquipoInvitado
         -byte[] enlaceSelector
         -byte[] enlaceVerificadorHash
         -Instant enlaceVenceEn

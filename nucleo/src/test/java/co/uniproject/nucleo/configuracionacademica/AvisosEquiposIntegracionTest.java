@@ -206,7 +206,10 @@ class AvisosEquiposIntegracionTest extends ApiIntegracionBase {
                     .containsExactly("Beto Res es el nuevo líder de Equipo Res, elegido por votación.");
         }
 
-        // (b) Empate y luego desempate del docente.
+        // (b) Empate y luego desempate del docente (equipo sin líder).
+        jdbc.sql("UPDATE miembro_equipo SET rol_equipo = 'INTEGRANTE' WHERE id_equipo = :e")
+                .param("e", e)
+                .update();
         abrirRondaApi(doc.nav(), e);
         assertThat(votarApi(navA, e, idA).statusCode()).isEqualTo(200);
         assertThat(votarApi(navB, e, idC).statusCode()).isEqualTo(200);
@@ -230,7 +233,10 @@ class AvisosEquiposIntegracionTest extends ApiIntegracionBase {
         assertThat(elegidos.get(1).origen()).isEqualTo(OrigenLider.DESEMPATE);
         assertThat(elegidos.get(1).lider().id()).isEqualTo(idC);
 
-        // (c) Sin votos.
+        // (c) Sin votos (equipo sin líder).
+        jdbc.sql("UPDATE miembro_equipo SET rol_equipo = 'INTEGRANTE' WHERE id_equipo = :e")
+                .param("e", e)
+                .update();
         abrirRondaApi(doc.nav(), e);
         vencerRondaSql(e);
         revisionRondas.cerrarVencidas();
@@ -238,6 +244,41 @@ class AvisosEquiposIntegracionTest extends ApiIntegracionBase {
         sinLider = eventosDe("equipo.sin_lider", "{data,equipo,id}", e, EquipoSinLider.class);
         assertThat(sinLider).hasSize(2);
         assertThat(sinLider.get(1).motivo()).isEqualTo(MotivoSinLider.SIN_VOTOS);
+    }
+
+    @Test
+    void cerrarSinVotosConLiderNoEmiteSinLider() {
+        Docente doc = nuevoDocente("Profe ConLider");
+        long c = crearCurso(doc.nav(), "Curso ConLider");
+        long p = crearProyecto(doc.nav(), "Proyecto ConLider");
+        asignarCursos(doc.nav(), p, c);
+        long e = crearEquipoApi(doc.nav(), p, "Equipo ConLider", c, null);
+        String emailA = correoUnico("clida");
+        String emailB = correoUnico("clidb");
+        long idA = crearUsuario("Ana ConLider", emailA, "ESTUDIANTE");
+        long idB = crearUsuario("Beto ConLider", emailB, "ESTUDIANTE");
+        agregarAlCurso(doc.nav(), c, emailA, emailB);
+        jdbc.sql("INSERT INTO miembro_equipo (id_equipo, id_usuario) VALUES (:e, :a), (:e, :b)")
+                .param("e", e)
+                .param("a", idA)
+                .param("b", idB)
+                .update();
+        assertThat(doc.nav()
+                        .put("/api/equipos/" + e + "/lider", "{\"idUsuario\":" + idA + "}")
+                        .statusCode())
+                .isEqualTo(200);
+
+        abrirRondaApi(doc.nav(), e);
+        vencerRondaSql(e);
+        revisionRondas.cerrarVencidas();
+
+        assertThat(jdbc.sql("SELECT resultado FROM ronda_lider WHERE id_equipo = :e")
+                        .param("e", e)
+                        .query(String.class)
+                        .single())
+                .isEqualTo("SIN_VOTOS");
+        assertThat(eventosDe("equipo.sin_lider", "{data,equipo,id}", e, EquipoSinLider.class))
+                .isEmpty();
     }
 
     @Test

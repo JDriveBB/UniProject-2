@@ -4715,7 +4715,7 @@ select.campo__entrada {
   }
 }
 
-/* ===== Sugerencias del campo de fichas e invitados del equipo (T-027, D-11 y D-12) ===== */
+/* ===== Sugerencias del campo de fichas (T-027 y D-11) ===== */
 .sugerencias {
   display: flex;
   flex-direction: column;
@@ -4790,11 +4790,6 @@ select.campo__entrada {
   flex-shrink: 0;
   color: var(--color-texto-secundario);
   font-weight: var(--peso-regular);
-}
-
-.equipo__invitado-texto {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 @media (prefers-reduced-motion: no-preference) {

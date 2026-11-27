@@ -163,7 +163,7 @@ public class RondasLider {
                 resultado.name()));
         if (resultado == ResultadoRonda.LIDER_ELEGIDO) {
             avisos.liderElegido(ronda.idEquipo(), ganador, OrigenLider.VOTACION);
-        } else {
+        } else if (apoyo.liderDe(ronda.idEquipo()).isEmpty()) {
             avisos.sinLider(
                     ronda.idEquipo(),
                     resultado == ResultadoRonda.EMPATE ? MotivoSinLider.EMPATE : MotivoSinLider.SIN_VOTOS);

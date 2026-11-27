@@ -1,6 +1,6 @@
 # 04. Modelo de datos — UniProject
 
-Este documento describe el modelo relacional real implementado en **PostgreSQL 18.6** mediante migraciones **Flyway** en SQL plano. La base de datos `uniproject` se divide en dos esquemas con roles de mínimo privilegio: el esquema `public` (29 tablas, dueño `uniproject_nucleo`) y el esquema `agente` (1 tabla, dueño `uniproject_agente` sin permisos sobre `public`).
+Este documento describe el modelo relacional real implementado en **PostgreSQL 18.6** mediante migraciones **Flyway** en SQL plano. La base de datos `uniproject` se divide en dos esquemas con roles de mínimo privilegio: el esquema `public` (35 tablas, dueño `uniproject_nucleo`) y el esquema `agente` (1 tabla, dueño `uniproject_agente` sin permisos sobre `public`).
 
 ---
 
@@ -22,6 +22,22 @@ erDiagram
         integer version_credenciales
     }
 
+    curso {
+        bigint id_curso PK
+        bigint id_docente FK
+        varchar nombre
+        varchar periodo
+        varchar descripcion
+        timestamptz archivado_en
+        timestamptz creado_en
+    }
+
+    miembro_curso {
+        bigint id_curso PK,FK
+        bigint id_usuario PK,FK
+        timestamptz fecha_ingreso
+    }
+
     proyecto {
         bigint id_proyecto PK
         bigint id_docente FK
@@ -30,6 +46,22 @@ erDiagram
         date fecha_inicio
         date fecha_fin
         boolean usa_monitores
+        boolean equipos_mixtos
+        timestamptz cierre_equipos
+        integer horas_ronda
+        timestamptz rondas_programadas_en
+        timestamptz recordatorio_cierre_en
+    }
+
+    curso_proyecto {
+        bigint id_curso PK,FK
+        bigint id_proyecto PK,FK
+    }
+
+    participante_proyecto {
+        bigint id_proyecto PK,FK
+        bigint id_usuario PK,FK
+        bigint id_curso FK
     }
 
     monitor_proyecto {
@@ -40,7 +72,9 @@ erDiagram
     equipo {
         bigint id_equipo PK
         bigint id_proyecto FK
+        bigint id_curso FK
         varchar nombre_equipo
+        integer cupo
     }
 
     miembro_equipo {
@@ -48,6 +82,24 @@ erDiagram
         bigint id_usuario PK,FK
         varchar rol_equipo
         timestamptz fecha_ingreso
+    }
+
+    ronda_lider {
+        bigint id_ronda PK
+        bigint id_equipo FK
+        varchar origen
+        timestamptz abre_en
+        timestamptz cierra_en
+        timestamptz cerrada_en
+        varchar resultado
+        bigint id_lider_elegido FK
+    }
+
+    voto_lider {
+        bigint id_ronda PK,FK
+        bigint id_votante PK,FK
+        bigint id_candidato FK
+        timestamptz votado_en
     }
 
     hito {
@@ -70,19 +122,33 @@ erDiagram
         numeric puntaje_maximo
     }
 
+    usuario ||--o{ curso : "administra (id_docente)"
+    curso ||--o{ miembro_curso : "inscribe"
+    usuario ||--o{ miembro_curso : "cursa"
     usuario ||--o{ proyecto : "dirige (id_docente)"
+    curso ||--o{ curso_proyecto : "participa en"
+    proyecto ||--o{ curso_proyecto : "recibe"
+    proyecto ||--o{ participante_proyecto : "incluye"
+    usuario ||--o{ participante_proyecto : "participa"
+    curso ||--o{ participante_proyecto : "cuenta con"
     proyecto ||--o{ monitor_proyecto : "asigna"
     usuario ||--o{ monitor_proyecto : "acompaña (id_monitor)"
     proyecto ||--o{ equipo : "agrupa"
+    curso |o--o{ equipo : "corresponde (id_curso)"
     equipo ||--o{ miembro_equipo : "integra"
     usuario ||--o{ miembro_equipo : "pertenece"
+    equipo ||--o{ ronda_lider : "elige lider"
+    usuario |o--o{ ronda_lider : "gana (id_lider_elegido)"
+    ronda_lider ||--o{ voto_lider : "recibe"
+    usuario ||--o{ voto_lider : "vota (id_votante)"
+    usuario ||--o{ voto_lider : "postulado (id_candidato)"
     proyecto ||--o{ hito : "define"
     hito ||--o{ criterio_rubrica : "evalua con"
 ```
 
-Este grupo modela la estructura académica creada por el docente: proyectos con fechas límite, equipos con exactamente un líder (`miembro_equipo_un_lider_uk`), asignación opcional de monitores (`usa_monitores`), hitos ordenados con configuración opcional de alerta de inactividad (`V7`) y criterios de rúbrica por hito.
+Este grupo modela la estructura académica creada por el docente: cursos con sus estudiantes (`curso`, `miembro_curso`) asignados a proyectos (`curso_proyecto`, `participante_proyecto`), proyectos con fechas límite, modo mixto (`equipos_mixtos`), cierre de autoinscripción (`cierre_equipos`) y duración de rondas (`horas_ronda`), equipos con cupo opcional (`cupo`) y como máximo un líder (`miembro_equipo_un_lider_uk`), votación de líder por rondas (`ronda_lider`, `voto_lider`), asignación opcional de monitores (`usa_monitores`), hitos ordenados con configuración opcional de alerta de inactividad (`V7`) y criterios de rúbrica por hito.
 
-**Fuentes:** [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql), [`V4__anonimizacion.sql`](../../nucleo/src/main/resources/db/migration/V4__anonimizacion.sql), [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql), [`V7__alerta_inactividad_opcional.sql`](../../nucleo/src/main/resources/db/migration/V7__alerta_inactividad_opcional.sql).
+**Fuentes:** [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql), [`V4__anonimizacion.sql`](../../nucleo/src/main/resources/db/migration/V4__anonimizacion.sql), [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql), [`V7__alerta_inactividad_opcional.sql`](../../nucleo/src/main/resources/db/migration/V7__alerta_inactividad_opcional.sql), [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql).
 
 ---
 
@@ -309,20 +375,20 @@ erDiagram
         bigint id_proyecto PK
     }
 
-    equipo {
-        bigint id_equipo PK
+    curso {
+        bigint id_curso PK
     }
 
     correo_habilitado {
         bigint id_correo_habilitado PK
         bigint id_proyecto FK
+        bigint id_curso FK
         varchar email
         varchar rol_plataforma
         bigint id_habilitado_por FK
         timestamptz fecha_habilitacion
         bigint id_usuario_registrado FK
         timestamptz fecha_uso
-        bigint id_equipo_invitado FK
         bytea enlace_selector UK
         bytea enlace_verificador_hash
         timestamptz enlace_vence_en
@@ -367,16 +433,16 @@ erDiagram
 
     usuario ||--o{ correo_habilitado : "habilita (id_habilitado_por)"
     usuario |o--o{ correo_habilitado : "usa al registrarse"
-    proyecto |o--o{ correo_habilitado : "restringe ambito"
-    equipo |o--o{ correo_habilitado : "invita (id_equipo_invitado)"
+    proyecto |o--o{ correo_habilitado : "restringe monitor"
+    curso |o--o{ correo_habilitado : "habilita estudiante (id_curso)"
     usuario ||--o{ recuperacion_contrasena : "solicita"
     usuario |o--o{ log_auditoria : "origina (id_usuario_accion)"
     log_auditoria ||--o| texto_auditoria : "anexa texto libre"
 ```
 
-Este grupo soporta la habilitación previa de correos con invitación directa a equipo (`V8`) y enlace de un solo uso con selector y hash SHA-256 (`V9`), la recuperación de contraseña sin exponer códigos en claro y con limitación de tasa (`V5`), y la auditoría inmutable (`log_auditoria`) separada de los textos libres borrables por Ley 1581 (`texto_auditoria`, migración V6).
+Este grupo soporta la habilitación previa de correos —estudiantes por curso (`id_curso`, migración `V11`, que retiró `id_equipo_invitado` de `V8`), monitores por proyecto y docentes sin ámbito— con enlace de un solo uso con selector y hash SHA-256 (`V9`, `V10`), la recuperación de contraseña sin exponer códigos en claro y con limitación de tasa (`V5`), y la auditoría inmutable (`log_auditoria`) separada de los textos libres borrables por Ley 1581 (`texto_auditoria`, migración V6).
 
-**Fuentes:** [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql), [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql), [`V8__invitacion_equipo.sql`](../../nucleo/src/main/resources/db/migration/V8__invitacion_equipo.sql), [`V9__enlace_registro.sql`](../../nucleo/src/main/resources/db/migration/V9__enlace_registro.sql), [`RegistroAuditoriaJdbc.java`](../../nucleo/src/main/java/co/uniproject/nucleo/trazabilidad/auditoria/RegistroAuditoriaJdbc.java).
+**Fuentes:** [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql), [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql), [`V9__enlace_registro.sql`](../../nucleo/src/main/resources/db/migration/V9__enlace_registro.sql), [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql), [`RegistroAuditoriaJdbc.java`](../../nucleo/src/main/java/co/uniproject/nucleo/trazabilidad/auditoria/RegistroAuditoriaJdbc.java).
 
 ---
 
@@ -479,11 +545,13 @@ El agente de Telegram opera con el rol `uniproject_agente` sobre el esquema excl
 | `tarea.nivel_riesgo` | `'BAJO'`, `'MEDIO'`, `'ALTO'` (o `NULL`) | `tarea_nivel_riesgo_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L156) |
 | `evidencia.tipo_evidencia` | `'PDF'`, `'IMAGEN'`, `'ENLACE'` | `evidencia_tipo_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L200) |
 | `solicitud_correccion.estado` | `'PENDIENTE'`, `'ATENDIDA'` | `solicitud_correccion_estado_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L231) |
-| `notificacion.tipo` | Las 6 claves académicas (`tarea.ruta_critica.riesgo`, `equipo.inactividad`, `hito.enviado`, `hito.evaluado`, `tarea.reasignada`, `tarea.correccion`) | `notificacion_tipo_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L288-L295) |
-| `notificacion.entidad_referencia` | `'tarea'`, `'hito_equipo'`, `'equipo'` | `notificacion_entidad_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L296) |
+| `ronda_lider.origen` | `'PROGRAMADA'`, `'DEMANDA'` | `ronda_lider_origen_ck` | [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L70) |
+| `ronda_lider.resultado` | `'LIDER_ELEGIDO'`, `'EMPATE'`, `'SIN_VOTOS'`, `'CANCELADA'` (o `NULL`) | `ronda_lider_resultado_ck` | [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L74-L75) |
+| `notificacion.tipo` | Las 6 claves académicas más las 7 de cursos, equipos y votación (`curso.estudiante_agregado`, `equipo.votacion_abierta`, `equipo.lider_elegido`, `equipo.sin_lider`, `equipo.miembro_cambio`, `equipo.inscripcion_por_cerrar`, `equipo.inscripcion_resumen`) | `notificacion_tipo_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L288-L295); ampliada en [`V12__eventos_cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V12__eventos_cursos_y_equipos.sql#L22-L37) |
+| `notificacion.entidad_referencia` | `'tarea'`, `'hito_equipo'`, `'equipo'`, `'curso'`, `'proyecto'` | `notificacion_entidad_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L296); ampliada en [`V12__eventos_cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V12__eventos_cursos_y_equipos.sql#L39-L41) |
 | `notificacion.estado_envio` | `'EN_COLA'`, `'SIN_TELEGRAM'` | `notificacion_estado_envio_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L297) |
 | `correo_habilitado.rol_plataforma` | `'DOCENTE'`, `'ESTUDIANTE'`, `'MONITOR'` | `correo_habilitado_rol_ck` | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L353) |
-| `evento_saliente.tipo` | Las 6 claves académicas más `'cuenta.recuperacion.solicitada'` y `'cuenta.contrasena.cambiada'` | `evento_saliente_tipo_ck` | V1 del núcleo; ampliada en [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql#L44-L54) |
+| `evento_saliente.tipo` | Las 6 claves académicas, las 2 de recuperación/contraseña y las 7 de cursos, equipos y votación | `evento_saliente_tipo_ck` | V1 del núcleo; ampliada en [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql#L44-L54) y [`V12__eventos_cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V12__eventos_cursos_y_equipos.sql#L3-L20) |
 
 ### Invariantes `CHECK` de negocio y privacidad
 
@@ -496,8 +564,9 @@ El agente de Telegram opera con el rol `uniproject_agente` sobre el esquema excl
 | `tarea`, `dependencia_tarea` | `tarea_avance_ck`, `tarea_completada_ck`, `tarea_bloqueo_ck`, `tarea_horas_ck`, `tarea_origen_ck`, `dependencia_tarea_distintas_ck` | Avance `0..100`; `COMPLETADA` equivale a `100` % y `fecha_completada IS NOT NULL`; `bloqueada_por_dependencia` equivale a `fecha_bloqueo IS NOT NULL`; sin auto-dependencia ni auto-origen. | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L150-L174) |
 | `evidencia`, `comentario_tarea`, `solicitud_correccion` | `evidencia_forma_ck`, `comentario_tarea_contenido_ck`, `solicitud_correccion_atencion_ck` | URL `http(s)://` sin nombre de archivo para `ENLACE`, o clave `evidencias/<uuid>.(pdf\|png\|jpg)` con nombre para archivos; comentario no vacío; `ATENDIDA` implica `fecha_atencion IS NOT NULL`. | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L201-L232) |
 | `evaluacion_hito`, `calificacion_criterio`, `nota_individual` | `evaluacion_hito_nota_ck`, `calificacion_criterio_nota_ck`, `nota_individual_factor_ck`, `nota_individual_sugerida_ck`, `nota_individual_final_ck`, `nota_individual_confirmacion_ck` | Escala de notas `0..5`; `factor_ajuste >= 0`; `nota_final` y `fecha_confirmacion` nulas o no nulas simultáneamente. | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L246-L272) |
+| `proyecto`, `equipo`, `ronda_lider` | `proyecto_horas_ronda_ck`, `equipo_cupo_ck`, `ronda_lider_fechas_ck`, `ronda_lider_cierre_ck` | `horas_ronda` en `1..336`; `cupo` nulo o mayor que 0; `cierra_en > abre_en`; `cerrada_en IS NULL` equivale a `resultado IS NULL`. | [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L77-L125) |
 | `log_auditoria` | `log_auditoria_entidad_ck`, `log_auditoria_accion_ck` | `entidad_afectada` en minúsculas (`^[a-z_]{2,40}$`) y `accion` en mayúsculas (`^[A-Z_]{3,40}$`). | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L316-L317) |
-| `correo_habilitado` | `correo_habilitado_proyecto_ck`, `correo_habilitado_uso_ck`, `correo_habilitado_invitacion_ck`, `correo_habilitado_enlace_ck`, `correo_habilitado_enlace_uso_ck` | Docentes sin proyecto y estudiantes/monitores con proyecto; invitación a equipo (`V8`) solo en `ESTUDIANTE` sin usar; enlace de registro (`V9`) con selector (8 bytes), hash SHA-256 (32 bytes) y vencimiento, y nulo tras usarse. | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L354-L355), [`V8__invitacion_equipo.sql`](../../nucleo/src/main/resources/db/migration/V8__invitacion_equipo.sql#L8-L9), [`V9__enlace_registro.sql`](../../nucleo/src/main/resources/db/migration/V9__enlace_registro.sql#L10-L19) |
+| `correo_habilitado` | `correo_habilitado_ambito_ck`, `correo_habilitado_uso_ck`, `correo_habilitado_enlace_ck`, `correo_habilitado_enlace_uso_ck` | Docentes sin proyecto ni curso, monitores con `id_proyecto` y sin curso, estudiantes con `id_curso` y sin proyecto (`V11`, que retiró `id_equipo_invitado`); enlace de registro (`V9`, `V10`) con selector (8 bytes), hash SHA-256 (32 bytes) y vencimiento, y nulo tras usarse. | [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L354-L355), [`V9__enlace_registro.sql`](../../nucleo/src/main/resources/db/migration/V9__enlace_registro.sql#L10-L19), [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L135-L138) |
 | `recuperacion_contrasena`, `limite_recuperacion` | `recuperacion_contrasena_vigencia_ck`, `recuperacion_contrasena_codigo_ck`, `limite_recuperacion_clave_ck`, `limite_recuperacion_cuenta_ck` | Vigencia válida; selector (8 bytes) + hash (32 bytes); claves de límite de tasa con SHA-256 hex (`^(correo\|ip\|canje\|cambio):[0-9a-f]{64}$`). | [`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql#L22-L39) |
 
 ### Restricciones `UNIQUE`, triggers e índices operativos
@@ -509,21 +578,23 @@ El agente de Telegram opera con el rol `uniproject_agente` sobre el esquema excl
 | `UNIQUE` | `equipo_nombre_uk (id_proyecto, nombre_equipo)`, `hito_orden_uk (id_proyecto, orden)`, `hito_equipo_uk (id_hito, id_equipo)` | `equipo`, `hito`, `hito_equipo` | Evita nombres de equipo repetidos, órdenes duplicados y pares hito-equipo repetidos ([`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L63-L113)). |
 | `UNIQUE` parcial | `miembro_equipo_un_lider_uk` sobre `(id_equipo) WHERE rol_equipo = 'LIDER'` | `miembro_equipo` | Garantiza en base de datos el supuesto 2 de la entrega 1: como máximo un líder por equipo ([`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L76)). |
 | `UNIQUE` | `evaluacion_hito_envio_uk (id_envio)`, `nota_individual_uk (id_evaluacion, id_estudiante)` | `evaluacion_hito`, `nota_individual` | Una evaluación por entrega y una nota individual por estudiante y evaluación ([`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L245-L268)). |
-| `UNIQUE` con nulos iguales | `correo_habilitado_uk UNIQUE NULLS NOT DISTINCT (email, id_proyecto)` | `correo_habilitado` | Impide duplicar habilitaciones de docente (`id_proyecto IS NULL`) o por proyecto ([`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L351)). |
+| `UNIQUE` | `curso_nombre_uk (id_docente, lower(nombre), lower(periodo))` | `curso` | Impide que un mismo docente cree dos cursos con el mismo nombre en el mismo periodo, sin distinguir mayúsculas ([`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L15)). |
+| `UNIQUE` parcial | `ronda_lider_abierta_uk` sobre `(id_equipo) WHERE cerrada_en IS NULL` | `ronda_lider` | Garantiza como máximo una ronda de votación abierta por equipo ([`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L81)). |
+| `UNIQUE` con nulos iguales | `correo_habilitado_uk UNIQUE NULLS NOT DISTINCT (email, id_proyecto, id_curso)` | `correo_habilitado` | Impide duplicar habilitaciones de docente (`id_proyecto IS NULL AND id_curso IS NULL`), de monitor por proyecto o de estudiante por curso ([`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L140)). |
 | `UNIQUE` parciales | `recuperacion_contrasena_selector_uk` (`V5`) y `correo_habilitado_enlace_selector_uk` (`V9`) | `recuperacion_contrasena`, `correo_habilitado` | Búsqueda en O(log n) por selector de 8 bytes solo cuando hay token vigente ([`V5__recuperacion_contrasena.sql`](../../nucleo/src/main/resources/db/migration/V5__recuperacion_contrasena.sql#L28-L29), [`V9__enlace_registro.sql`](../../nucleo/src/main/resources/db/migration/V9__enlace_registro.sql#L21-L22)). |
 | `TRIGGER` | `log_auditoria_sin_cambios` (`BEFORE UPDATE OR DELETE FOR EACH ROW`) y `log_auditoria_sin_vaciado` (`BEFORE TRUNCATE FOR EACH STATEMENT`) → `log_auditoria_solo_insercion()` | `log_auditoria` | Impide cualquier alteración o borrado en la auditoría incluso al dueño de la tabla (`uniproject_nucleo`), lanzando `restrict_violation` (restricción 4e; [`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L325-L339)). |
 | `INDEX` parcial (`SKIP LOCKED`) | Índice parcial sobre `(creado_en) WHERE publicado_en IS NULL` | `evento_saliente` | Acelera la consulta `WHERE publicado_en IS NULL ORDER BY creado_en LIMIT 50 FOR UPDATE SKIP LOCKED` del sondeo de `PublicadorOutbox` (V1 del núcleo; `decisiones-tecnicas-java.md`). |
-| Otros índices operativos | `notificacion_bandeja_idx`, `log_auditoria_registro_idx`, `log_auditoria_usuario_idx`, `correo_habilitado_pendiente_idx`, `correo_habilitado_equipo_invitado_idx` | Varias | Soportan la bandeja P10 ordenada por fecha descendente, consultas de historial sin escaneos completos y búsqueda de invitaciones pendientes ([`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L299-L357), [`V8__invitacion_equipo.sql`](../../nucleo/src/main/resources/db/migration/V8__invitacion_equipo.sql#L11-L12)). |
+| Otros índices operativos | `notificacion_bandeja_idx`, `log_auditoria_registro_idx`, `log_auditoria_usuario_idx`, `correo_habilitado_pendiente_idx`, `correo_habilitado_curso_idx`, `curso_docente_idx`, `miembro_curso_usuario_idx`, `curso_proyecto_proyecto_idx`, `participante_proyecto_usuario_idx`, `participante_proyecto_curso_idx`, `voto_lider_candidato_idx` | Varias | Soportan la bandeja P10 ordenada por fecha descendente, consultas de historial, cursos, participación por proyecto, conteo de votos y habilitaciones pendientes por curso ([`V3__modelo_dominio.sql`](../../nucleo/src/main/resources/db/migration/V3__modelo_dominio.sql#L299-L357), [`V11__cursos_y_equipos.sql`](../../nucleo/src/main/resources/db/migration/V11__cursos_y_equipos.sql#L14-L141)). |
 
 ---
 
 ## 4.9. Diferencias frente al modelo de 19 tablas de la entrega 1
 
-En `entrega1.md` sección 2.7 se planteaba un modelo relacional de **19 tablas**, que posteriormente se amplió a **20 tablas** en el diagrama previo al desarrollo ([`Archivos_contexto/diagrama-bd-actual.md`](../contexto/diagrama-bd-actual.md), cuyo título conservaba el rótulo «19 tablas»). En el sistema construido existen hoy **30 tablas de aplicación** (**29 en el esquema `public`** del núcleo y **1 en el esquema `agente`** del bot de Telegram):
+En `entrega1.md` sección 2.7 se planteaba un modelo relacional de **19 tablas**, que posteriormente se amplió a **20 tablas** en el diagrama previo al desarrollo ([`Archivos_contexto/diagrama-bd-actual.md`](../contexto/diagrama-bd-actual.md), cuyo título conservaba el rótulo «19 tablas»). En el sistema construido existen hoy **36 tablas de aplicación** (**35 en el esquema `public`** del núcleo y **1 en el esquema `agente`** del bot de Telegram):
 
 | Cambio respecto a la entrega 1 / diagrama vigente | Qué se añadió o modificó | Por qué se cambió |
 |---|---|---|
-| **9 tablas nuevas en `public`** | `evento_saliente` (V1/V5), `codigo_vinculacion` (V1), `estado_riesgo_tarea` (V2/V3), `alerta_inactividad` (V2/V3), `correo_habilitado` (V3/V8/V9), `recuperacion_contrasena` (V5), `limite_recuperacion` (V5), `texto_auditoria` (V6) y `solicitud_apoyo` (V6). | Soportar outbox transaccional, vinculación a Telegram sin correo electrónico, deduplicación de alertas horarias, alta de cuentas por correo habilitado con invitación y enlace de registro, recuperación de contraseña con limitación de tasa, y separación de textos libres borrables por Ley 1581 respecto a `log_auditoria`. |
+| **15 tablas nuevas en `public`** | `evento_saliente` (V1/V5/V12), `codigo_vinculacion` (V1), `estado_riesgo_tarea` (V2/V3), `alerta_inactividad` (V2/V3), `correo_habilitado` (V3/V9/V11), `recuperacion_contrasena` (V5), `limite_recuperacion` (V5), `texto_auditoria` (V6), `solicitud_apoyo` (V6), `curso` (V11), `miembro_curso` (V11), `curso_proyecto` (V11), `participante_proyecto` (V11), `ronda_lider` (V11) y `voto_lider` (V11). | Soportar outbox transaccional, vinculación a Telegram sin correo electrónico, deduplicación de alertas horarias, alta de cuentas por correo habilitado (por curso para estudiantes) y enlace de registro, recuperación de contraseña con limitación de tasa, separación de textos libres borrables por Ley 1581 respecto a `log_auditoria`, cursos académicos, autoinscripción a equipos con cupo y votación de líder por rondas. |
 | **1 tabla nueva en esquema `agente`** | `agente.evento_procesado` (`(evento_id, usuario_id)`). | Garantizar consumo idempotente por evento y destinatario manteniendo al agente aislado del esquema `public` (Ley 1581). |
 | **Columnas añadidas en `usuario`** | `telegram_chat_id` (V1), `fecha_anonimizacion` (`V4`) y `version_credenciales` (`V5`). | Vincular Telegram (`insertable = false, updatable = false` en JPA), suprimir cuentas sin romper llaves foráneas académicas e invalidar sesiones tras cambiar o restablecer contraseña. |
 | **Alerta de inactividad opcional en `hito`** | `V7` eliminó `NOT NULL` de `hito.dias_inactividad_alerta` (manteniendo `CHECK 1..60` para valores no nulos). | Permitir que el docente deje hitos concretos sin alerta automática de inactividad (RF6). |
